@@ -23,7 +23,12 @@
 #else
 #   define pe() return -1;
 #   define ni() return -1;
-#   define msg(...) ;
+#   ifdef PRINT_ITERATION_COUNT
+#      include <stdio.h>
+#      define msg(...) printf(__VA_ARGS__)
+#   else
+#      define msg(...) ;
+#   endif
 #endif
 
 #define next(x) *(code + x)

@@ -1,0 +1,3 @@
+[submodule "lib/microcuts"]
+	path = lib/microcuts
+	url = https://github.com/start-lang/microcuts

@@ -123,6 +123,10 @@ int8_t run(uint8_t* code){
             else if (s->info.type == FLOAT) s->info.comp = s->A.f32 == 0;
             break;
           default:
+            if (next(1) >= 'A' && next(1) <= 'Z'){
+              consume();
+              continue;
+            }
             pe();
         }
         consume();
@@ -272,8 +276,13 @@ int8_t run(uint8_t* code){
         s->info.type = 3;
         s->A.f32 = 0;
         break;
+      case IN:
       case OUT:
-        // printf("%d\n", s->A.i8[0]);
+        if (next(1) >= 'A' && next(1) <= 'Z'){
+          break;
+        } else {
+            api(0, *code, s);
+        }
       case ENDIF:
       case NOP:
         break;
@@ -357,6 +366,8 @@ int8_t run(uint8_t* code){
             else if (s->info.type == INT32) s->A.i32 = s->A.i32*10 + (*code - '0');
             else if (s->info.type == FLOAT) { ni(); }
           }
+        } else if (*code >= 'A' && *code <= 'Z'){
+          api(prev(1), *code, s);
         } else {
           pe();
         }

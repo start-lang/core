@@ -6,6 +6,8 @@
 //suppress pointer signedness warning during compilation
 #define run(A) run((uint8_t*) A)
 
+void api(uint8_t pre, uint8_t op, State * s){}
+
 int main(void){
   uint8_t ** M = &mem_begin;
 
@@ -38,24 +40,24 @@ int main(void){
   assert_eq((run("b257"), s->A.i8[0]), 1);
   assert_eq((run("b257"), s->A.i8[1]), 0);
 
-  assert_eq((run("i3"), s->info.type), INT16);
-  assert_eq((run("I3"), s->info.type), INT32);
+  assert_eq((run("s3"), s->info.type), INT16);
+  assert_eq((run("i3"), s->info.type), INT32);
   assert_eq((run("f3"), s->info.type), FLOAT);
-  assert_eq(run("f3"), 0);
+  // assert_eq(run("f3"), 0);
   end_section();
 
   begin_section("STORE");
-  assert_eq((run("3s"), (*M)[0]), 3);
+  assert_eq((run("3!"), (*M)[0]), 3);
   end_section();
 
   begin_section("Move/Load");
-  assert_eq((run("3s>4s"), (*M)[0]), 3);
-  assert_eq((run("3s>4s"), (*M)[1]), 4);
-  assert_eq((run(">4s<3s"), (*M)[0]), 3);
-  assert_eq((run(">4s<3s"), (*M)[1]), 4);
-  assert_eq((run(">4s<3s1"), s->A.i8[0]), 1);
-  assert_eq((run(">4s<3s1l"), s->A.i8[0]), 3);
-  assert_eq((run(">4s<3s1>l"), s->A.i8[0]), 4);
+  assert_eq((run("3!>4!"), (*M)[0]), 3);
+  assert_eq((run("3!>4!"), (*M)[1]), 4);
+  assert_eq((run(">4!<3!"), (*M)[0]), 3);
+  assert_eq((run(">4!<3!"), (*M)[1]), 4);
+  assert_eq((run(">4!<3!1"), s->A.i8[0]), 1);
+  assert_eq((run(">4!<3!1;"), s->A.i8[0]), 3);
+  assert_eq((run(">4!<3!1>;"), s->A.i8[0]), 4);
   end_section();
 
   begin_section("SWITCH");
@@ -97,9 +99,9 @@ int main(void){
   assert_eq(run("?=(1:2)"), 0);
   assert_eq((run("?=(1:2)"), s->info.comp), 1);
   assert_eq((run("?=(1:2)"), s->A.i8[0]), 1);
-  assert_eq((run("0@1@?>(2:3)s"), s->mem[0]), 3);
-  assert_eq((run("1@1@?>(2:3)s"), s->mem[0]), 3);
-  assert_eq((run("2@1@?>(2:3)s"), s->mem[0]), 2);
+  assert_eq((run("0@1@?>(2:3)!"), s->mem[0]), 3);
+  assert_eq((run("1@1@?>(2:3)!"), s->mem[0]), 3);
+  assert_eq((run("2@1@?>(2:3)!"), s->mem[0]), 2);
   end_section();
 
   begin_section("WHILE");
@@ -116,15 +118,15 @@ int main(void){
   assert_eq(run("1@1?![-?!]"), 0);
   assert_eq((run("12@?![+?!]"), s->A.i8[0]), 12);
   assert_eq((run("12@?![+?!]"), s->B.i8[0]), 12);
-  assert_eq((run("8s?![1@l-s?! c x ]"), s->A.i8[0]), 1);
+  assert_eq((run("8!?![1@;-!?! c x ]"), s->A.i8[0]), 1);
   end_section();
 
   begin_section("Fibonacci");
-  assert_eq((run("8s>0s>1s?![2<1@l-s?!2> l@<l@s+>s]"), s->A.i8[0]), 21);
-  assert_eq((run("9s>0s>1s?![2<1@l-s?!2> l@<l@s+>s]"), s->A.i8[0]), 34);
-  assert_eq((run("10s>0s>1s?![2<1@l-s?!2> l@<l@s+>s]"), s->A.i8[0]), 55);
-  assert_eq((run("I46s>I0s>I1s?![2<I1@l-s?!2> l@<l@s+>s]"), s->A.i32), 1836311903);
-  assert_eq((run("tI46s>0s>1s?![2<1@l-s?!2> l@<l@s+>s]"), s->A.i32), 1836311903);
+  assert_eq((run("8!>0!>1!?![2<1@;-!?!2> ;@<;@!+>!]"), s->A.i8[0]), 21);
+  assert_eq((run("9!>0!>1!?![2<1@;-!?!2> ;@<;@!+>!]"), s->A.i8[0]), 34);
+  assert_eq((run("10!>0!>1!?![2<1@;-!?!2> ;@<;@!+>!]"), s->A.i8[0]), 55);
+  assert_eq((run("i46!>i0!>i1!?![2<i1@;-!?!2> ;@<;@!+>!]"), s->A.i32), 1836311903);
+  assert_eq((run("ti46!>0!>1!?![2<1@;-!?!2> ;@<;@!+>!]"), s->A.i32), 1836311903);
   end_section();
 
   end_tests();

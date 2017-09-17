@@ -40,8 +40,6 @@ typedef struct {
   struct {
     uint8_t comp:1;
     uint8_t type:2;
-    uint8_t i:2;
-    uint8_t o:2;
   } info;
   uint8_t* mem;
 } State;
@@ -53,6 +51,8 @@ typedef struct {
 
 void begin();
 int8_t run(uint8_t* code);
+
+extern void api(uint8_t pre, uint8_t op, State * s);
 
 #ifdef __cplusplus
 }

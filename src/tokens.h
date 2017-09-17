@@ -3,7 +3,8 @@
 
 #ifdef NANO
 #   define FUNCTION        'F'
-#   define ENDFUNCTION     ';'
+#   define STARTFUNCTION   '{'
+#   define ENDFUNCTION     '}'
 #   define RETURN          'r'
 #   define SET_MEM_SIZE    'm'
 #endif
@@ -25,15 +26,15 @@
 #define RIGHT           '>'
 #define CLEAR           'C'
 #define SWITCH          '@'
-#define STORE           's'
-#define LOAD            'l'
+#define STORE           '!'
+#define LOAD            ';'
 
 #define OUT             '.'
 #define IN              ','
 #define MEM_JUMP        'm' //signed int
 #define COPY_FROM       'v'
 #define RUN             '^'
-#define CODE_JMP        'J'
+#define CODE_JMP        'j'
 
 #define SUM             '+'
 #define SUB             '-'
@@ -58,8 +59,8 @@
 #define INV             '~'
 
 #define T_INT8          'b'
-#define T_INT16         'i'
-#define T_INT32         'I'
+#define T_INT16         's'
+#define T_INT32         'i'
 #define T_FLOAT         'f'
 #define STRING          '\"'
 #define CHAR            '\''

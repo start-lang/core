@@ -4,16 +4,19 @@
 # CPPFLAGS = -D DEBUG_INTERPRETER -D EXPOSE_INTERNALS -D PRINT_ITERATION_COUNT=10
 CPPFLAGS = -D DEBUG_INTERPRETER -D EXPOSE_INTERNALS
 
-clean:
+build:
+	mkdir -p build
+
+clean: build
 	rm -rf build/*
 
-test:
+test: build
 	@gcc -Wall $(CPPFLAGS) -Isrc -Ilib/microcuts/src lib/microcuts/src/microcuts.c test/test_star_t.c src/star_t.c -o build/test_star_t && \
 	chmod +x build/test_star_t && \
 	./build/test_star_t
 	@make clean > /dev/null
 
-cov:
+cov: build
 	@gcc --coverage -D EXPOSE_INTERNALS -Isrc -Ilib/microcuts/src lib/microcuts/src/microcuts.c test/test_star_t.c src/star_t.c -o build/test_star_t && \
 	chmod +x build/test_star_t && \
 	./build/test_star_t && \

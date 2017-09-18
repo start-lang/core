@@ -50,7 +50,9 @@ typedef struct {
 #endif
 
 void begin();
-int8_t run(uint8_t* code);
+int8_t runall(uint8_t* code);
+int8_t blockrun(uint8_t* block, uint8_t len);
+int8_t step(uint8_t code);
 
 extern void api(uint8_t pre, uint8_t op, State * s);
 

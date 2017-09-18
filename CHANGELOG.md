@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [0.2.0] - 2017-09-18
+### Changed
+  - `run` function decomposed into `step` and `runall` and `runblock`
+
 ## [0.1.3] - 2017-09-17
 ### Added
   - External api call

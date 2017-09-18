@@ -1,10 +1,11 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <microcuts.h>
 #include <star_t.h>
 
 //suppress pointer signedness warning during compilation
-#define run(A) run((uint8_t*) A)
+#define run(A) runall((uint8_t*) A)
 
 void api(uint8_t pre, uint8_t op, State * s){}
 
@@ -127,6 +128,40 @@ int main(void){
   assert_eq((run("10!>0!>1!?![2<1@;-!?!2> ;@<;@!+>!]"), s->A.i8[0]), 55);
   assert_eq((run("i46!>i0!>i1!?![2<i1@;-!?!2> ;@<;@!+>!]"), s->A.i32), 1836311903);
   assert_eq((run("ti46!>0!>1!?![2<1@;-!?!2> ;@<;@!+>!]"), s->A.i32), 1836311903);
+  end_section();
+
+  begin_section("blockrun");
+  char * code = "ti46!>0!>1!?![2<1@;-!?!2> ;@<;@!+>!]";
+  for (int max_block_size = 1; max_block_size <= strlen(code); max_block_size++){
+    int direction = 0;
+    int index = 0;
+    begin();
+    char * block = realloc(block, (max_block_size+1)*sizeof(char));
+    while (1) {
+      int block_size = max_block_size;
+      if (index*max_block_size + max_block_size >= strlen(code)){
+        block_size = strlen(code) - index*max_block_size;
+      }
+      if (block_size <= 0){
+        break;
+      }
+      strncpy(block, code + (index*max_block_size),  block_size);
+      block[block_size] = '\0';
+      direction = blockrun((uint8_t*)block, block_size);
+      // printf("%s %d %d %d\n", block, block_size, direction, index);
+
+      if (direction == -1){
+        index--;
+      } else if (direction == 0){
+        index++;
+      } else {
+        //error
+        printf("%d\n", direction);
+        break;
+      }
+    }
+    assert_eq(s->A.i32, 1836311903);
+  }
   end_section();
 
   end_tests();

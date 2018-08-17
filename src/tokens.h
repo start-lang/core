@@ -22,9 +22,16 @@
 #define NOP             ' '
 #define COND_MODIFIER   '?'
 #define TYPE_SET        't' //eh necessario?
+#define FUNCTION_SET    '#'
 #define LEFT            '<'
 #define RIGHT           '>'
-#define CLEAR           'C'
+
+#define START_STACK     '$'
+#define PUSH            'p'
+#define POP             'o'
+#define STACK_HEIGHT    'h'
+
+#define ZERO            'z'
 #define SWITCH          '@'
 #define STORE           '!'
 #define LOAD            ';'
@@ -49,7 +56,7 @@
 #define C_LE            'l'
 #define C_GE            'g'
 #define C_NOT_NULL      '?'
-#define C_ZERO          'O'
+#define C_ZERO          'z'
 
 #define AND             '&'
 #define OR              '|'

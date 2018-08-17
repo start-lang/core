@@ -37,11 +37,11 @@ typedef union {
 typedef struct {
   Register A;
   Register B;
-  struct {
-    uint8_t comp:1;
-    uint8_t type:2;
-  } info;
-  uint8_t* mem;
+  uint8_t Ans:1;
+  uint8_t Type:2;
+  uint8_t Function;
+  uint8_t* StackStart;
+  uint8_t* Mem;
 } State;
 
 #ifdef EXPOSE_INTERNALS

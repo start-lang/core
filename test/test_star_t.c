@@ -159,11 +159,12 @@ int main(void){
 
   begin_section("blockrun");
   char * code = "ti46!>0!>1!?![2<1@;-!?!2> ;@<;@!+>!]";
+  char * block = NULL;
   for (int max_block_size = 1; max_block_size <= strlen(code); max_block_size++){
     int direction = 0;
     int index = 0;
     begin();
-    char * block = realloc(block, (max_block_size+1)*sizeof(char));
+    block = realloc(block, (max_block_size+1)*sizeof(char));
     while (1) {
       int block_size = max_block_size;
       if (index*max_block_size + max_block_size >= strlen(code)){

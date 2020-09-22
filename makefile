@@ -4,7 +4,10 @@
 # CPPFLAGS = -D DEBUG_INTERPRETER -D EXPOSE_INTERNALS -D PRINT_ITERATION_COUNT=10
 CPPFLAGS = -D DEBUG_INTERPRETER -D EXPOSE_INTERNALS
 
-build:
+init:
+	[ "$$(ls -A lib/microcuts)" ] || git submodule update --init --recursive
+
+build: init
 	mkdir -p build
 
 clean: build

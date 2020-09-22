@@ -153,12 +153,11 @@ int main(void){
   assert_eq((run("8!>0!>1!?![2<1@;-!?!2> ;@<;@!+>!]"), s->A.i8[0]), 21);
   assert_eq((run("9!>0!>1!?![2<1@;-!?!2> ;@<;@!+>!]"), s->A.i8[0]), 34);
   assert_eq((run("10!>0!>1!?![2<1@;-!?!2> ;@<;@!+>!]"), s->A.i8[0]), 55);
-  assert_eq((run("i46!>i0!>i1!?![2<i1@;-!?!2> ;@<;@!+>!]"), s->A.i32), 1836311903);
-  assert_eq((run("ti46!>0!>1!?![2<1@;-!?!2> ;@<;@!+>!]"), s->A.i32), 1836311903);
+  assert_eq((run("i46!>0!>1!?![2<1@;-!?!2> ;@<;@!+>!]"), s->A.i32), 1836311903);
   end_section();
 
   begin_section("blockrun");
-  char * code = "ti46!>0!>1!?![2<1@;-!?!2> ;@<;@!+>!]";
+  char * code = "i46!>0!>1!?![2<1@;-!?!2> ;@<;@!+>!]";
   char * block = NULL;
   for (int max_block_size = 1; max_block_size <= strlen(code); max_block_size++){
     int direction = 0;

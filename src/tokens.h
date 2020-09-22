@@ -21,7 +21,6 @@
 
 #define NOP             ' '
 #define COND_MODIFIER   '?'
-#define TYPE_SET        't' //eh necessario?
 #define FUNCTION_SET    '#'
 #define LEFT            '<'
 #define RIGHT           '>'

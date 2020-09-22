@@ -251,30 +251,11 @@ int8_t step(uint8_t code){
             pe();
         }
         return 0;
-      case TYPE_SET:
-        switch (code) {
-          case T_INT8:
-            s->Type = 0;
-            break;
-          case T_INT16:
-            s->Type = 1;
-            break;
-          case T_INT32:
-            s->Type = 2;
-            break;
-          case T_FLOAT:
-            s->Type = 3;
-            break;
-          default:
-            pe();
-        }
-        return 0;
     }
   }
 
   switch (code) {
     case COND_MODIFIER:
-    case TYPE_SET:
       lookahead = 1;
       break;
     case LEFT:
@@ -440,21 +421,15 @@ int8_t step(uint8_t code){
       break;
     case T_INT8:
       s->Type = 0;
-      s->A.i16[0] = 0;
-      s->A.i16[1] = 0;
       break;
     case T_INT16:
       s->Type = 1;
-      s->A.i16[0] = 0;
-      s->A.i16[1] = 0;
       break;
     case T_INT32:
       s->Type = 2;
-      s->A.i32 = 0;
       break;
     case T_FLOAT:
       s->Type = 3;
-      s->A.f32 = 0;
       break;
     case IN:
     case OUT:

@@ -73,13 +73,32 @@ int main(void){
   assert_eq((run("3!"), (*M)[0]), 3);
   end_section();
 
+  // tape-register notation
+  // M[n-1] [A|B> M[n]
+
   begin_section("Move/Load");
+  // 3 [4|0> 4
   assert_eq((run("3!>4!"), (*M)[0]), 3);
   assert_eq((run("3!>4!"), (*M)[1]), 4);
+  // [3|0> 3 4
   assert_eq((run(">4!<3!"), (*M)[0]), 3);
   assert_eq((run(">4!<3!"), (*M)[1]), 4);
+  // [1|0> 3 4
+  assert_eq((run(">4!<3!1"), (*M)[0]), 3);
+  assert_eq((run(">4!<3!1"), (*M)[1]), 4);
   assert_eq((run(">4!<3!1"), s->A.i8[0]), 1);
+  // [3|0> 3 4
   assert_eq((run(">4!<3!1;"), s->A.i8[0]), 3);
+  // 0. [0|0>     - start
+  // 1. ? [0|0>   - > right
+  // 2. ? [4|0>   - 4 read const 4 into A
+  // 3. ? [4|0> 4 - ! store
+  // 4. [4|0> ? 4 - < left
+  // 5. [3|0> ? 4 - 3 read const 3 into A
+  // 6. [3|0> 3 4 - ! store
+  // 7. [1|0> 3 4 - 1 read const 1 into A
+  // 8. 3 [1|0> 4 - < right
+  // 9. 3 [4|0> 4 - ; load
   assert_eq((run(">4!<3!1>;"), s->A.i8[0]), 4);
   end_section();
 
@@ -102,6 +121,11 @@ int main(void){
   end_section();
 
   begin_section("OP");
+  // 0. [0|0>     - start
+  // 0. [12|0>    - 12 read const 12 into A
+  // 0. [0|12>    - @  switch A, B
+  // 0. [1|12>    - 1  read const 1 into A
+  // 0. [13|12>   - +  A + B -> A
   assert_eq((run("12@1+"), s->A.i8[0]), 13);
   assert_eq((run("1@12-"), s->A.i8[0]), 11);
   assert_eq((run("1@12--"), s->A.i8[0]), 10);
@@ -109,21 +133,28 @@ int main(void){
   end_section();
 
   begin_section("IF");
+  // valid empty expressions
   assert_eq(run("()"), 0);
   assert_eq(run("(:)"), 0);
+  // Ans is false by default
+  assert_eq((run(""), s->Ans), 0);
   assert_eq(run("1(2)"), 0);
   assert_eq((run("1(2)"), s->A.i8[0]), 1);
   assert_eq((run("1(2:)"), s->A.i8[0]), 1);
   assert_eq((run("1(:2)"), s->A.i8[0]), 2);
-  assert_eq((run("?!(1:2)"), s->A.i8[0]), 2);
-  assert_eq(run("?=(1:2)"), 0);
+  // false 
   assert_eq(run("?!(1:2)"), 0);
+  assert_eq((run("?!(1:2)"), s->A.i8[0]), 2);
   assert_eq((run("(2:3)"), s->A.i8[0]), 3);
+  // true
   assert_eq(run("?=(1:2)"), 0);
   assert_eq((run("?=(1:2)"), s->Ans), 1);
   assert_eq((run("?=(1:2)"), s->A.i8[0]), 1);
+  // 0 > 1 ?
   assert_eq((run("0@1@?>(2:3)!"), s->Mem[0]), 3);
+  // 1 > 1 ?
   assert_eq((run("1@1@?>(2:3)!"), s->Mem[0]), 3);
+  // 2 > 1 ?
   assert_eq((run("2@1@?>(2:3)!"), s->Mem[0]), 2);
   end_section();
 

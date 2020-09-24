@@ -446,13 +446,17 @@ int8_t step(uint8_t code){
     default:
       if (code >= '0' && code <= '9'){
         if (!prev || ((prev < '0' || prev > '9') && prev != T_INT8 && prev != T_INT16 && prev != T_INT32 && prev != T_FLOAT)){
-          s->A.i16[0] = (code - '0');
-          s->A.i16[1] = 0;
+          if (s->Type == FLOAT) {
+            s->A.f32 = (code - '0');
+          } else {
+            s->A.i16[0] = (code - '0');
+            s->A.i16[1] = 0;
+          }
         } else {
           if (s->Type == INT8) s->A.i8[0] = s->A.i8[0]*10 + (code - '0');
           else if (s->Type == INT16) s->A.i16[0] = s->A.i16[0]*10 + (code - '0');
           else if (s->Type == INT32) s->A.i32 = s->A.i32*10 + (code - '0');
-          else if (s->Type == FLOAT) { pe(); }
+          else if (s->Type == FLOAT) s->A.f32 = s->A.f32*10 + (code - '0');
         }
       } else {
         pe();

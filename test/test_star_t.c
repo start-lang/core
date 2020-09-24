@@ -35,7 +35,11 @@ int main(void){
   end_section();
 
   begin_section("DATA TYPES");
-  assert_eq((run("3"), s->Type), INT8);
+  // default type is int8 and cleared regs
+  assert_eq((run(""), s->Type), INT8);
+  assert_eq((run(""), s->A.f32), 0);
+  assert_eq((run(""), s->B.f32), 0);
+  // random assertions
   assert_eq((run("3"), s->A.i8[0]), 3);
   assert_eq((run("1"), s->A.i8[0]), 1);
   assert_eq((run("10"), s->A.i8[0]), 10);
@@ -44,23 +48,25 @@ int main(void){
   assert_eq((run("128"), s->A.i8[0]), 128);
   assert_eq((run("255"), s->A.i8[0]), 255);
   assert_eq((run("256"), s->A.i8[0]), 0);
+  // integer overflow
   assert_eq((run("257"), s->A.i8[0]), 1);
   assert_eq((run("257"), s->A.i8[1]), 0);
-  assert_eq((run("b"), s->Type), INT8);
-  assert_eq((run("b"), s->A.i8[0]), 0);
-  assert_eq((run("b3"), s->Type), INT8);
-  assert_eq((run("b3"), s->A.i8[0]), 3);
-  assert_eq((run("b33"), s->A.i8[0]), 33);
-  assert_eq((run("b128"), s->A.i8[0]), 128);
-  assert_eq((run("b255"), s->A.i8[0]), 255);
-  assert_eq((run("b256"), s->A.i8[0]), 0);
-  assert_eq((run("b257"), s->A.i8[0]), 1);
-  assert_eq((run("b257"), s->A.i8[1]), 0);
-
-  assert_eq((run("s3"), s->Type), INT16);
-  assert_eq((run("i3"), s->Type), INT32);
-  assert_eq((run("f3"), s->Type), FLOAT);
-  // assert_eq(run("f3"), 0);
+  assert_eq((run("s65537"), s->A.i16[0]), 1);
+  assert_eq((run("s65537"), s->A.i16[1]), 0);
+  // type changes
+  assert_eq((run("bs"), s->Type), INT16);
+  assert_eq((run("bi"), s->Type), INT32);
+  assert_eq((run("bf"), s->Type), FLOAT);
+  assert_eq((run("ib"), s->Type), INT8);
+  // random values
+  assert_eq((run("s257"), s->A.i16[0]), 257);
+  assert_eq((run("i65537"), s->A.i32), 65537);
+  assert_eq((run("f16"), s->A.f32), 16);
+  assert_eq((run("f16@"), s->A.f32), 0);
+  assert_eq((run("f16@32"), s->A.f32), 32);
+  assert_eq((run("f16@32"), s->B.f32), 16);
+  // store 3/2
+  assert_eq((run("f3@2@/"), s->A.f32), 3.0f/2.0f);
   end_section();
 
   begin_section("STORE");

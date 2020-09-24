@@ -2,11 +2,11 @@
 #define TOKENS_H
 
 #ifdef NANO
-#   define FUNCTION        'F'
-#   define STARTFUNCTION   '{'
-#   define ENDFUNCTION     '}'
-#   define RETURN          'r'
-#   define SET_MEM_SIZE    'm'
+#   define FUNCTION        'F' // unused
+#   define STARTFUNCTION   '{' // unused
+#   define ENDFUNCTION     '}' // unused
+#   define RETURN          'r' // unused
+#   define SET_MEM_SIZE    'm' // unused
 #endif
 
 #define IF              '('
@@ -16,12 +16,12 @@
 #define BREAK           'x'
 #define CONTINUE        'c'
 #define ENDWHILE        ']'
-#define ARRAY           '{'
-#define ENDARRAY        '}'
+#define ARRAY           '{' // unused
+#define ENDARRAY        '}' // unused
 
 #define NOP             ' '
 #define COND_MODIFIER   '?'
-#define FUNCTION_SET    '#'
+#define FUNCTION_SET    '#' // unused
 #define LEFT            '<'
 #define RIGHT           '>'
 
@@ -37,10 +37,10 @@
 
 #define OUT             '.'
 #define IN              ','
-#define MEM_JUMP        'm' //signed int
-#define COPY_FROM       'v'
-#define RUN             '^'
-#define CODE_JMP        'j'
+#define MEM_JUMP        'm' //signed int // unused
+#define COPY_FROM       'v' // unused
+#define RUN             '^' // unused
+#define CODE_JMP        'j' // unused
 
 #define SUM             '+'
 #define SUB             '-'
@@ -68,9 +68,9 @@
 #define T_INT16         's'
 #define T_INT32         'i'
 #define T_FLOAT         'f'
-#define STRING          '\"'
-#define CHAR            '\''
-#define SCAPE           '\\'
+#define STRING          '\"' // unused
+#define CHAR            '\'' // unused
+#define SCAPE           '\\' // unused
 
 
 #define INT8    0
@@ -79,7 +79,7 @@
 #define FLOAT   3
 
 
-#define SYS_REALLOC
-#define SYS_SW_DELAY
+#define SYS_REALLOC  // unused
+#define SYS_SW_DELAY // unused
 
 #endif

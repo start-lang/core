@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <string.h>
 #include <star_t.h>
 
 #ifdef DEBUG_INTERPRETER
@@ -19,7 +20,8 @@
 //     }
 #   define pe() return -1;
 #   define ni() printf("ERROR: Not implemented yet\n"); return -1;
-#   define printf(...) printf("[%s,%d] ", __FILE__, __LINE__); printf(__VA_ARGS__)
+#   define _printf(...) printf(__VA_ARGS__)
+// #   define printf(...) printf("[%s,%d] ", __FILE__, __LINE__); printf(__VA_ARGS__)
 #   define msg(...) printf(__VA_ARGS__)
 #else
 #   define pe() return -1;
@@ -48,11 +50,13 @@ int8_t stack = 1;
 int8_t inc = 1;
 State * s;
 
+int8_t r = -1;
 void begin(){
   if (mem_begin){
     free(mem_begin);
   }
   mem = mem_begin = (uint8_t*) malloc(sizeof(uint8_t) * MEM_SIZE);
+  memset(mem, 0, sizeof(uint8_t) * MEM_SIZE);
   code_begin = NULL;
   if (!s){
     s = (State*) malloc(sizeof(State));
@@ -66,9 +70,14 @@ void begin(){
   s->B.i16[1] = 0;
   prev = 0;
   lookahead = 0;
+  #if defined(MAX_ITERATION_COUNT) || defined(PRINT_ITERATION_COUNT)
+    _ic = 0;
+  #endif
+  stack = 1;
+  inc = 1;
+  r = -1;
 }
 
-int8_t r = -1;
 int8_t blockrun(uint8_t* block, uint8_t len){
   if (r > 0){
     block += len-1;
@@ -106,6 +115,18 @@ int8_t blockrun(uint8_t* block, uint8_t len){
       return 0; //EOF
     }
     r = step(*block);
+
+    #ifdef DEBUG_INTERPRETER
+      uint8_t at = s->Mem - mem_begin;
+      for (uint8_t i = 0; i <= at + 1; i++){
+        if (i == at) {
+          _printf("[%d|%d> ", s->A.i32, s->B.i32);
+        }
+        _printf("[%d] ", mem_begin[i]);
+      }
+      _printf("\t\t- %c \n", *block);
+    #endif
+
     if (r < 0){
       return r;
     } else if (r == 0) {
@@ -149,51 +170,25 @@ int8_t blockrun(uint8_t* block, uint8_t len){
 
 int8_t runall(uint8_t* code){
   begin();
-  int8_t r;
-  while (*code){
-    r = step(*code);
-    if (r < 0){
-      return r;
-    } else if (r == 0) {
-      code++;
-    } else {
-      // printf("%c %d\n", *code, r);
-      while (*code) {
-        code += inc;
-        // printf("---- %c %d\n", *code, stack);
-        if (*code == IF){
-          stack++;
-        } else if (*code == ELSE && r == JM_EIFE && stack == 1) {
-          break;
-        } else if (*code == ENDIF) {
-          stack--;
-          if (r <= JM_ENIF && !stack){
-            break;
-          }
-        } else if (*code == WHILE) {
-          stack++;
-          if (r >= JM_WHI0 && !stack){
-            break;
-          }
-        } else if (*code == ENDWHILE) {
-          stack--;
-          if (r == JM_EWHI && !stack){
-            break;
-          }
-        }
-        if (!*code){
-          return stack;
-        }
-      }
-      if (r != JM_WHI0){
-        code++;
-      }
-    }
-  }
-  return 0;
+  return blockrun(code, strlen((char*) code));
 }
 
 int8_t step(uint8_t code){
+  #ifdef MAX_ITERATION_COUNT
+    if (_ic > MAX_ITERATION_COUNT) {
+      return -1;
+    }
+  #endif
+  
+  #ifdef PRINT_ITERATION_COUNT
+    if (_ic % PRINT_ITERATION_COUNT == 0) {
+      msg("%d\n", _ic);
+    }
+  #endif
+
+  #if defined(MAX_ITERATION_COUNT) || defined(PRINT_ITERATION_COUNT)
+    _ic++;
+  #endif
   if (lookahead){
     lookahead = 0;
     switch (prev) {

@@ -16,8 +16,6 @@ int8_t run(char * src) {
   return result;
 }
 
-#define assert_eq(A, B) __assert_eq(#A, #B, A, B, __FILE__, __LINE__); free(s->mem_begin); free(s)
-
 void api(uint8_t pre, uint8_t op, State * s){
   switch (pre) {
     case 0:
@@ -36,7 +34,14 @@ void api(uint8_t pre, uint8_t op, State * s){
   }
 }
 
+void clean(){
+  free(s->mem_begin); 
+  free(s);
+}
+
 int main(void){
+
+  set_cleanup(clean);
 
   begin_section("NOP");
   assert_eq(run(" "), 0);

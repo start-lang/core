@@ -42,17 +42,22 @@ typedef struct {
   uint8_t Function;
   uint8_t* StackStart;
   uint8_t* Mem;
+  uint8_t* block;
+
+  #if defined(MAX_ITERATION_COUNT) || defined(PRINT_ITERATION_COUNT)
+    uint16_t _ic;
+  #endif
+
+  uint8_t* mem_begin;
+  uint8_t prev; // eq
+  uint8_t lookahead; // change to bool :1
+  int8_t stack; //eq
+  int8_t inc; // pode ser foward (1) ou backward (-1) -> bool
+  int8_t r;
 } State;
 
-#ifdef EXPOSE_INTERNALS
-  extern State * s;
-  extern uint8_t* mem_begin;
-#endif
-
-void begin();
-int8_t runall(uint8_t* code);
-int8_t blockrun(uint8_t* block, uint8_t len);
-int8_t step(uint8_t code);
+int8_t blockrun(State * s);
+int8_t step(uint8_t code, State * s);
 
 extern void api(uint8_t pre, uint8_t op, State * s);
 

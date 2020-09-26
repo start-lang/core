@@ -4,10 +4,19 @@
 #include <microcuts.h>
 #include <star_t.h>
 
+uint8_t ** M;
+State * s;
 
-int8_t run(char * code) {
-  return runall((uint8_t*) code);
+int8_t run(char * src) {
+  s = (State*) malloc(sizeof(State));
+  memset(s, 0, sizeof(State));
+  s->block = (uint8_t*) src;
+  int8_t result = blockrun(s);
+  M = &(s->mem_begin);
+  return result;
 }
+
+#define assert_eq(A, B) __assert_eq(#A, #B, A, B, __FILE__, __LINE__); free(s->mem_begin); free(s)
 
 void api(uint8_t pre, uint8_t op, State * s){
   switch (pre) {
@@ -28,7 +37,6 @@ void api(uint8_t pre, uint8_t op, State * s){
 }
 
 int main(void){
-  uint8_t ** M = &mem_begin;
 
   begin_section("NOP");
   assert_eq(run(" "), 0);
@@ -201,7 +209,8 @@ int main(void){
   for (int max_block_size = 1; max_block_size <= strlen(code); max_block_size++){
     int direction = 0;
     int index = 0;
-    begin();
+    s = (State*) malloc(sizeof(State));
+    memset(s, 0, sizeof(State));
     block = realloc(block, (max_block_size+1)*sizeof(char));
     while (1) {
       int block_size = max_block_size;
@@ -213,7 +222,8 @@ int main(void){
       }
       strncpy(block, code + (index*max_block_size),  block_size);
       block[block_size] = '\0';
-      direction = blockrun((uint8_t*)block, block_size);
+      s->block = (uint8_t*) block;
+      direction = blockrun(s);
       // printf("%s %d %d %d\n", block, block_size, direction, index);
 
       if (direction == -1){
@@ -228,6 +238,7 @@ int main(void){
     }
     assert_eq(s->A.i32, 1836311903);
   }
+  free(block);
   end_section();
 
   end_tests();

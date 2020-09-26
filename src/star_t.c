@@ -34,159 +34,142 @@
 #   endif
 #endif
 
-#if defined(MAX_ITERATION_COUNT) || defined(PRINT_ITERATION_COUNT)
-  uint16_t _ic = 0;
-#endif
-uint8_t* mem = NULL;
-uint8_t* mem_begin = NULL;
-uint8_t* code_begin = NULL;
-uint8_t prev;
-uint8_t lookahead;
-int8_t stack = 1;
-int8_t inc = 1;
-State * s;
 
-int8_t r = -1;
-void begin(){
-  if (mem_begin){
-    free(mem_begin);
+int8_t blockrun(State * s){
+  if (!s->Mem) {
+    s->Mem = (uint8_t*) malloc(sizeof(uint8_t) * MEM_SIZE);
+    memset(s->Mem, 0, sizeof(uint8_t) * MEM_SIZE);
+    s->mem_begin = s->Mem;
+    s->Ans = 0;
+    s->Type = 0;
+    s->A.i16[0] = 0;
+    s->A.i16[1] = 0;
+    s->B.i16[0] = 0;
+    s->B.i16[1] = 0;
+    s->prev = 0;
+    s->lookahead = 0;
+    #if defined(MAX_ITERATION_COUNT) || defined(PRINT_ITERATION_COUNT)
+      s->_ic = 0;
+    #endif
+    s->stack = 1;
+    s->inc = 1;
+    s->r = -1;
   }
-  mem = mem_begin = (uint8_t*) malloc(sizeof(uint8_t) * MEM_SIZE);
-  memset(mem, 0, sizeof(uint8_t) * MEM_SIZE);
-  code_begin = NULL;
-  if (!s){
-    s = (State*) malloc(sizeof(State));
-  }
-  s->Mem = mem;
-  s->Ans = 0;
-  s->Type = 0;
-  s->A.i16[0] = 0;
-  s->A.i16[1] = 0;
-  s->B.i16[0] = 0;
-  s->B.i16[1] = 0;
-  prev = 0;
-  lookahead = 0;
-  #if defined(MAX_ITERATION_COUNT) || defined(PRINT_ITERATION_COUNT)
-    _ic = 0;
-  #endif
-  stack = 1;
-  inc = 1;
-  r = -1;
-}
-
-int8_t blockrun(uint8_t* block, uint8_t len){
-  if (r > 0){
-    block += len-1;
-    while (*block) {
-      // printf("0--- %c %d\n", *block, stack);
-      // printf("---- %c %d\n", *block, stack);
-      if (*block == IF){
-        stack++;
-      } else if (*block == ELSE && r == JM_EIFE && stack == 1) {
+  uint8_t len = strlen((char*) s->block);
+  uint8_t code = *(s->block);
+  if (s->r > 0){
+    s->block += len-1;
+    code = *(s->block);
+    while (code) {
+      // printf("0--- %c %d\n", code, stack);
+      // printf("---- %c %d\n", code, stack);
+      if (code == IF){
+        s->stack++;
+      } else if (code == ELSE && s->r == JM_EIFE && s->stack == 1) {
         break;
-      } else if (*block == ENDIF) {
-        stack--;
-        if (r <= JM_ENIF && !stack){
+      } else if (code == ENDIF) {
+        s->stack--;
+        if (s->r <= JM_ENIF && ! s->stack){
           break;
         }
-      } else if (*block == WHILE) {
-        stack++;
-        if (r >= JM_WHI0 && !stack){
+      } else if (code == WHILE) {
+        s->stack++;
+        if (s->r >= JM_WHI0 && ! s->stack){
           break;
         }
-      } else if (*block == ENDWHILE) {
-        stack--;
-        if (r == JM_EWHI && !stack){
+      } else if (code == ENDWHILE) {
+        s->stack--;
+        if (s->r == JM_EWHI && ! s->stack){
           break;
         }
       }
-      block += inc;
-      if (!*block){
-        return stack;
+      s->block += s->inc;
+      code = *(s->block);
+      if (!code){
+        return s->stack;
       }
     }
   }
   while (1){
-    if (!*block){
+    if (!code){
       return 0; //EOF
     }
-    r = step(*block);
+    s->r = step(*(s->block), s);
 
     #ifdef DEBUG_INTERPRETER
-      uint8_t at = s->Mem - mem_begin;
+      uint8_t at = s->Mem - s->mem_begin;
       for (uint8_t i = 0; i <= at + 1; i++){
         if (i == at) {
           _printf("[%d|%d> ", s->A.i32, s->B.i32);
         }
-        _printf("[%d] ", mem_begin[i]);
+        _printf("[%d] ", (s->mem_begin)[i]);
       }
-      _printf("\t\t- %c \n", *block);
+      _printf("\t\t- %c \n", code);
     #endif
 
-    if (r < 0){
-      return r;
-    } else if (r == 0) {
-      block++;
+    if (s->r < 0){
+      return s->r;
+    } else if (s->r == 0) {
+      s->block++;
+      code = *(s->block);
     } else {
-      while (*block) {
-        // printf("0--- %c %d\n", *block, stack);
-        block += inc;
-        // printf("---- %c %d\n", *block, stack);
-        if (*block == IF){
-          stack++;
-        } else if (*block == ELSE && r == JM_EIFE && stack == 1) {
+      while (code) {
+        // printf("0--- %c %d\n", code, stack);
+        s->block += s->inc;
+        code = *(s->block);
+        // printf("---- %c %d\n", code, stack);
+        if (code == IF){
+          s->stack++;
+        } else if (code == ELSE && s->r == JM_EIFE && s->stack == 1) {
           break;
-        } else if (*block == ENDIF) {
-          stack--;
-          if (r <= JM_ENIF && !stack){
+        } else if (code == ENDIF) {
+          s->stack--;
+          if (s->r <= JM_ENIF && ! s->stack){
             break;
           }
-        } else if (*block == WHILE) {
-          stack++;
-          if (r >= JM_WHI0 && !stack){
+        } else if (code == WHILE) {
+          s->stack++;
+          if (s->r >= JM_WHI0 && ! s->stack){
             break;
           }
-        } else if (*block == ENDWHILE) {
-          stack--;
-          if (r == JM_EWHI && !stack){
+        } else if (code == ENDWHILE) {
+          s->stack--;
+          if (s->r == JM_EWHI && ! s->stack){
             break;
           }
         }
-        if (!*block){
-          return stack;
+        if (!code){
+          return s->stack;
         }
       }
-      if (r != JM_WHI0){
-        block++;
+      if (s->r != JM_WHI0){
+        s->block++;
+        code = *(s->block);
       }
     }
   }
   return 0;
 }
 
-int8_t runall(uint8_t* code){
-  begin();
-  return blockrun(code, strlen((char*) code));
-}
-
-int8_t step(uint8_t code){
+int8_t step(uint8_t code, State * s){
+  uint8_t prev = s->prev;
   #ifdef MAX_ITERATION_COUNT
-    if (_ic > MAX_ITERATION_COUNT) {
+    if (s->_ic > MAX_ITERATION_COUNT) {
       return -1;
     }
   #endif
   
   #ifdef PRINT_ITERATION_COUNT
-    if (_ic % PRINT_ITERATION_COUNT == 0) {
-      msg("%d\n", _ic);
+    if (s->_ic % PRINT_ITERATION_COUNT == 0) {
+      msg("%d\n", s->_ic);
     }
   #endif
 
   #if defined(MAX_ITERATION_COUNT) || defined(PRINT_ITERATION_COUNT)
-    _ic++;
+    s->_ic++;
   #endif
-  if (lookahead){
-    lookahead = 0;
+  if (s->lookahead){
+    s->lookahead = 0;
     switch (prev) {
       case COND_MODIFIER:
         switch (code) {
@@ -247,7 +230,7 @@ int8_t step(uint8_t code){
 
   switch (code) {
     case COND_MODIFIER:
-      lookahead = 1;
+      s->lookahead = 1;
       break;
     case LEFT:
       if (prev == SHIFT_LEFT){
@@ -256,11 +239,11 @@ int8_t step(uint8_t code){
         else if (s->Type == INT32) s->A.i32 <<= s->B.i32;
         return 0;
       } else {
-        uint8_t inc = (prev > '0' && prev < '9') ? s->A.i8[0] : 1;
-        if (s->Type == INT8) s->Mem -= 1 * inc;
-        else if (s->Type == INT16) s->Mem -= 2 * inc;
-        else if (s->Type == INT32) s->Mem -= 4 * inc;
-        else if (s->Type == FLOAT) s->Mem -= 4 * inc;
+        uint8_t mod = (prev > '0' && prev < '9') ? s->A.i8[0] : 1;
+        if (s->Type == INT8) s->Mem -= 1 * mod;
+        else if (s->Type == INT16) s->Mem -= 2 * mod;
+        else if (s->Type == INT32) s->Mem -= 4 * mod;
+        else if (s->Type == FLOAT) s->Mem -= 4 * mod;
         break;
       }
     case RIGHT:
@@ -270,11 +253,11 @@ int8_t step(uint8_t code){
         else if (s->Type == INT32) s->A.i32 >>= s->B.i32;
         return 0;
       } else {
-        uint8_t inc = (prev > '0' && prev < '9') ? s->A.i8[0] : 1;
-        if (s->Type == INT8) s->Mem += 1 * inc;
-        else if (s->Type == INT16) s->Mem += 2 * inc;
-        else if (s->Type == INT32) s->Mem += 4 * inc;
-        else if (s->Type == FLOAT) s->Mem += 4 * inc;
+        uint8_t mod = (prev > '0' && prev < '9') ? s->A.i8[0] : 1;
+        if (s->Type == INT8) s->Mem += 1 * mod;
+        else if (s->Type == INT16) s->Mem += 2 * mod;
+        else if (s->Type == INT32) s->Mem += 4 * mod;
+        else if (s->Type == FLOAT) s->Mem += 4 * mod;
         break;
       }
     case START_STACK:
@@ -285,12 +268,12 @@ int8_t step(uint8_t code){
       s->A.i16[1] = 0;
       break;
     case PUSH:
-      step(STORE);
-      step(RIGHT);
+      step(STORE, s);
+      step(RIGHT, s);
       break;
     case POP:
-      step(LEFT);
-      step(LOAD);
+      step(LEFT, s);
+      step(LOAD, s);
       break;
     case IF:
     case ELSE:
@@ -300,8 +283,8 @@ int8_t step(uint8_t code){
     case ENDWHILE:
       {
         uint8_t jmpmatch = JM_NONE;
-        stack = 1;
-        inc = 1;
+        s->stack = 1;
+        s->inc = 1;
         if (code == IF && !s->Ans){
           // jump to else : + 1 or endif ) + 1
           jmpmatch = JM_EIFE;
@@ -316,17 +299,17 @@ int8_t step(uint8_t code){
           jmpmatch = JM_EWHI;
         } else if (code == CONTINUE){
           //jump to while [
-          inc = -1;
-          stack = -1;
+          s->inc = -1;
+          s->stack = -1;
           jmpmatch = JM_WHI0;
         } else if (code == ENDWHILE && s->Ans){
           //jump to WHILE [ + 1
-          inc = -1;
-          stack = -1;
+          s->inc = -1;
+          s->stack = -1;
           jmpmatch = JM_WHI1;
         }
         // printf("%c %d??\n", prev, jmpmatch);
-        prev = code;
+        s->prev = code;
         return jmpmatch;
       }
     case SUM:
@@ -454,6 +437,6 @@ int8_t step(uint8_t code){
       }
       break;
   }
-  prev = code;
+  s->prev = code;
   return 0;
 }

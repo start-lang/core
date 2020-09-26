@@ -158,6 +158,17 @@ int main(void){
   assert_eq((run("2@1@?>(2:3)!"), s->Mem[0]), 2);
   end_section();
 
+  begin_section("Stack");
+  assert_eq((run("b$3p4p"), (*M)[0]), 3);
+  assert_eq((run("b$3p4p"), (*M)[1]), 4);
+  assert_eq((run("b$3p4ph"), s->A.i16[0]), 2);
+  assert_eq((run("b$3p4po"), s->A.i8[0]), 4);
+  assert_eq((run("b$3p4poo"), s->A.i8[0]), 3);
+  assert_eq((run("b$3p4pooh"), s->A.i16[0]), 0);
+  assert_eq((run("b$1p2p3p4p5p 0@o+@o+@o+@o+@o+"), s->A.i8[0]), 15);
+  assert_eq((run("b$1p2p3p4p5p 0?=[ @o+ !h??;]"), s->A.i8[0]), 15);
+  end_section();
+
   begin_section("WHILE");
   assert_eq(run("[]"), 0);
   assert_eq(run("1[2]"), 0);
@@ -173,17 +184,6 @@ int main(void){
   assert_eq((run("12@?![+?!]"), s->A.i8[0]), 12);
   assert_eq((run("12@?![+?!]"), s->B.i8[0]), 12);
   assert_eq((run("8!?![1@;-!?! c x ]"), s->A.i8[0]), 1);
-  end_section();
-
-  begin_section("Stack");
-  assert_eq((run("b$3p4p"), (*M)[0]), 3);
-  assert_eq((run("b$3p4p"), (*M)[1]), 4);
-  assert_eq((run("b$3p4ph"), s->A.i16[0]), 2);
-  assert_eq((run("b$3p4po"), s->A.i8[0]), 4);
-  assert_eq((run("b$3p4poo"), s->A.i8[0]), 3);
-  assert_eq((run("b$3p4pooh"), s->A.i16[0]), 0);
-  assert_eq((run("b$1p2p3p4p5p 0@o+@o+@o+@o+@o+"), s->A.i8[0]), 15);
-  assert_eq((run("b$1p2p3p4p5p 0?=[ @o+ !h??;]"), s->A.i8[0]), 15);
   end_section();
 
   begin_section("Fibonacci");

@@ -4,8 +4,10 @@
 #include <microcuts.h>
 #include <star_t.h>
 
-//suppress pointer signedness warning during compilation
-#define run(A) runall((uint8_t*) A)
+
+int8_t run(char * code) {
+  return runall((uint8_t*) code);
+}
 
 void api(uint8_t pre, uint8_t op, State * s){
   switch (pre) {

@@ -34,10 +34,6 @@
 #   endif
 #endif
 
-#define next(x) *(code + x)
-#define prev(x) *(code - x)
-#define consume() (code++)
-
 #if defined(MAX_ITERATION_COUNT) || defined(PRINT_ITERATION_COUNT)
   uint16_t _ic = 0;
 #endif

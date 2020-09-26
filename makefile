@@ -34,7 +34,12 @@ debug: build
  
 mleak: build
 	@ gcc -Wall -g -D EXPOSE_INTERNALS ${INCLUDES} -o ${OUTPUT} && \
-		chmod +x ${OUTPUT} && valgrind --leak-check=full ${OUTPUT}
+		chmod +x ${OUTPUT} && valgrind --leak-check=full --show-error-list=yes ${OUTPUT}
+	@ make clean > /dev/null
+ 
+gdb: build
+	@ gcc -Wall -g -D EXPOSE_INTERNALS ${INCLUDES} -o ${OUTPUT} && \
+		chmod +x ${OUTPUT} && valgrind --leak-check=full --vgdb=yes --vgdb-error=1 ${OUTPUT}
 	@ make clean > /dev/null
 
 cov: build

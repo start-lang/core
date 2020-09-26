@@ -40,6 +40,7 @@ int8_t blockrun(State * s){
     s->Mem = (uint8_t*) malloc(sizeof(uint8_t) * MEM_SIZE);
     memset(s->Mem, 0, sizeof(uint8_t) * MEM_SIZE);
     s->mem_begin = s->Mem;
+    s->block_begin = s->block;
     s->Ans = 0;
     s->Type = 0;
     s->A.i16[0] = 0;
@@ -61,8 +62,6 @@ int8_t blockrun(State * s){
     s->block += len-1;
     code = *(s->block);
     while (code) {
-      // printf("0--- %c %d\n", code, stack);
-      // printf("---- %c %d\n", code, stack);
       if (code == IF){
         s->stack++;
       } else if (code == ELSE && s->r == JM_EIFE && s->stack == 1) {
@@ -82,6 +81,9 @@ int8_t blockrun(State * s){
         if (s->r == JM_EWHI && ! s->stack){
           break;
         }
+      }
+      if (s->block - s->block_begin == 0 && s->inc < 0) {
+        return -1;
       }
       s->block += s->inc;
       code = *(s->block);
@@ -114,10 +116,11 @@ int8_t blockrun(State * s){
       code = *(s->block);
     } else {
       while (code) {
-        // printf("0--- %c %d\n", code, stack);
+        if (s->block - s->block_begin == 0 && s->inc < 0) {
+          return -1;
+        }
         s->block += s->inc;
         code = *(s->block);
-        // printf("---- %c %d\n", code, stack);
         if (code == IF){
           s->stack++;
         } else if (code == ELSE && s->r == JM_EIFE && s->stack == 1) {

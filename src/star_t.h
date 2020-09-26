@@ -43,6 +43,7 @@ typedef struct {
   uint8_t* StackStart;
   uint8_t* Mem;
   uint8_t* block;
+  uint8_t* block_begin;
 
   #if defined(MAX_ITERATION_COUNT) || defined(PRINT_ITERATION_COUNT)
     uint16_t _ic;

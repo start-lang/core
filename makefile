@@ -31,6 +31,11 @@ debug: build
 	@ gcc -Wall $(DBGFLAGS) ${INCLUDES} -o ${OUTPUT} && \
 		chmod +x ${OUTPUT} && ./${OUTPUT}
 	@ make clean > /dev/null
+ 
+mleak: build
+	@ gcc -Wall -g -D EXPOSE_INTERNALS ${INCLUDES} -o ${OUTPUT} && \
+		chmod +x ${OUTPUT} && valgrind --leak-check=full ${OUTPUT}
+	@ make clean > /dev/null
 
 cov: build
 	@ rm -f *.gc*

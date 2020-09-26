@@ -33,9 +33,9 @@ debug: build
 	@ make clean > /dev/null
 
 cov: build
+	@ rm -f *.gc*
 	@ gcc --coverage -D EXPOSE_INTERNALS ${INCLUDES} -o ${OUTPUT} && \
 		chmod +x ${OUTPUT} && ./${OUTPUT} && \
 		gcov star_t.c > /dev/null && \
-		./lib/microcuts/tools/coverage.py && \
-		rm -f *.gc*
+		./lib/microcuts/tools/coverage.py
 	@ make clean > /dev/null

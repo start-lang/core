@@ -16,6 +16,8 @@ extern "C" {
 #define JM_EWHI 3
 #define JM_WHI0 4
 #define JM_WHI1 5
+#define JM_ERR0 6
+#define JM_PEXC 7
 
 #ifdef SIGNED_INT
   typedef int8_t byte_t;
@@ -51,15 +53,14 @@ typedef struct {
   uint8_t _type:2;
   uint8_t _forward:1;
   uint8_t _lookahead:1;
+  uint8_t  _prev_step_result:3;
 
   uint8_t _prev_token;
   int8_t  _matching;
-  int8_t  _prev_step_result;
-
 } State;
 
 int8_t blockrun(State * s);
-int8_t step(uint8_t token, State * s);
+uint8_t step(uint8_t token, State * s);
 
 extern void api(uint8_t pre, uint8_t op, State * s);
 

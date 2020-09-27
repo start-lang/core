@@ -43,11 +43,11 @@ int8_t blockrun(State * s){
     s->_src0 = s->src;
     s->_matching = 1;
     s->_forward = 1;
-    s->_prev_step_result = -1;
+    s->_prev_step_result = JM_ERR0;
   }
   uint8_t len = strlen((char*) s->src);
   uint8_t token = *(s->src);
-  if (s->_prev_step_result > 0){
+  if (s->_prev_step_result > 0 && s->_prev_step_result < JM_ERR0){
     s->src += len-1;
     token = *(s->src);
     while (token) {
@@ -98,7 +98,7 @@ int8_t blockrun(State * s){
       _printf("\t\t- %c \n", token);
     #endif
 
-    if (s->_prev_step_result < 0){
+    if (s->_prev_step_result >= JM_ERR0){
       return s->_prev_step_result;
     } else if (s->_prev_step_result == 0) {
       s->src++;
@@ -143,7 +143,7 @@ int8_t blockrun(State * s){
   return 0;
 }
 
-int8_t step(uint8_t token, State * s){
+uint8_t step(uint8_t token, State * s){
   uint8_t prev = s->_prev_token;
   s->_ic++;
   #ifdef MAX_ITERATION_COUNT
@@ -212,7 +212,7 @@ int8_t step(uint8_t token, State * s){
             else if (s->_type == FLOAT) s->_ans = s->a.f32 == 0;
             break;
           default:
-            pe();
+            return JM_PEXC;
         }
         return 0;
     }
@@ -423,7 +423,7 @@ int8_t step(uint8_t token, State * s){
           else if (s->_type == FLOAT) s->a.f32 = s->a.f32*10 + (token - '0');
         }
       } else {
-        pe();
+        return JM_PEXC;
       }
       break;
   }

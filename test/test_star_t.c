@@ -117,6 +117,34 @@ int main(void){
   assert_eq((run(">4!<3!1>;"), s->a.i8[0]), 4);
   end_section();
 
+  begin_section("STRING");
+  // register contains string length
+  assert_eq((run("2!\"abc\""), s->a.i8[0]), 3);
+  // memory pointer stays the same
+  assert_eq((run("2!\"abc\"3!"), (*M)[0]), 3);
+  assert_eq((run("2!\"abc\"3!"), (*M)[1]), 'b');
+  assert_eq((run("2!\"abc\"3!"), (*M)[2]), 'c');
+  assert_eq((run("2!\"abc\"3!"), (*M)[3]), 0);
+  // going foward to the end of the string using >
+  assert_eq((run("2!\"abc\">3!"), (*M)[0]), 'a');
+  assert_eq((run("2!\"abc\">3!"), (*M)[1]), 'b');
+  assert_eq((run("2!\"abc\">3!"), (*M)[2]), 'c');
+  assert_eq((run("2!\"abc\">3!"), (*M)[3]), 0);
+  assert_eq((run("2!\"abc\">3!"), (*M)[4]), 3);
+  // escape
+  assert_eq((run("2!\"a\\\"c\">3!"), s->a.i8[0]), 3);
+  assert_eq((run("2!\"a\\\"c\">3!"), (*M)[0]), 'a');
+  assert_eq((run("2!\"a\\\"c\">3!"), (*M)[1]), '\"');
+  assert_eq((run("2!\"a\\\"c\">3!"), (*M)[2]), 'c');
+  assert_eq((run("2!\"a\\\"c\">3!"), (*M)[3]), 0);
+  assert_eq((run("2!\"a\\\"c\">3!"), (*M)[4]), 3);
+  assert_eq((run("2!\"\\\"\">3!"), (*M)[0]), '\"');
+  assert_eq((run("2!\"\\\"\">3!"), (*M)[1]), 0);
+  assert_eq((run("2!\"\\\"\">3!"), (*M)[2]), 3);
+  // // ends with 0
+  assert_eq((run("2!\"\""), (*M)[0]), 0);
+  end_section();
+
   begin_section("SWITCH");
   assert_eq((run("2"), s->a.i8[0]), 2);
   assert_eq((run("2@"), s->b.i8[0]), 2);

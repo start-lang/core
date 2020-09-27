@@ -135,6 +135,21 @@ int8_t blockrun(State * s){
 
 uint8_t step(uint8_t token, State * s){
   uint8_t prev = s->_prev_token;
+  if (s->_string){
+    if (token != SCAPE) {
+      *((uint8_t*)(s->_m)) = token;
+      s->a.i8[0]++;
+      s->_m++;
+      if (token == STRING && prev != SCAPE) {
+        *((uint8_t*)(s->_m - 1)) = 0;
+        s->_m -= s->a.i8[0];
+        s->a.i8[0] -= 1;
+        s->_string = 0;
+      }
+    }
+    s->_prev_token = token;
+    return 0;
+  }
   if (s->_lookahead){
     s->_lookahead = 0;
     switch (prev) {
@@ -199,6 +214,10 @@ uint8_t step(uint8_t token, State * s){
     case COND_MODIFIER:
       s->_lookahead = 1;
       break;
+    case STRING:
+      s->a.i8[0] = 0;
+      s->_string = 1;
+      break;
     case LEFT:
       if (prev == SHIFT_LEFT){
         if (s->_type == INT8) s->a.i8[0] <<= s->b.i8[0];
@@ -220,6 +239,10 @@ uint8_t step(uint8_t token, State * s){
         else if (s->_type == INT32) s->a.i32 >>= s->b.i32;
         return 0;
       } else {
+        if (prev == STRING) {
+          s->_m += s->a.i8[0] + 1;
+          break;
+        }
         uint8_t mod = (prev > '0' && prev < '9') ? s->a.i8[0] : 1;
         if (s->_type == INT8) s->_m += 1 * mod;
         else if (s->_type == INT16) s->_m += 2 * mod;

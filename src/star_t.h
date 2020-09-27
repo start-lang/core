@@ -54,6 +54,7 @@ typedef struct {
   uint8_t _forward:1;
   uint8_t _lookahead:1;
   uint8_t  _prev_step_result:3;
+  uint8_t  _string:1;
 
   uint8_t _prev_token;
   int8_t  _matching;

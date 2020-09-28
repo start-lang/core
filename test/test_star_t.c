@@ -16,27 +16,33 @@ int8_t run(char * src) {
   return result;
 }
 
-void api(uint8_t pre, uint8_t op, State * s){
-  switch (pre) {
-    case 0:
-      switch (op) {
-        case IN:
-          scanf("%d", &(s->a.i32));
-          break;
-        case OUT:
-          printf("%d\n", s->a.i32);
-          break;
-      }
-      break;
-    default:
-      //err TODO
-      break;
-  }
+int8_t f_x(State * s){
+  s->_m[0] = 123;
+  return 0;
 }
 
+int8_t f_y(State * s){
+  s->_m[0] = 100;
+  return 0;
+}
+
+int8_t exceptionHandler(State * s){
+  return 0;
+}
+
+int8_t undef(State * s){
+  return 0;
+}
+
+Function ext[] = {
+  {(uint8_t*)"", exceptionHandler},
+  {(uint8_t*)"X", f_x}, 
+  {(uint8_t*)"Y", f_y}, 
+  {NULL, undef},
+};
+
 void clean(){
-  free(s->_m0); 
-  free(s);
+  free_memory(s);
 }
 
 int main(void){
@@ -277,7 +283,13 @@ int main(void){
   begin_section("IDS");
   assert_eq((run("ABC^1!>2!>3!ABC ;"), s->a.i8[0]), 1);
   assert_eq((run("N^8!>A^0!>B^1!?![1@N;-!?!B;@A;@!+B!]"), s->a.i8[0]), 21);
-  // assert_eq((run("ABC"), strcmp("ABC", (char *) ((s->_vars)[0]).name)), 0);
+  assert_eq((run("N^>A^0!>B^1!N8!?![1@N;-!?!B;@A;@!+B!]"), s->a.i8[0]), 21);
+  end_section();
+
+  begin_section("Functions");
+  assert_eq((run("X "), (*M)[0]), 123);
+  assert_eq((run("Y "), (*M)[0]), 100);
+  assert_eq((run("X Y "), (*M)[0]), 100);
   end_section();
 
   end_tests();

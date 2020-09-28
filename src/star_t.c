@@ -68,6 +68,17 @@ uint8_t jump(State * s){
   return 0;
 }
 
+void free_memory(State * s){
+  free(s->_m0);
+  for (uint8_t i = 0; i < s->_varc; i++){
+    free(s->_vars[i].name);
+  }
+  if (s->_id){
+   free(s->_id);
+  }
+  free(s);
+}
+
 int8_t blockrun(State * s){
   if (!s->_m) {
     s->_m = (uint8_t*) malloc(sizeof(uint8_t) * MEM_SIZE);
@@ -167,20 +178,31 @@ uint8_t step(uint8_t token, State * s){
     s->_prev_token = token;
     return 0;
   } else if (s->_idlen) {
-    s->_id = (uint8_t*) realloc(s->_id, s->_idlen);
     if (token == NEW_VAR) {
+      s->_id = (uint8_t*) realloc(s->_id, s->_idlen + 1);
       s->_vars[s->_varc] = (Variable){.name = s->_id, .pos = s->_m - s->_m0};
       s->_varc++;
     } else {
-      printf("+");
+      uint8_t found = 0;
       for (uint8_t i = 0; i < s->_varc; i++){
-        printf("%d\n", i);
         if (strcmp((char*)s->_vars[i].name, (char*)s->_id) == 0){
           s->_m = s->_m0 + s->_vars[i].pos;
-          printf("ok %d %d, \n", s->_vars[i].pos, s->_m[0]);
+          found = 1;
           break;
         }
       }
+      uint8_t fid = 0;
+      while (!found){
+        if (ext[fid].name == 0 || strcmp((char*)ext[fid].name, (char*)s->_id) == 0){
+          int8_t ret_val = ext[fid].fp(s);
+          if (ret_val) {
+            return ret_val;
+          }
+          break;
+        }
+        fid++;
+      }
+      free(s->_id);
     }
     s->_id = NULL;
     s->_idlen = 0;
@@ -429,14 +451,6 @@ uint8_t step(uint8_t token, State * s){
       break;
     case T_FLOAT:
       s->_type = 3;
-      break;
-    case IN:
-    case OUT:
-      if (prev >= 'A' && prev <= 'Z'){
-        api(prev, token, s);
-      } else {
-        api(0, token, s);
-      }
       break;
     case ENDIF:
     case NOP:

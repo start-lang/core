@@ -66,13 +66,21 @@ typedef struct {
   uint8_t _prev_token;
   int8_t  _matching;
 
-  Variable _vars[10];
+  Variable _vars[10]; // TODO: malloc
   uint8_t _varc;
   
 } State;
 
 int8_t blockrun(State * s);
 uint8_t step(uint8_t token, State * s);
+void free_memory(State * s);
+
+typedef struct {
+  uint8_t* name;
+  int8_t (*fp)(State * s);
+} Function;
+
+extern Function ext[];
 
 extern void api(uint8_t pre, uint8_t op, State * s);
 

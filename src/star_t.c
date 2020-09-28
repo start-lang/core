@@ -130,6 +130,10 @@ int8_t blockrun(State * s){
       }
     }
   }
+  // if (s->_idlen) {
+  //   free(s->_id);
+  //   s->_idlen = 0;
+  // }
   return 0;
 }
 
@@ -149,6 +153,37 @@ uint8_t step(uint8_t token, State * s){
     }
     s->_prev_token = token;
     return 0;
+  }
+  if ((token >= 'A' && token <= 'Z') || token == '_'){
+    if (!s->_id) {
+      s->_id = (uint8_t*) malloc(16);
+      memset(s->_id, 0, 16);
+    }
+    if (s->_idlen == 16){ // ta feio
+      s->_id = (uint8_t*) realloc(s->_id, 32);
+    }
+    s->_id[s->_idlen] = token;
+    s->_idlen++;
+    s->_prev_token = token;
+    return 0;
+  } else if (s->_idlen) {
+    s->_id = (uint8_t*) realloc(s->_id, s->_idlen);
+    if (token == NEW_VAR) {
+      s->_vars[s->_varc] = (Variable){.name = s->_id, .pos = s->_m - s->_m0};
+      s->_varc++;
+    } else {
+      printf("+");
+      for (uint8_t i = 0; i < s->_varc; i++){
+        printf("%d\n", i);
+        if (strcmp((char*)s->_vars[i].name, (char*)s->_id) == 0){
+          s->_m = s->_m0 + s->_vars[i].pos;
+          printf("ok %d %d, \n", s->_vars[i].pos, s->_m[0]);
+          break;
+        }
+      }
+    }
+    s->_id = NULL;
+    s->_idlen = 0;
   }
   if (s->_lookahead){
     s->_lookahead = 0;

@@ -42,6 +42,9 @@
 #define RUN             '^' // unused
 #define CODE_JMP        'j' // unused
 
+
+#define NEW_VAR         '^'
+
 #define SUM             '+'
 #define SUB             '-'
 #define MULTI           '*'

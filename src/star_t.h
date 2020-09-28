@@ -37,6 +37,11 @@ typedef union {
 } Register;
 
 typedef struct {
+  uint8_t* name;
+  uint16_t pos;
+} Variable;
+
+typedef struct {
 
   Register a;
   Register b;
@@ -45,6 +50,7 @@ typedef struct {
   uint8_t* _src0;
   uint8_t* _m;
   uint8_t* _m0;
+  uint8_t* _id;
   uint8_t* v_stack0; // TODO: remove virtual stack
 
   uint16_t _ic;
@@ -56,8 +62,13 @@ typedef struct {
   uint8_t  _prev_step_result:3;
   uint8_t  _string:1;
 
+  uint8_t _idlen;
   uint8_t _prev_token;
   int8_t  _matching;
+
+  Variable _vars[10];
+  uint8_t _varc;
+  
 } State;
 
 int8_t blockrun(State * s);

@@ -10,6 +10,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   - Float constants
   - syntax: Token `STRING '"'`
   - syntax: Token `SCAPE '\'`
+  - syntax: Token `NEW_VAR '^'`
+### Changed
+  - syntax: All upper case strings are now translated to api calls or memory jumps
 
 ## [0.2.0] - 2017-09-18
 ### Added

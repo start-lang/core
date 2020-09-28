@@ -274,7 +274,15 @@ int main(void){
   free(block);
   end_section();
 
+  begin_section("IDS");
+  assert_eq((run("ABC^1!>2!>3!ABC ;"), s->a.i8[0]), 1);
+  assert_eq((run("N^8!>A^0!>B^1!?![1@N;-!?!B;@A;@!+B!]"), s->a.i8[0]), 21);
+  // assert_eq((run("ABC"), strcmp("ABC", (char *) ((s->_vars)[0]).name)), 0);
+  end_section();
+
   end_tests();
+
+  printf("state size: %ld\n", sizeof(State));
 
   return 0;
 }

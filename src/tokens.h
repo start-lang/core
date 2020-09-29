@@ -13,14 +13,12 @@
 
 #define NOP             ' '
 #define COND_MODIFIER   '?'
-#define FUNCTION_SET    '#' // unused
 #define LEFT            '<'
 #define RIGHT           '>'
 
-
 #define STARTFUNCTION   '{'
 #define ENDFUNCTION     '}'
-#define RETURN          'r' // unused
+#define RETURN          'r'
 #define MALLOC          'm' // unused
 
 #define START_STACK     '$'
@@ -32,12 +30,7 @@
 #define SWITCH          '@'
 #define STORE           '!'
 #define LOAD            ';'
-
-#define MEM_JUMP        'm' //signed int // unused
-#define COPY_FROM       'v' // unused
 #define RUN             '#'
-#define CODE_JMP        'j' // unused
-
 #define NEW_VAR         '^'
 
 #define SUM             '+'
@@ -66,18 +59,14 @@
 #define T_INT16         's'
 #define T_INT32         'i'
 #define T_FLOAT         'f'
-#define STRING          '\"' // unused
+#define STRING          '\"'
 #define CHAR            '\'' // unused
-#define SCAPE           '\\' // unused
+#define SCAPE           '\\'
 
 
 #define INT8    0
 #define INT16   1
 #define INT32   2
 #define FLOAT   3
-
-
-#define SYS_REALLOC  // unused
-#define SYS_SW_DELAY // unused
 
 #endif

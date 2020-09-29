@@ -22,6 +22,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   - syntax: Token `TYPE_SET 't'`
   - syntax: Token `OUT '.'`
   - syntax: Token `IN ','`
+  - syntax: Token `MEM_JUMP 'm'`
+  - syntax: Token `COPY_FROM 'v'`
+  - syntax: Token `CODE_JMP 'j'`
 
 ## [0.2.0] - 2017-09-18
 ### Added

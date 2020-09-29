@@ -164,6 +164,7 @@ int8_t blockrun(State * s){
         if (jump(s)) return -1;
         if (s->_prev_step_result != JM_WHI0){
           s->src++;
+          s->_prev_step_result = 0;
         }
       }
     }

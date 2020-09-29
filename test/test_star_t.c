@@ -3,10 +3,12 @@
 #include <string.h>
 #include <microcuts.h>
 #include <star_t.h>
+#include <time.h>
 
 uint8_t ** M;
 State * s;
 char out[256] = "";
+double time_spent;
 
 char * load_file(const char * fname){
   char *source = NULL;
@@ -30,7 +32,13 @@ int8_t run(char * src) {
   s = (State*) malloc(sizeof(State));
   memset(s, 0, sizeof(State));
   s->src = (uint8_t*) src;
+  clock_t begin = clock();
   int8_t result = blockrun(s);
+  clock_t end = clock();
+  time_spent = (double)(end - begin) / CLOCKS_PER_SEC;
+  // if (s->_ic > 100){
+  //   printf("%d %d IPS\n", s->_ic, (int)(s->_ic/time_spent));
+  // }
   M = &(s->_m0);
   return result;
 }

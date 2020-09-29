@@ -312,6 +312,13 @@ int main(void){
   assert_eq((run("\"Z{1!K }2!\"#>Z "), (*M)[1]), 111);
   end_section();
 
+  begin_section("Return");
+  assert_eq((run("r1!"), (*M)[0]), 0);
+  assert_eq((run("1!r2!"), (*M)[0]), 1);
+  assert_eq((run("Z{11!rK }2!>Z "), (*M)[1]), 11);
+  assert_eq((run("\"Z{11!rK }2!\"#>Z "), (*M)[1]), 11);
+  end_section();
+
   end_tests();
 
   printf("state size: %ld\n", sizeof(State));

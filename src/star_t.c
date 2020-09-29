@@ -205,13 +205,13 @@ uint8_t step(uint8_t token, State * s){
   }
 
   if (s->_srcinput){
-    s->_funcs[s->_funcc - 1].src[s->a.i16[0]] = token;
-    // TODO: realloc
+    RTFunction * f = &(s->_funcs[s->_funcc - 1]);
+    f->src = realloc(f->src, s->a.i16[0] + 1);
+    f->src[s->a.i16[0]] = token;
     if (token == ENDFUNCTION) {
       s->b.i16[0]--;
       if (s->b.i16[0] == 0){
-        s->_funcs[s->_funcc - 1].src[s->a.i16[0]] = 0;
-        // TODO: realloc final
+        f->src[s->a.i16[0]] = 0;
         s->_srcinput = 0;
       }
     } else if (token == STARTFUNCTION) {
@@ -242,12 +242,10 @@ uint8_t step(uint8_t token, State * s){
       s->_varc++;
     } else if (token == STARTFUNCTION) {
       s->_id = (uint8_t*) realloc(s->_id, s->_idlen + 1);
-      printf("new func %s %d\n", (char*) s->_id, s->_funcc);
-      uint8_t* src = malloc(16);
       s->a.i16[0] = 0; // length src
       s->b.i16[0] = 1; // open/close
       s->_funcs = (RTFunction*) realloc(s->_funcs, (s->_funcc + 1)*sizeof(RTFunction));
-      s->_funcs[s->_funcc] = (RTFunction){.name = s->_id, .src = src};
+      s->_funcs[s->_funcc] = (RTFunction){.name = s->_id, .src = NULL};
       s->_funcc++;
       s->_id = NULL;
       s->_idlen = 0;
@@ -255,7 +253,6 @@ uint8_t step(uint8_t token, State * s){
       s->_prev_token = token;
       return 0;
     } else {
-      printf("run func %s\n", (char*) s->_id);
       uint8_t found = 0;
       for (uint8_t i = 0; i < s->_varc; i++){
         if (strcmp((char*)s->_vars[i].name, (char*)s->_id) == 0){
@@ -360,6 +357,9 @@ uint8_t step(uint8_t token, State * s){
       break;
     case RUN:
       new_sub((uint8_t*) s->_m, s);
+      break;
+    case RETURN:
+      return -1;
       break;
     case LEFT:
       if (prev == SHIFT_LEFT){

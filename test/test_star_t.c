@@ -300,8 +300,10 @@ int main(void){
   assert_eq((run("Z{1!}2!>Z "), (*M)[0]), 2);
   assert_eq((run("Z{1!}2!>Z "), (*M)[1]), 1);
   // inner undef
-  assert_eq((run("Z{1!Z }2!>Z "), (*M)[1]), 111);
-  assert_eq((run("Z{K{1!}K } 2!>Z "), (*M)[1]), 1);
+  assert_eq((run("Z{1!K }2!>Z "), (*M)[1]), 111);
+  assert_eq((run("Z{K{1!}K }2!>Z "), (*M)[1]), 1);
+  assert_eq((run("FIB{;>0!>1!?![2<1@;-!?!2> ;@<;@!+>!]}8!FIB2>;"), s->a.i32), 21);
+  assert_eq((run("iFIB{i;>0!>1!?![2<1@;-!?!2> ;@<;@!+>!]}46!FIB2>;"), s->a.i32), 1836311903);
   end_section();
 
   end_tests();

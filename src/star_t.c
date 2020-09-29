@@ -77,6 +77,12 @@ void free_memory(State * s){
     free(s->_funcs[i].name);
     free(s->_funcs[i].src);
   }
+  if (s->_vars){
+    free(s->_vars);
+  }
+  if (s->_funcs){
+    free(s->_funcs);
+  }
   if (s->_id){
    free(s->_id);
   }
@@ -117,7 +123,20 @@ int8_t blockrun(State * s){
     s->_prev_step_result = step(*(s->src), s);
     if (s->sub){
       blockrun(s->sub);
+      for (uint8_t i = 0; i < s->sub->_varc; i++){
+        free(s->sub->_vars[i].name);
+      }
+      if (s->sub->_vars){
+        free(s->sub->_vars);
+      }
+      if (s->sub->_id){
+        free(s->sub->_id);
+      }
+      // restore posible changes
+      s->_funcs = s->sub->_funcs;
+      s->_funcc = s->sub->_funcc;
       free(s->sub);
+      s->sub = NULL;
     }
     s->_ic++;
 
@@ -203,13 +222,16 @@ uint8_t step(uint8_t token, State * s){
   } else if (s->_idlen) {
     if (token == NEW_VAR) {
       s->_id = (uint8_t*) realloc(s->_id, s->_idlen + 1);
+      s->_vars = (Variable*) realloc(s->_vars, (s->_varc + 1)*sizeof(Variable));
       s->_vars[s->_varc] = (Variable){.name = s->_id, .pos = s->_m - s->_m0};
       s->_varc++;
     } else if (token == STARTFUNCTION) {
       s->_id = (uint8_t*) realloc(s->_id, s->_idlen + 1);
+      printf("new func %s %d\n", (char*) s->_id, s->_funcc);
       uint8_t* src = malloc(16);
       s->a.i16[0] = 0; // length src
       s->b.i16[0] = 1; // open/close
+      s->_funcs = (RTFunction*) realloc(s->_funcs, (s->_funcc + 1)*sizeof(RTFunction));
       s->_funcs[s->_funcc] = (RTFunction){.name = s->_id, .src = src};
       s->_funcc++;
       s->_id = NULL;
@@ -235,9 +257,11 @@ uint8_t step(uint8_t token, State * s){
           sub->_m = s->_m;
           sub->_m0 = sub->_m;
           sub->_src0 = sub->src;
-          s->_matching = 1;
-          s->_forward = 1;
-          s->_prev_step_result = JM_ERR0;
+          sub->_funcs = s->_funcs; // share funcs
+          sub->_funcc = s->_funcc; // share funcs
+          sub->_matching = 1;
+          sub->_forward = 1;
+          sub->_prev_step_result = JM_ERR0;
           s->sub = sub;
 
           // TODO go back 1 token

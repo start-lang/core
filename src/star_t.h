@@ -42,6 +42,11 @@ typedef struct {
 } Variable;
 
 typedef struct {
+  uint8_t* name;
+  uint8_t* src;
+} RTFunction;
+
+typedef struct _State {
 
   Register a;
   Register b;
@@ -61,6 +66,7 @@ typedef struct {
   uint8_t _lookahead:1;
   uint8_t  _prev_step_result:3;
   uint8_t  _string:1;
+  uint8_t  _srcinput:1;
 
   uint8_t _idlen;
   uint8_t _prev_token;
@@ -68,6 +74,11 @@ typedef struct {
 
   Variable _vars[10]; // TODO: malloc
   uint8_t _varc;
+
+  RTFunction _funcs[10]; // TODO: malloc
+  uint8_t _funcc;
+  
+  struct _State * sub;
   
 } State;
 

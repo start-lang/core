@@ -31,6 +31,7 @@ int8_t exceptionHandler(State * s){
 }
 
 int8_t undef(State * s){
+  s->_m[0] = 111;
   return 0;
 }
 
@@ -290,6 +291,17 @@ int main(void){
   assert_eq((run("X "), (*M)[0]), 123);
   assert_eq((run("Y "), (*M)[0]), 100);
   assert_eq((run("X Y "), (*M)[0]), 100);
+  // undef
+  assert_eq((run("X Y Z "), (*M)[0]), 111);
+  end_section();
+
+  begin_section("Functions2"); // TODO: fix space after call
+  assert_eq((run("Z{1!}2!Z "), (*M)[0]), 1);
+  assert_eq((run("Z{1!}2!>Z "), (*M)[0]), 2);
+  assert_eq((run("Z{1!}2!>Z "), (*M)[1]), 1);
+  // inner undef
+  assert_eq((run("Z{1!Z }2!>Z "), (*M)[1]), 111);
+  assert_eq((run("Z{K{1!}K } 2!>Z "), (*M)[1]), 1);
   end_section();
 
   end_tests();

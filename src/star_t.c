@@ -73,6 +73,10 @@ void free_memory(State * s){
   for (uint8_t i = 0; i < s->_varc; i++){
     free(s->_vars[i].name);
   }
+  for (uint8_t i = 0; i < s->_funcc; i++){
+    free(s->_funcs[i].name);
+    free(s->_funcs[i].src);
+  }
   if (s->_id){
    free(s->_id);
   }
@@ -111,6 +115,10 @@ int8_t blockrun(State * s){
     #endif
       
     s->_prev_step_result = step(*(s->src), s);
+    if (s->sub){
+      blockrun(s->sub);
+      free(s->sub);
+    }
     s->_ic++;
 
     #ifdef DEBUG_INTERPRETER
@@ -141,10 +149,6 @@ int8_t blockrun(State * s){
       }
     }
   }
-  // if (s->_idlen) {
-  //   free(s->_id);
-  //   s->_idlen = 0;
-  // }
   return 0;
 }
 
@@ -165,6 +169,25 @@ uint8_t step(uint8_t token, State * s){
     s->_prev_token = token;
     return 0;
   }
+
+  if (s->_srcinput){
+    s->_funcs[s->_funcc - 1].src[s->a.i16[0]] = token;
+    // TODO: realloc
+    if (token == ENDFUNCTION) {
+      s->b.i16[0]--;
+      if (s->b.i16[0] == 0){
+        s->_funcs[s->_funcc - 1].src[s->a.i16[0]] = 0;
+        // TODO: realloc final
+        s->_srcinput = 0;
+      }
+    } else if (token == STARTFUNCTION) {
+      s->b.i16[0]++;
+    }
+    s->a.i16[0]++;
+    s->_prev_token = token;
+    return 0;
+  }
+
   if ((token >= 'A' && token <= 'Z') || token == '_'){
     if (!s->_id) {
       s->_id = (uint8_t*) malloc(16);
@@ -182,12 +205,43 @@ uint8_t step(uint8_t token, State * s){
       s->_id = (uint8_t*) realloc(s->_id, s->_idlen + 1);
       s->_vars[s->_varc] = (Variable){.name = s->_id, .pos = s->_m - s->_m0};
       s->_varc++;
+    } else if (token == STARTFUNCTION) {
+      s->_id = (uint8_t*) realloc(s->_id, s->_idlen + 1);
+      uint8_t* src = malloc(16);
+      s->a.i16[0] = 0; // length src
+      s->b.i16[0] = 1; // open/close
+      s->_funcs[s->_funcc] = (RTFunction){.name = s->_id, .src = src};
+      s->_funcc++;
+      s->_id = NULL;
+      s->_idlen = 0;
+      s->_srcinput = 1;
+      s->_prev_token = token;
+      return 0;
     } else {
       uint8_t found = 0;
       for (uint8_t i = 0; i < s->_varc; i++){
         if (strcmp((char*)s->_vars[i].name, (char*)s->_id) == 0){
           s->_m = s->_m0 + s->_vars[i].pos;
           found = 1;
+          break;
+        }
+      }
+      for (uint8_t i = 0; i < s->_funcc; i++){
+        if (strcmp((char*)s->_funcs[i].name, (char*)s->_id) == 0){
+          found = 1;
+          State* sub = (State*) malloc(sizeof(State));
+          memset(sub, 0, sizeof(State));
+          sub->src = (uint8_t*) s->_funcs[i].src;
+          sub->_m = s->_m;
+          sub->_m0 = sub->_m;
+          sub->_src0 = sub->src;
+          s->_matching = 1;
+          s->_forward = 1;
+          s->_prev_step_result = JM_ERR0;
+          s->sub = sub;
+
+          // TODO go back 1 token
+
           break;
         }
       }

@@ -1,14 +1,6 @@
 #ifndef TOKENS_H
 #define TOKENS_H
 
-#ifdef NANO
-#   define FUNCTION        'F' // unused
-#   define STARTFUNCTION   '{' // unused
-#   define ENDFUNCTION     '}' // unused
-#   define RETURN          'r' // unused
-#   define SET_MEM_SIZE    'm' // unused
-#endif
-
 #define IF              '('
 #define ELSE            ':'
 #define ENDIF           ')'
@@ -24,6 +16,12 @@
 #define FUNCTION_SET    '#' // unused
 #define LEFT            '<'
 #define RIGHT           '>'
+
+
+#define STARTFUNCTION   '{'
+#define ENDFUNCTION     '}'
+#define RETURN          'r' // unused
+#define MALLOC          'm' // unused
 
 #define START_STACK     '$'
 #define PUSH            'p'

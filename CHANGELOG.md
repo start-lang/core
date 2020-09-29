@@ -5,15 +5,19 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
-  - syntax: Token `TYPE_SET 't'` removed
 ### Added
   - Float constants
   - syntax: Token `STRING '"'`
   - syntax: Token `SCAPE '\'`
+  - identifiers for variables
   - syntax: Token `NEW_VAR '^'`
+  - runtime function declaration
+  - syntax: Token `MALLOC 'm'`
+  - syntax: Token `RETURN 'r'`
 ### Changed
   - syntax: All upper case strings are now translated to api calls or memory jumps
 ### Removed
+  - syntax: Token `TYPE_SET 't'`
   - syntax: Token `OUT '.'`
   - syntax: Token `IN ','`
 

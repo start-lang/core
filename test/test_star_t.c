@@ -306,6 +306,12 @@ int main(void){
   assert_eq((run("iFIB{i;>0!>1!?![2<1@;-!?!2> ;@<;@!+>!]}46!FIB2>;"), s->a.i32), 1836311903);
   end_section();
 
+  begin_section("Run");
+  assert_eq((run("\"1!\"#"), (*M)[0]), 1);
+  assert_eq((run("\"Z{1!K }2!>Z \"#"), (*M)[1]), 111);
+  assert_eq((run("\"Z{1!K }2!\"#>Z "), (*M)[1]), 111);
+  end_section();
+
   end_tests();
 
   printf("state size: %ld\n", sizeof(State));

@@ -171,6 +171,21 @@ int8_t blockrun(State * s){
   return 0;
 }
 
+void new_sub(uint8_t * src, State * s) {
+  State* sub = (State*) malloc(sizeof(State));
+  memset(sub, 0, sizeof(State));
+  sub->src = src;
+  sub->_m = s->_m;
+  sub->_m0 = sub->_m;
+  sub->_src0 = sub->src;
+  sub->_funcs = s->_funcs; // share funcs
+  sub->_funcc = s->_funcc; // share funcs
+  sub->_matching = 1;
+  sub->_forward = 1;
+  sub->_prev_step_result = JM_ERR0;
+  s->sub = sub;
+}
+
 uint8_t step(uint8_t token, State * s){
   uint8_t prev = s->_prev_token;
   if (s->_string){
@@ -240,6 +255,7 @@ uint8_t step(uint8_t token, State * s){
       s->_prev_token = token;
       return 0;
     } else {
+      printf("run func %s\n", (char*) s->_id);
       uint8_t found = 0;
       for (uint8_t i = 0; i < s->_varc; i++){
         if (strcmp((char*)s->_vars[i].name, (char*)s->_id) == 0){
@@ -251,18 +267,7 @@ uint8_t step(uint8_t token, State * s){
       for (uint8_t i = 0; i < s->_funcc; i++){
         if (strcmp((char*)s->_funcs[i].name, (char*)s->_id) == 0){
           found = 1;
-          State* sub = (State*) malloc(sizeof(State));
-          memset(sub, 0, sizeof(State));
-          sub->src = (uint8_t*) s->_funcs[i].src;
-          sub->_m = s->_m;
-          sub->_m0 = sub->_m;
-          sub->_src0 = sub->src;
-          sub->_funcs = s->_funcs; // share funcs
-          sub->_funcc = s->_funcc; // share funcs
-          sub->_matching = 1;
-          sub->_forward = 1;
-          sub->_prev_step_result = JM_ERR0;
-          s->sub = sub;
+          new_sub((uint8_t*) s->_funcs[i].src, s);
 
           // TODO go back 1 token
 
@@ -352,6 +357,9 @@ uint8_t step(uint8_t token, State * s){
     case STRING:
       s->a.i8[0] = 0;
       s->_string = 1;
+      break;
+    case RUN:
+      new_sub((uint8_t*) s->_m, s);
       break;
     case LEFT:
       if (prev == SHIFT_LEFT){

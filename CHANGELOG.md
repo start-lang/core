@@ -14,6 +14,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   - runtime function declaration
   - syntax: Token `MALLOC 'm'`
   - syntax: Token `RETURN 'r'`
+  - run code in tape
+  - syntax: Token `RUN '#'`
 ### Changed
   - syntax: All upper case strings are now translated to api calls or memory jumps
 ### Removed

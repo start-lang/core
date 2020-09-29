@@ -35,7 +35,7 @@
 
 #define MEM_JUMP        'm' //signed int // unused
 #define COPY_FROM       'v' // unused
-#define RUN             '^' // unused
+#define RUN             '#'
 #define CODE_JMP        'j' // unused
 
 #define NEW_VAR         '^'

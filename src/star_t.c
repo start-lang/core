@@ -289,40 +289,40 @@ uint8_t step(uint8_t token, State * s){
       case COND_MODIFIER:
         switch (token) {
           case C_EQ:
-            if (s->_type == INT8) s->_ans = s->_m[0] == REG.i8[0];
-            else if (s->_type == INT16) s->_ans = *((uint16_t*) s->_m) == REG.i16[0];
-            else if (s->_type == INT32) s->_ans = *((uint32_t*) s->_m) == REG.i32;
-            else if (s->_type == FLOAT) s->_ans = *((float*) s->_m) == REG.f32;
+            if (s->_type == INT8) s->_ans = REG.i8[0] == s->_m[0];
+            else if (s->_type == INT16) s->_ans = REG.i16[0] == *((uint16_t*) s->_m);
+            else if (s->_type == INT32) s->_ans = REG.i32 == *((uint32_t*) s->_m);
+            else if (s->_type == FLOAT) s->_ans = REG.f32 == *((float*) s->_m);
             break;
           case C_NEQ:
-            if (s->_type == INT8) s->_ans = s->_m[0] != REG.i8[0];
-            else if (s->_type == INT16) s->_ans = *((uint16_t*) s->_m) != REG.i16[0];
-            else if (s->_type == INT32) s->_ans = *((uint32_t*) s->_m) != REG.i32;
-            else if (s->_type == FLOAT) s->_ans = *((float*) s->_m) != REG.f32;
+            if (s->_type == INT8) s->_ans = REG.i8[0] != s->_m[0];
+            else if (s->_type == INT16) s->_ans = REG.i16[0] != *((uint16_t*) s->_m);
+            else if (s->_type == INT32) s->_ans = REG.i32 != *((uint32_t*) s->_m);
+            else if (s->_type == FLOAT) s->_ans = REG.f32 != *((float*) s->_m);
             break;
           case C_LT:
-            if (s->_type == INT8) s->_ans = s->_m[0] < REG.i8[0];
-            else if (s->_type == INT16) s->_ans = *((uint16_t*) s->_m) < REG.i16[0];
-            else if (s->_type == INT32) s->_ans = *((uint32_t*) s->_m) < REG.i32;
-            else if (s->_type == FLOAT) s->_ans = *((float*) s->_m) < REG.f32;
+            if (s->_type == INT8) s->_ans = REG.i8[0] < s->_m[0];
+            else if (s->_type == INT16) s->_ans = REG.i16[0] < *((uint16_t*) s->_m);
+            else if (s->_type == INT32) s->_ans = REG.i32 < *((uint32_t*) s->_m);
+            else if (s->_type == FLOAT) s->_ans = REG.f32 < *((float*) s->_m);
             break;
           case C_GT:
-            if (s->_type == INT8) s->_ans = s->_m[0] > REG.i8[0];
-            else if (s->_type == INT16) s->_ans = *((uint16_t*) s->_m) > REG.i16[0];
-            else if (s->_type == INT32) s->_ans = *((uint32_t*) s->_m) > REG.i32;
-            else if (s->_type == FLOAT) s->_ans = *((float*) s->_m) > REG.f32;
+            if (s->_type == INT8) s->_ans = REG.i8[0] > s->_m[0];
+            else if (s->_type == INT16) s->_ans = REG.i16[0] > *((uint16_t*) s->_m);
+            else if (s->_type == INT32) s->_ans = REG.i32 > *((uint32_t*) s->_m);
+            else if (s->_type == FLOAT) s->_ans = REG.f32 > *((float*) s->_m);
             break;
           case C_LE:
-            if (s->_type == INT8) s->_ans = s->_m[0] <= REG.i8[0];
-            else if (s->_type == INT16) s->_ans = *((uint16_t*) s->_m) <= REG.i16[0];
-            else if (s->_type == INT32) s->_ans = *((uint32_t*) s->_m) <= REG.i32;
-            else if (s->_type == FLOAT) s->_ans = *((float*) s->_m) <= REG.f32;
+            if (s->_type == INT8) s->_ans = REG.i8[0] <= s->_m[0];
+            else if (s->_type == INT16) s->_ans = REG.i16[0] <= *((uint16_t*) s->_m);
+            else if (s->_type == INT32) s->_ans = REG.i32 <= *((uint32_t*) s->_m);
+            else if (s->_type == FLOAT) s->_ans = REG.f32 <= *((float*) s->_m);
             break;
           case C_GE:
-            if (s->_type == INT8) s->_ans = s->_m[0] >= REG.i8[0];
-            else if (s->_type == INT16) s->_ans = *((uint16_t*) s->_m) >= REG.i16[0];
-            else if (s->_type == INT32) s->_ans = *((uint32_t*) s->_m) >= REG.i32;
-            else if (s->_type == FLOAT) s->_ans = *((float*) s->_m) >= REG.f32;
+            if (s->_type == INT8) s->_ans = REG.i8[0] >= s->_m[0];
+            else if (s->_type == INT16) s->_ans = REG.i16[0] >= *((uint16_t*) s->_m);
+            else if (s->_type == INT32) s->_ans = REG.i32 >= *((uint32_t*) s->_m);
+            else if (s->_type == FLOAT) s->_ans = REG.f32 >= *((float*) s->_m);
             break;
           case C_NOT_NULL:
             if (s->_type == INT8) s->_ans = s->_m[0] != 0;
@@ -335,6 +335,9 @@ uint8_t step(uint8_t token, State * s){
             else if (s->_type == INT16) s->_ans = *((uint16_t*) s->_m) == 0;
             else if (s->_type == INT32) s->_ans = *((uint32_t*) s->_m) == 0;
             else if (s->_type == FLOAT) s->_ans = *((float*) s->_m) == 0;
+            break;
+          case STACK_HEIGHT:
+            s->_ans = (s->_m - s->v_stack0) != 0;
             break;
           default:
             return JM_PEXC;
@@ -355,7 +358,7 @@ uint8_t step(uint8_t token, State * s){
       new_sub((uint8_t*) s->_m, s);
       break;
     case MALLOC:
-      s->_mlen = REG.i16[0];
+      s->_mlen = REG.i16[0] * (s->_type + 1);
       uint16_t at = s->_m - s->_m0;
       s->_m0 = (uint8_t*) realloc(s->_m0, s->_mlen);
       s->_m = s->_m0 + at;
@@ -378,7 +381,7 @@ uint8_t step(uint8_t token, State * s){
         else if (s->_type == INT32) *((uint32_t*) s->_m) <<= REG.i32;
         return 0;
       } else {
-        uint8_t mod = (prev > '0' && prev < '9') ? s->_m[0] : 1;
+        uint8_t mod = (prev > '0' && prev < '9') ? REG.i8[0] : 1;
         if (s->_type == INT8) s->_m -= 1 * mod;
         else if (s->_type == INT16) s->_m -= 2 * mod;
         else if (s->_type == INT32) s->_m -= 4 * mod;
@@ -396,7 +399,7 @@ uint8_t step(uint8_t token, State * s){
           s->_m += REG.i8[0] + 1;
           break;
         }
-        uint8_t mod = (prev > '0' && prev < '9') ? s->_m[0] : 1;
+        uint8_t mod = (prev > '0' && prev < '9') ? REG.i8[0] : 1;
         if (s->_type == INT8) s->_m += 1 * mod;
         else if (s->_type == INT16) s->_m += 2 * mod;
         else if (s->_type == INT32) s->_m += 4 * mod;
@@ -505,9 +508,18 @@ uint8_t step(uint8_t token, State * s){
       else if (s->_type == INT32) *((uint32_t*) s->_m) = ~*((uint32_t*) s->_m);
       break;
     case SWITCH:
-      if (s->_type == INT8) s->_m[0] ^= REG.i8[0], REG.i8[0] ^= s->_m[0], s->_m[0] ^= REG.i8[0];
-      else if (s->_type == INT16) *((uint16_t*) s->_m) ^= REG.i16[0], REG.i16[0] ^= *((uint16_t*) s->_m), *((uint16_t*) s->_m) ^= REG.i16[0];
-      else *((uint32_t*) s->_m) ^= REG.i32, REG.i32 ^= *((uint32_t*) s->_m), *((uint32_t*) s->_m) ^= REG.i32;
+      if (s->_type == INT8) 
+        s->_m[0] ^= REG.i8[0], 
+        REG.i8[0] ^= s->_m[0], 
+        s->_m[0] ^= REG.i8[0];
+      else if (s->_type == INT16) 
+        *((uint16_t*) s->_m) ^= REG.i16[0], 
+        REG.i16[0] ^= *((uint16_t*) s->_m), 
+        *((uint16_t*) s->_m) ^= REG.i16[0];
+      else 
+        *((uint32_t*) s->_m) ^= REG.i32, 
+        REG.i32 ^= *((uint32_t*) s->_m), 
+        *((uint32_t*) s->_m) ^= REG.i32;
       break;
     case STORE:
       if (s->_type == INT8) s->_m[0] = REG.i8[0];
@@ -539,15 +551,15 @@ uint8_t step(uint8_t token, State * s){
     default:
       if (token >= '0' && token <= '9'){
         if (prev < '0' || prev > '9'){
-          if (s->_type == INT8) s->_m[0] = (token - '0');
-          else if (s->_type == INT16) *((uint16_t*) s->_m) = (token - '0');
-          else if (s->_type == INT32) *((uint32_t*) s->_m) = (token - '0');
-          else if (s->_type == FLOAT) *((float*) s->_m) = (token - '0');
+          if (s->_type == INT8) s->reg.i8[0] = (token - '0');
+          else if (s->_type == INT16) s->reg.i16[0] = (token - '0');
+          else if (s->_type == INT32) s->reg.i32 = (token - '0');
+          else if (s->_type == FLOAT) s->reg.f32 = (token - '0');
         } else {
-          if (s->_type == INT8) s->_m[0] = s->_m[0]*10 + (token - '0');
-          else if (s->_type == INT16) *((uint16_t*) s->_m) = *((uint16_t*) s->_m)*10 + (token - '0');
-          else if (s->_type == INT32) *((uint32_t*) s->_m) = *((uint32_t*) s->_m)*10 + (token - '0');
-          else if (s->_type == FLOAT) *((float*) s->_m) = *((float*) s->_m)*10 + (token - '0');
+          if (s->_type == INT8) s->reg.i8[0] = s->reg.i8[0]*10 + (token - '0');
+          else if (s->_type == INT16) s->reg.i16[0] = s->reg.i16[0]*10 + (token - '0');
+          else if (s->_type == INT32) s->reg.i32 = s->reg.i32*10 + (token - '0');
+          else if (s->_type == FLOAT) s->reg.f32 = s->reg.f32*10 + (token - '0');
         }
       } else {
         return JM_PEXC;

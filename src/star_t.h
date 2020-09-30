@@ -19,20 +19,10 @@ extern "C" {
 #define JM_ERR0 6
 #define JM_PEXC 7
 
-#ifdef SIGNED_INT
-  typedef int8_t byte_t;
-  typedef int16_t int_t;
-  typedef int32_t long_t;
-#else
-  typedef uint8_t byte_t;
-  typedef uint16_t int_t;
-  typedef uint32_t long_t;
-#endif
-
 typedef union {
-  byte_t i8 [4];
-  int_t i16 [2];
-  long_t i32;
+  uint8_t i8 [4];
+  uint16_t i16 [2];
+  uint32_t i32;
   float f32;
 } Register;
 
@@ -47,9 +37,7 @@ typedef struct {
 } RTFunction;
 
 typedef struct _State {
-
-  Register a;
-  Register b;
+  Register reg;
 
   uint8_t* src;
   uint8_t* _src0;
@@ -78,10 +66,17 @@ typedef struct _State {
 
   RTFunction * _funcs;
   uint8_t _funcc;
+
+  uint16_t _lensrc;
+  uint16_t _fmatching;
   
   struct _State * sub;
   
 } State;
+
+
+#define RM ((Register*)s->_m)[0]
+#define REG s->reg
 
 int8_t blockrun(State * s);
 uint8_t step(uint8_t token, State * s);

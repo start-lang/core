@@ -89,7 +89,7 @@ void free_memory(State * s){
   free(s);
 }
 
-int8_t blockrun(State * s){
+int8_t blockrun(State * s, uint8_t last){
   if (!s->_m) {
     s->_m = (uint8_t*) malloc(sizeof(uint8_t) * MEM_SIZE);
     memset(s->_m, 0, sizeof(uint8_t) * MEM_SIZE);
@@ -101,7 +101,14 @@ int8_t blockrun(State * s){
     s->_prev_step_result = JM_ERR0;
   }
   
-  while (*(s->src)){
+  while (1){
+    if (*(s->src) == 0){
+      if (last){
+        last = 0;
+      } else {
+        break;
+      }
+    }
     if (s->_prev_step_result > 0 && s->_prev_step_result < JM_ERR0){
       if (! s->_forward) {
         s->src += strlen((char*) s->src) - 1;
@@ -123,7 +130,7 @@ int8_t blockrun(State * s){
       
     s->_prev_step_result = step(*(s->src), s);
     if (s->sub){
-      blockrun(s->sub);
+      blockrun(s->sub, 1);
       for (uint8_t i = 0; i < s->sub->_varc; i++){
         free(s->sub->_vars[i].name);
       }
@@ -141,21 +148,12 @@ int8_t blockrun(State * s){
     }
     s->_ic++;
 
-    #ifdef DEBUG_INTERPRETER
-      uint8_t at = s->_m - s->_m0;
-      for (uint8_t i = 0; i <= at + 1; i++){
-        if (i == at) {
-          _printf("[%d:%d:%d> ", REG.i32, s->_ans, s->_type);
-        }
-        _printf("[%d] ", (s->_m0)[i]);
-      }
-      _printf("\t\t- %c \n", *(s->src));
-    #endif
-
     if (s->_prev_step_result >= JM_ERR0){
       return s->_prev_step_result;
     } else if (s->_prev_step_result == 0) {
-      s->src++;
+      if (*(s->src) != 0){
+        s->src++;
+      }
     } else {
       if (s->src - s->_src0 == 0 && ! s->_forward) {
         return -1;
@@ -189,6 +187,17 @@ void new_sub(uint8_t * src, State * s) {
 }
 
 uint8_t step(uint8_t token, State * s){
+
+  #ifdef DEBUG_INTERPRETER
+    for (uint8_t * i = s->_m0; i <= s->_m + 2; i++){
+      if (i == s->_m) {
+        _printf("[%d:%d:%d> ", REG.i32, s->_ans, s->_type);
+      }
+      _printf("[%d] ", i[0]);
+    }
+    _printf("\t\t- %c \n", token);
+  #endif
+
   uint8_t prev = s->_prev_token;
   if (s->_string){
     if (token != SCAPE) {
@@ -283,9 +292,32 @@ uint8_t step(uint8_t token, State * s){
     s->_id = NULL;
     s->_idlen = 0;
   }
+
   if (s->_lookahead){
     s->_lookahead = 0;
     switch (prev) {
+      case POP:
+        switch (token) {
+          case SUM:
+          case SUB:
+          case MULTI:
+          case DIV:
+          case MOD:
+          case AND:
+          case OR:
+          case XOR:
+            s->_prev_token = 0;
+            step(LEFT, s);
+            step(token, s);
+            step(LOAD, s);
+            break;
+          default:
+            step(LOAD, s);
+            s->_prev_token = 0;
+            step(LEFT, s);
+            step(token, s);
+        }
+        break;
       case COND_MODIFIER:
         switch (token) {
           case C_EQ:
@@ -342,11 +374,12 @@ uint8_t step(uint8_t token, State * s){
           default:
             return JM_PEXC;
         }
-        return 0;
     }
+    return 0;
   }
 
   switch (token) {
+    case POP:
     case COND_MODIFIER:
       s->_lookahead = 1;
       break;
@@ -406,20 +439,18 @@ uint8_t step(uint8_t token, State * s){
         else if (s->_type == FLOAT) s->_m += 4 * mod;
         break;
       }
-    case START_STACK:
-      s->v_stack0 = s->_m;
-      break;
     case STACK_HEIGHT:
-      REG.i16[0] = (s->_m - s->v_stack0);
+      REG.i16[0] = (s->_m - s->v_stack0) + 1;
       REG.i16[1] = 0;
       break;
     case PUSH:
+      if (!s->v_stack0){
+        s->v_stack0 = s->_m;
+      } else {
+        s->_prev_token = 0;
+        step(RIGHT, s);
+      }
       step(STORE, s);
-      step(RIGHT, s);
-      break;
-    case POP:
-      step(LEFT, s);
-      step(LOAD, s);
       break;
     case IF:
     case ELSE:
@@ -547,6 +578,7 @@ uint8_t step(uint8_t token, State * s){
       break;
     case ENDIF:
     case NOP:
+    case 0:
       break;
     default:
       if (token >= '0' && token <= '9'){

@@ -78,7 +78,7 @@ typedef struct _State {
 #define RM ((Register*)s->_m)[0]
 #define REG s->reg
 
-int8_t blockrun(State * s);
+int8_t blockrun(State * s, uint8_t last);
 uint8_t step(uint8_t token, State * s);
 void free_memory(State * s);
 

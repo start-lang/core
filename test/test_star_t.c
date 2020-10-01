@@ -33,7 +33,7 @@ int8_t run(char * src) {
   memset(s, 0, sizeof(State));
   s->src = (uint8_t*) src;
   clock_t begin = clock();
-  int8_t result = blockrun(s);
+  int8_t result = blockrun(s, 1);
   clock_t end = clock();
   time_spent = (double)(end - begin) / CLOCKS_PER_SEC;
   // if (s->_ic > 100){
@@ -253,14 +253,15 @@ int main(void){
   end_section();
 
   begin_section("Stack");
-  assert_eq((run("b$3p4p"), (*M)[0]), 3);
-  assert_eq((run("b$3p4p"), (*M)[1]), 4);
-  assert_eq((run("b$3p4ph"), s->reg.i16[0]), 2);
-  assert_eq((run("b$3p4po"), RM.i8[0]), 4);
-  assert_eq((run("b$3p4poo"), RM.i8[0]), 3);
-  assert_eq((run("b$3p4pooh"), s->reg.i16[0]), 0);
-  assert_eq((run("b$1p2p3p4p5p <;<+;<+;<+;<+;"), RM.i8[0]), 15);
-  assert_eq((run("b$1p2p3p4p5p 0?=[ <+; ?h]"), RM.i8[0]), 15);
+  assert_eq((run("b3p4p"), (*M)[0]), 3);
+  assert_eq((run("b3p4p"), (*M)[1]), 4);
+  assert_eq((run("b3p4ph"), s->reg.i16[0]), 2);
+  assert_eq((run("b3p4po"), s->reg.i8[0]), 4);
+  assert_eq((run("b3p4poo"), s->reg.i8[0]), 3);
+  assert_eq((run("b3p4pooh"), s->reg.i16[0]), 0);
+  assert_eq((run("b1p2p3p4p5p o+o+o+o+"), RM.i8[0]), 15);
+  assert_eq((run("b1p2p3p4p5p ?=[ <+; ?h]"), RM.i8[0]), 15);
+  assert_eq((run("b1p2p3p4p5p ?=[ o+ ?h]"), RM.i8[0]), 15);
   end_section();
 
   begin_section("WHILE");
@@ -308,7 +309,7 @@ int main(void){
       strncpy(block, code + (index*max_block_size),  block_size);
       block[block_size] = '\0';
       s->src = (uint8_t*) block;
-      direction = blockrun(s);
+      direction = blockrun(s, 0);
       // printf("%s %d %d %d\n", block, block_size, direction, index);
 
       if (direction == -1){
@@ -327,41 +328,41 @@ int main(void){
   end_section();
 
   begin_section("IDS");
-  assert_eq((run("ABC^1!>2!>3!ABC ;"), RM.i8[0]), 1);
+  assert_eq((run("ABC^1!>2!>3!ABC;"), s->reg.i8[0]), 1);
   assert_eq((run("N^8!>B^0!>A^1!?=[N1-?!A;B@A+]"), RM.i8[0]), 21);
   assert_eq((run("N^>B^0!>A^1!N8!?=[N1-?!A;B@A+]"), RM.i8[0]), 21);
   end_section();
 
   begin_section("Functions");
-  assert_eq((run("X "), (*M)[0]), 123);
-  assert_eq((run("Y "), (*M)[0]), 100);
-  assert_eq((run("X Y "), (*M)[0]), 100);
+  assert_eq((run("X"), (*M)[0]), 123);
+  assert_eq((run("Y"), (*M)[0]), 100);
+  assert_eq((run("X Y"), (*M)[0]), 100);
   // undef
-  assert_eq((run("X Y Z "), (*M)[0]), 111);
+  assert_eq((run("X Y Z"), (*M)[0]), 111);
   end_section();
 
-  begin_section("Functions2"); // TODO: fix space after call
-  assert_eq((run("Z{1!}2!Z "), (*M)[0]), 1);
-  assert_eq((run("Z{1!}2!>Z "), (*M)[0]), 2);
-  assert_eq((run("Z{1!}2!>Z "), (*M)[1]), 1);
+  begin_section("Functions2");
+  assert_eq((run("Z{1!}2!Z"), (*M)[0]), 1);
+  assert_eq((run("Z{1!}2!>Z"), (*M)[0]), 2);
+  assert_eq((run("Z{1!}2!>Z"), (*M)[1]), 1);
   // inner undef
-  assert_eq((run("Z{1!K }2!>Z "), (*M)[1]), 111);
-  assert_eq((run("Z{K{1!}K }2!>Z "), (*M)[1]), 1);
+  assert_eq((run("Z{1!K }2!>Z"), (*M)[1]), 111);
+  assert_eq((run("Z{K{1!}K }2!>Z"), (*M)[1]), 1);
   assert_eq((run("FIB{;>0!>1!?=[2<1-?!2>;<@>+]}8!FIB2>;"), RM.i32), 21);
   assert_eq((run("iFIB{i;>0!>1!?=[2<1-?!2>;<@>+]}46!FIB2>;"), RM.i32), 1836311903);
   end_section();
 
   begin_section("Run");
   assert_eq((run("\"1!\"#"), (*M)[0]), 1);
-  assert_eq((run("\"Z{1!K }2!>Z \"#"), (*M)[1]), 111);
-  assert_eq((run("\"Z{1!K }2!\"#>Z "), (*M)[1]), 111);
+  assert_eq((run("\"Z{1!K}2!>Z\"#"), (*M)[1]), 111);
+  assert_eq((run("\"Z{1!K}2!\"#>Z"), (*M)[1]), 111);
   end_section();
 
   begin_section("Return");
   assert_eq((run("r1!"), (*M)[0]), 0);
   assert_eq((run("1!r2!"), (*M)[0]), 1);
-  assert_eq((run("Z{11!rK }2!>Z "), (*M)[1]), 11);
-  assert_eq((run("\"Z{11!rK }2!\"#>Z "), (*M)[1]), 11);
+  assert_eq((run("Z{11!rK}2!>Z"), (*M)[1]), 11);
+  assert_eq((run("\"Z{11!rK}2!\"#>Z"), (*M)[1]), 11);
   end_section();
 
   begin_section("Pi");

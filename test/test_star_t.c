@@ -370,10 +370,7 @@ int main(void){
     memset(out, 0, 256);
     char * src = load_file("test/pi.st"); 
     char pi[] = "3.141592653";
-    assert_eq((run(src), strcmp(out, pi)), 0);
-    if (strcmp(out, pi) != 0){
-      printf("'%s' != '%s'", out, pi);
-    }
+    assert_str_eq(pi, (run(src), out));
     free(src);
   }
   end_section();
@@ -382,10 +379,7 @@ int main(void){
   {
     memset(out, 0, 256);
     char * src = load_file("test/quine.st"); 
-    assert_eq((run(src), strcmp(out, src)), 0);
-    if (strcmp(out, src) != 0){
-      printf("in:'%s' != out:'%s'", src, out);
-    }
+    assert_str_eq(src, (run(src), out));
     free(src);
   }
   end_section();

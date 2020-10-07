@@ -34,6 +34,39 @@
 #   endif
 #endif
 
+uint8_t jump(State * s){
+  uint8_t token = *(s->src);
+  while (token) {
+    if (!token){
+      return 1;
+    } else if (token == IF){
+      s->_matching++;
+    } else if (token == ELSE && s->_prev_step_result == JM_EIFE && s->_matching == 1) {
+      break;
+    } else if (token == ENDIF) {
+      s->_matching--;
+      if (s->_prev_step_result <= JM_ENIF && ! s->_matching){
+        break;
+      }
+    } else if (token == WHILE) {
+      s->_matching++;
+      if (s->_prev_step_result >= JM_WHI0 && ! s->_matching){
+        break;
+      }
+    } else if (token == ENDWHILE) {
+      s->_matching--;
+      if (s->_prev_step_result == JM_EWHI && ! s->_matching){
+        break;
+      }
+    }
+    if (s->src - s->_src0 == 0 && ! s->_forward) {
+      return 1;
+    }
+    s->src += s->_forward ? 1 : -1;
+    token = *(s->src);
+  }
+  return 0;
+}
 
 int8_t blockrun(State * s){
   if (!s->_m) {
@@ -45,47 +78,29 @@ int8_t blockrun(State * s){
     s->_forward = 1;
     s->_prev_step_result = JM_ERR0;
   }
-  uint8_t len = strlen((char*) s->src);
-  uint8_t token = *(s->src);
-  if (s->_prev_step_result > 0 && s->_prev_step_result < JM_ERR0){
-    s->src += len-1;
-    token = *(s->src);
-    while (token) {
-      if (token == IF){
-        s->_matching++;
-      } else if (token == ELSE && s->_prev_step_result == JM_EIFE && s->_matching == 1) {
-        break;
-      } else if (token == ENDIF) {
-        s->_matching--;
-        if (s->_prev_step_result <= JM_ENIF && ! s->_matching){
-          break;
-        }
-      } else if (token == WHILE) {
-        s->_matching++;
-        if (s->_prev_step_result >= JM_WHI0 && ! s->_matching){
-          break;
-        }
-      } else if (token == ENDWHILE) {
-        s->_matching--;
-        if (s->_prev_step_result == JM_EWHI && ! s->_matching){
-          break;
-        }
-      }
-      if (s->src - s->_src0 == 0 && ! s->_forward) {
-        return -1;
-      }
-      s->src += s->_forward ? 1 : -1;
-      token = *(s->src);
-      if (!token){
-        return s->_matching;
+  
+  while (*(s->src)){
+    if (s->_prev_step_result > 0 && s->_prev_step_result < JM_ERR0){
+      if (! s->_forward) {
+        s->src += strlen((char*) s->src) - 1;
+        if (jump(s)) return -1;
       }
     }
-  }
-  while (1){
-    if (!token){
-      return 0; //EOF
-    }
+
+    #ifdef MAX_ITERATION_COUNT
+      if (s->_ic > MAX_ITERATION_COUNT) {
+        return JM_ERR0;
+      }
+    #endif
+    
+    #ifdef PRINT_ITERATION_COUNT
+      if (s->_ic % PRINT_ITERATION_COUNT == 0) {
+        msg("%d\n", s->_ic);
+      }
+    #endif
+      
     s->_prev_step_result = step(*(s->src), s);
+    s->_ic++;
 
     #ifdef DEBUG_INTERPRETER
       uint8_t at = s->_m - s->_m0;
@@ -95,48 +110,23 @@ int8_t blockrun(State * s){
         }
         _printf("[%d] ", (s->_m0)[i]);
       }
-      _printf("\t\t- %c \n", token);
+      _printf("\t\t- %c \n", *(s->src));
     #endif
 
     if (s->_prev_step_result >= JM_ERR0){
       return s->_prev_step_result;
     } else if (s->_prev_step_result == 0) {
       s->src++;
-      token = *(s->src);
     } else {
-      while (token) {
-        if (s->src - s->_src0 == 0 && ! s->_forward) {
-          return -1;
-        }
-        s->src += s->_forward ? 1 : -1;;
-        token = *(s->src);
-        if (token == IF){
-          s->_matching++;
-        } else if (token == ELSE && s->_prev_step_result == JM_EIFE && s->_matching == 1) {
-          break;
-        } else if (token == ENDIF) {
-          s->_matching--;
-          if (s->_prev_step_result <= JM_ENIF && ! s->_matching){
-            break;
-          }
-        } else if (token == WHILE) {
-          s->_matching++;
-          if (s->_prev_step_result >= JM_WHI0 && ! s->_matching){
-            break;
-          }
-        } else if (token == ENDWHILE) {
-          s->_matching--;
-          if (s->_prev_step_result == JM_EWHI && ! s->_matching){
-            break;
-          }
-        }
-        if (!token){
-          return s->_matching;
-        }
+      if (s->src - s->_src0 == 0 && ! s->_forward) {
+        return -1;
       }
-      if (s->_prev_step_result != JM_WHI0){
-        s->src++;
-        token = *(s->src);
+      s->src += s->_forward ? 1 : -1;;
+      if (s->_prev_step_result != 0) {
+        if (jump(s)) return -1;
+        if (s->_prev_step_result != JM_WHI0){
+          s->src++;
+        }
       }
     }
   }
@@ -145,19 +135,6 @@ int8_t blockrun(State * s){
 
 uint8_t step(uint8_t token, State * s){
   uint8_t prev = s->_prev_token;
-  s->_ic++;
-  #ifdef MAX_ITERATION_COUNT
-    if (s->_ic > MAX_ITERATION_COUNT) {
-      return -1;
-    }
-  #endif
-  
-  #ifdef PRINT_ITERATION_COUNT
-    if (s->_ic % PRINT_ITERATION_COUNT == 0) {
-      msg("%d\n", s->_ic);
-    }
-  #endif
-
   if (s->_lookahead){
     s->_lookahead = 0;
     switch (prev) {

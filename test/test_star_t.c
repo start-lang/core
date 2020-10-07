@@ -237,7 +237,7 @@ int main(void){
         index++;
       } else {
         //error
-        printf("%d\n", direction);
+        printf("ss%d\n", direction);
         break;
       }
     }

@@ -94,6 +94,7 @@ int8_t blockrun(State * s){
     s->_m = (uint8_t*) malloc(sizeof(uint8_t) * MEM_SIZE);
     memset(s->_m, 0, sizeof(uint8_t) * MEM_SIZE);
     s->_m0 = s->_m;
+    s->_mlen = MEM_SIZE;
     s->_src0 = s->src;
     s->_matching = 1;
     s->_forward = 1;
@@ -353,6 +354,20 @@ uint8_t step(uint8_t token, State * s){
     case RUN:
       new_sub((uint8_t*) s->_m, s);
       break;
+    case MALLOC:
+      s->_mlen = s->a.i16[0];
+      uint16_t at = s->_m - s->_m0;
+      s->_m0 = (uint8_t*) realloc(s->_m0, s->_mlen);
+      s->_m = s->_m0 + at;
+      memset(s->_m0 + 1, 0, s->_mlen - at - 1);
+      break;
+    case GTZERO:
+      s->a.i8[0] = 0;
+      while (s->_m[0]) {
+        s->_m++;
+        s->a.i8[0]++;
+      }
+      break;
     case RETURN:
       return -1;
       break;
@@ -488,12 +503,6 @@ uint8_t step(uint8_t token, State * s){
       if (s->_type == INT8) s->a.i8[0] = ~s->a.i8[0];
       else if (s->_type == INT16) s->a.i16[0] = ~s->a.i16[0];
       else if (s->_type == INT32) s->a.i32 = ~s->a.i32;
-      break;
-    case ZERO:
-      s->a.i16[0] = 0;
-      s->a.i16[1] = 0;
-      s->b.i16[0] = 0;
-      s->b.i16[1] = 0;
       break;
     case SWITCH:
       s->a.i8[0] ^= s->b.i8[0];

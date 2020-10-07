@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   - syntax: Token `RETURN 'r'`
   - run code in tape
   - syntax: Token `RUN '#'`
+  - syntax: Token `GOTO_ZERO 'z'`
 ### Changed
   - syntax: All upper case strings are now translated to api calls or memory jumps
 ### Removed

@@ -19,14 +19,14 @@
 #define STARTFUNCTION   '{'
 #define ENDFUNCTION     '}'
 #define RETURN          'r'
-#define MALLOC          'm' // unused
+#define MALLOC          'm'
 
 #define START_STACK     '$'
 #define PUSH            'p'
 #define POP             'o'
 #define STACK_HEIGHT    'h'
 
-#define ZERO            'z'
+#define GTZERO          'z'
 #define SWITCH          '@'
 #define STORE           '!'
 #define LOAD            ';'

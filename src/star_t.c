@@ -36,126 +36,116 @@
 
 
 int8_t blockrun(State * s){
-  if (!s->Mem) {
-    s->Mem = (uint8_t*) malloc(sizeof(uint8_t) * MEM_SIZE);
-    memset(s->Mem, 0, sizeof(uint8_t) * MEM_SIZE);
-    s->mem_begin = s->Mem;
-    s->block_begin = s->block;
-    s->Ans = 0;
-    s->Type = 0;
-    s->A.i16[0] = 0;
-    s->A.i16[1] = 0;
-    s->B.i16[0] = 0;
-    s->B.i16[1] = 0;
-    s->prev = 0;
-    s->lookahead = 0;
-    #if defined(MAX_ITERATION_COUNT) || defined(PRINT_ITERATION_COUNT)
-      s->_ic = 0;
-    #endif
-    s->stack = 1;
-    s->inc = 1;
-    s->r = -1;
+  if (!s->_m) {
+    s->_m = (uint8_t*) malloc(sizeof(uint8_t) * MEM_SIZE);
+    memset(s->_m, 0, sizeof(uint8_t) * MEM_SIZE);
+    s->_m0 = s->_m;
+    s->_src0 = s->src;
+    s->_matching = 1;
+    s->_forward = 1;
+    s->_prev_step_result = -1;
   }
-  uint8_t len = strlen((char*) s->block);
-  uint8_t code = *(s->block);
-  if (s->r > 0){
-    s->block += len-1;
-    code = *(s->block);
-    while (code) {
-      if (code == IF){
-        s->stack++;
-      } else if (code == ELSE && s->r == JM_EIFE && s->stack == 1) {
+  uint8_t len = strlen((char*) s->src);
+  uint8_t token = *(s->src);
+  if (s->_prev_step_result > 0){
+    s->src += len-1;
+    token = *(s->src);
+    while (token) {
+      if (token == IF){
+        s->_matching++;
+      } else if (token == ELSE && s->_prev_step_result == JM_EIFE && s->_matching == 1) {
         break;
-      } else if (code == ENDIF) {
-        s->stack--;
-        if (s->r <= JM_ENIF && ! s->stack){
+      } else if (token == ENDIF) {
+        s->_matching--;
+        if (s->_prev_step_result <= JM_ENIF && ! s->_matching){
           break;
         }
-      } else if (code == WHILE) {
-        s->stack++;
-        if (s->r >= JM_WHI0 && ! s->stack){
+      } else if (token == WHILE) {
+        s->_matching++;
+        if (s->_prev_step_result >= JM_WHI0 && ! s->_matching){
           break;
         }
-      } else if (code == ENDWHILE) {
-        s->stack--;
-        if (s->r == JM_EWHI && ! s->stack){
+      } else if (token == ENDWHILE) {
+        s->_matching--;
+        if (s->_prev_step_result == JM_EWHI && ! s->_matching){
           break;
         }
       }
-      if (s->block - s->block_begin == 0 && s->inc < 0) {
+      if (s->src - s->_src0 == 0 && ! s->_forward) {
         return -1;
       }
-      s->block += s->inc;
-      code = *(s->block);
-      if (!code){
-        return s->stack;
+      s->src += s->_forward ? 1 : -1;
+      token = *(s->src);
+      if (!token){
+        return s->_matching;
       }
     }
   }
   while (1){
-    if (!code){
+    if (!token){
       return 0; //EOF
     }
-    s->r = step(*(s->block), s);
+    s->_prev_step_result = step(*(s->src), s);
 
     #ifdef DEBUG_INTERPRETER
-      uint8_t at = s->Mem - s->mem_begin;
+      uint8_t at = s->_m - s->_m0;
       for (uint8_t i = 0; i <= at + 1; i++){
         if (i == at) {
-          _printf("[%d|%d> ", s->A.i32, s->B.i32);
+          _printf("[%d|%d> ", s->a.i32, s->b.i32);
         }
-        _printf("[%d] ", (s->mem_begin)[i]);
+        _printf("[%d] ", (s->_m0)[i]);
       }
-      _printf("\t\t- %c \n", code);
+      _printf("\t\t- %c \n", token);
     #endif
 
-    if (s->r < 0){
-      return s->r;
-    } else if (s->r == 0) {
-      s->block++;
-      code = *(s->block);
+    if (s->_prev_step_result < 0){
+      return s->_prev_step_result;
+    } else if (s->_prev_step_result == 0) {
+      s->src++;
+      token = *(s->src);
     } else {
-      while (code) {
-        if (s->block - s->block_begin == 0 && s->inc < 0) {
+      while (token) {
+        if (s->src - s->_src0 == 0 && ! s->_forward) {
           return -1;
         }
-        s->block += s->inc;
-        code = *(s->block);
-        if (code == IF){
-          s->stack++;
-        } else if (code == ELSE && s->r == JM_EIFE && s->stack == 1) {
+        s->src += s->_forward ? 1 : -1;;
+        token = *(s->src);
+        if (token == IF){
+          s->_matching++;
+        } else if (token == ELSE && s->_prev_step_result == JM_EIFE && s->_matching == 1) {
           break;
-        } else if (code == ENDIF) {
-          s->stack--;
-          if (s->r <= JM_ENIF && ! s->stack){
+        } else if (token == ENDIF) {
+          s->_matching--;
+          if (s->_prev_step_result <= JM_ENIF && ! s->_matching){
             break;
           }
-        } else if (code == WHILE) {
-          s->stack++;
-          if (s->r >= JM_WHI0 && ! s->stack){
+        } else if (token == WHILE) {
+          s->_matching++;
+          if (s->_prev_step_result >= JM_WHI0 && ! s->_matching){
             break;
           }
-        } else if (code == ENDWHILE) {
-          s->stack--;
-          if (s->r == JM_EWHI && ! s->stack){
+        } else if (token == ENDWHILE) {
+          s->_matching--;
+          if (s->_prev_step_result == JM_EWHI && ! s->_matching){
             break;
           }
         }
-        if (!code){
-          return s->stack;
+        if (!token){
+          return s->_matching;
         }
       }
-      if (s->r != JM_WHI0){
-        s->block++;
-        code = *(s->block);
+      if (s->_prev_step_result != JM_WHI0){
+        s->src++;
+        token = *(s->src);
       }
     }
   }
   return 0;
 }
 
-int8_t step(uint8_t code, State * s){
-  uint8_t prev = s->prev;
+int8_t step(uint8_t token, State * s){
+  uint8_t prev = s->_prev_token;
+  s->_ic++;
   #ifdef MAX_ITERATION_COUNT
     if (s->_ic > MAX_ITERATION_COUNT) {
       return -1;
@@ -168,61 +158,58 @@ int8_t step(uint8_t code, State * s){
     }
   #endif
 
-  #if defined(MAX_ITERATION_COUNT) || defined(PRINT_ITERATION_COUNT)
-    s->_ic++;
-  #endif
-  if (s->lookahead){
-    s->lookahead = 0;
+  if (s->_lookahead){
+    s->_lookahead = 0;
     switch (prev) {
       case COND_MODIFIER:
-        switch (code) {
+        switch (token) {
           case C_EQ:
-            if (s->Type == INT8) s->Ans = s->A.i8[0] == s->B.i8[0];
-            else if (s->Type == INT16) s->Ans = s->A.i16[0] == s->B.i16[0];
-            else if (s->Type == INT32) s->Ans = s->A.i32 == s->B.i32;
-            else if (s->Type == FLOAT) s->Ans = s->A.f32 == s->B.f32;
+            if (s->_type == INT8) s->_ans = s->a.i8[0] == s->b.i8[0];
+            else if (s->_type == INT16) s->_ans = s->a.i16[0] == s->b.i16[0];
+            else if (s->_type == INT32) s->_ans = s->a.i32 == s->b.i32;
+            else if (s->_type == FLOAT) s->_ans = s->a.f32 == s->b.f32;
             break;
           case C_NEQ:
-            if (s->Type == INT8) s->Ans = s->A.i8[0] != s->B.i8[0];
-            else if (s->Type == INT16) s->Ans = s->A.i16[0] != s->B.i16[0];
-            else if (s->Type == INT32) s->Ans = s->A.i32 != s->B.i32;
-            else if (s->Type == FLOAT) s->Ans = s->A.f32 != s->B.f32;
+            if (s->_type == INT8) s->_ans = s->a.i8[0] != s->b.i8[0];
+            else if (s->_type == INT16) s->_ans = s->a.i16[0] != s->b.i16[0];
+            else if (s->_type == INT32) s->_ans = s->a.i32 != s->b.i32;
+            else if (s->_type == FLOAT) s->_ans = s->a.f32 != s->b.f32;
             break;
           case C_LT:
-            if (s->Type == INT8) s->Ans = s->A.i8[0] < s->B.i8[0];
-            else if (s->Type == INT16) s->Ans = s->A.i16[0] < s->B.i16[0];
-            else if (s->Type == INT32) s->Ans = s->A.i32 < s->B.i32;
-            else if (s->Type == FLOAT) s->Ans = s->A.f32 < s->B.f32;
+            if (s->_type == INT8) s->_ans = s->a.i8[0] < s->b.i8[0];
+            else if (s->_type == INT16) s->_ans = s->a.i16[0] < s->b.i16[0];
+            else if (s->_type == INT32) s->_ans = s->a.i32 < s->b.i32;
+            else if (s->_type == FLOAT) s->_ans = s->a.f32 < s->b.f32;
             break;
           case C_GT:
-            if (s->Type == INT8) s->Ans = s->A.i8[0] > s->B.i8[0];
-            else if (s->Type == INT16) s->Ans = s->A.i16[0] > s->B.i16[0];
-            else if (s->Type == INT32) s->Ans = s->A.i32 > s->B.i32;
-            else if (s->Type == FLOAT) s->Ans = s->A.f32 > s->B.f32;
+            if (s->_type == INT8) s->_ans = s->a.i8[0] > s->b.i8[0];
+            else if (s->_type == INT16) s->_ans = s->a.i16[0] > s->b.i16[0];
+            else if (s->_type == INT32) s->_ans = s->a.i32 > s->b.i32;
+            else if (s->_type == FLOAT) s->_ans = s->a.f32 > s->b.f32;
             break;
           case C_LE:
-            if (s->Type == INT8) s->Ans = s->A.i8[0] <= s->B.i8[0];
-            else if (s->Type == INT16) s->Ans = s->A.i16[0] <= s->B.i16[0];
-            else if (s->Type == INT32) s->Ans = s->A.i32 <= s->B.i32;
-            else if (s->Type == FLOAT) s->Ans = s->A.f32 <= s->B.f32;
+            if (s->_type == INT8) s->_ans = s->a.i8[0] <= s->b.i8[0];
+            else if (s->_type == INT16) s->_ans = s->a.i16[0] <= s->b.i16[0];
+            else if (s->_type == INT32) s->_ans = s->a.i32 <= s->b.i32;
+            else if (s->_type == FLOAT) s->_ans = s->a.f32 <= s->b.f32;
             break;
           case C_GE:
-            if (s->Type == INT8) s->Ans = s->A.i8[0] >= s->B.i8[0];
-            else if (s->Type == INT16) s->Ans = s->A.i16[0] >= s->B.i16[0];
-            else if (s->Type == INT32) s->Ans = s->A.i32 >= s->B.i32;
-            else if (s->Type == FLOAT) s->Ans = s->A.f32 >= s->B.f32;
+            if (s->_type == INT8) s->_ans = s->a.i8[0] >= s->b.i8[0];
+            else if (s->_type == INT16) s->_ans = s->a.i16[0] >= s->b.i16[0];
+            else if (s->_type == INT32) s->_ans = s->a.i32 >= s->b.i32;
+            else if (s->_type == FLOAT) s->_ans = s->a.f32 >= s->b.f32;
             break;
           case C_NOT_NULL:
-            if (s->Type == INT8) s->Ans = s->A.i8[0] != 0;
-            else if (s->Type == INT16) s->Ans = s->A.i16[0] != 0;
-            else if (s->Type == INT32) s->Ans = s->A.i32 != 0;
-            else if (s->Type == FLOAT) s->Ans = s->A.f32 != 0;
+            if (s->_type == INT8) s->_ans = s->a.i8[0] != 0;
+            else if (s->_type == INT16) s->_ans = s->a.i16[0] != 0;
+            else if (s->_type == INT32) s->_ans = s->a.i32 != 0;
+            else if (s->_type == FLOAT) s->_ans = s->a.f32 != 0;
             break;
           case C_ZERO:
-            if (s->Type == INT8) s->Ans = s->A.i8[0] == 0;
-            else if (s->Type == INT16) s->Ans = s->A.i16[0] == 0;
-            else if (s->Type == INT32) s->Ans = s->A.i32 == 0;
-            else if (s->Type == FLOAT) s->Ans = s->A.f32 == 0;
+            if (s->_type == INT8) s->_ans = s->a.i8[0] == 0;
+            else if (s->_type == INT16) s->_ans = s->a.i16[0] == 0;
+            else if (s->_type == INT32) s->_ans = s->a.i32 == 0;
+            else if (s->_type == FLOAT) s->_ans = s->a.f32 == 0;
             break;
           default:
             pe();
@@ -231,44 +218,44 @@ int8_t step(uint8_t code, State * s){
     }
   }
 
-  switch (code) {
+  switch (token) {
     case COND_MODIFIER:
-      s->lookahead = 1;
+      s->_lookahead = 1;
       break;
     case LEFT:
       if (prev == SHIFT_LEFT){
-        if (s->Type == INT8) s->A.i8[0] <<= s->B.i8[0];
-        else if (s->Type == INT16) s->A.i16[0] <<= s->B.i16[0];
-        else if (s->Type == INT32) s->A.i32 <<= s->B.i32;
+        if (s->_type == INT8) s->a.i8[0] <<= s->b.i8[0];
+        else if (s->_type == INT16) s->a.i16[0] <<= s->b.i16[0];
+        else if (s->_type == INT32) s->a.i32 <<= s->b.i32;
         return 0;
       } else {
-        uint8_t mod = (prev > '0' && prev < '9') ? s->A.i8[0] : 1;
-        if (s->Type == INT8) s->Mem -= 1 * mod;
-        else if (s->Type == INT16) s->Mem -= 2 * mod;
-        else if (s->Type == INT32) s->Mem -= 4 * mod;
-        else if (s->Type == FLOAT) s->Mem -= 4 * mod;
+        uint8_t mod = (prev > '0' && prev < '9') ? s->a.i8[0] : 1;
+        if (s->_type == INT8) s->_m -= 1 * mod;
+        else if (s->_type == INT16) s->_m -= 2 * mod;
+        else if (s->_type == INT32) s->_m -= 4 * mod;
+        else if (s->_type == FLOAT) s->_m -= 4 * mod;
         break;
       }
     case RIGHT:
       if (prev == SHIFT_RIGHT){
-        if (s->Type == INT8) s->A.i8[0] >>= s->B.i8[0];
-        else if (s->Type == INT16) s->A.i16[0] >>= s->B.i16[0];
-        else if (s->Type == INT32) s->A.i32 >>= s->B.i32;
+        if (s->_type == INT8) s->a.i8[0] >>= s->b.i8[0];
+        else if (s->_type == INT16) s->a.i16[0] >>= s->b.i16[0];
+        else if (s->_type == INT32) s->a.i32 >>= s->b.i32;
         return 0;
       } else {
-        uint8_t mod = (prev > '0' && prev < '9') ? s->A.i8[0] : 1;
-        if (s->Type == INT8) s->Mem += 1 * mod;
-        else if (s->Type == INT16) s->Mem += 2 * mod;
-        else if (s->Type == INT32) s->Mem += 4 * mod;
-        else if (s->Type == FLOAT) s->Mem += 4 * mod;
+        uint8_t mod = (prev > '0' && prev < '9') ? s->a.i8[0] : 1;
+        if (s->_type == INT8) s->_m += 1 * mod;
+        else if (s->_type == INT16) s->_m += 2 * mod;
+        else if (s->_type == INT32) s->_m += 4 * mod;
+        else if (s->_type == FLOAT) s->_m += 4 * mod;
         break;
       }
     case START_STACK:
-      s->StackStart = s->Mem;
+      s->v_stack0 = s->_m;
       break;
     case STACK_HEIGHT:
-      s->A.i16[0] = (s->Mem - s->StackStart);
-      s->A.i16[1] = 0;
+      s->a.i16[0] = (s->_m - s->v_stack0);
+      s->a.i16[1] = 0;
       break;
     case PUSH:
       step(STORE, s);
@@ -286,134 +273,134 @@ int8_t step(uint8_t code, State * s){
     case ENDWHILE:
       {
         uint8_t jmpmatch = JM_NONE;
-        s->stack = 1;
-        s->inc = 1;
-        if (code == IF && !s->Ans){
+        s->_matching = 1;
+        s->_forward = 1;
+        if (token == IF && !s->_ans){
           // jump to else : + 1 or endif ) + 1
           jmpmatch = JM_EIFE;
-        } else if (code == ELSE){
+        } else if (token == ELSE){
           //jump to endif ) + 1
           jmpmatch = JM_ENIF;
-        } else if (code == WHILE && !s->Ans){
+        } else if (token == WHILE && !s->_ans){
           //jump to ENDWHILE ] + 1
           jmpmatch = JM_EWHI;
-        } else if (code == BREAK){
+        } else if (token == BREAK){
           //jump to ENDWHILE ] + 1
           jmpmatch = JM_EWHI;
-        } else if (code == CONTINUE){
+        } else if (token == CONTINUE){
           //jump to while [
-          s->inc = -1;
-          s->stack = -1;
+          s->_forward = 0;
+          s->_matching = -1;
           jmpmatch = JM_WHI0;
-        } else if (code == ENDWHILE && s->Ans){
+        } else if (token == ENDWHILE && s->_ans){
           //jump to WHILE [ + 1
-          s->inc = -1;
-          s->stack = -1;
+          s->_forward = 0;
+          s->_matching = -1;
           jmpmatch = JM_WHI1;
         }
         // printf("%c %d??\n", prev, jmpmatch);
-        s->prev = code;
+        s->_prev_token = token;
         return jmpmatch;
       }
     case SUM:
-      if (s->Type == INT8) s->A.i8[0] += s->B.i8[0];
-      else if (s->Type == INT16) s->A.i16[0] += s->B.i16[0];
-      else if (s->Type == INT32) s->A.i32 += s->B.i32;
-      else if (s->Type == FLOAT) s->A.f32 += s->B.f32;
+      if (s->_type == INT8) s->a.i8[0] += s->b.i8[0];
+      else if (s->_type == INT16) s->a.i16[0] += s->b.i16[0];
+      else if (s->_type == INT32) s->a.i32 += s->b.i32;
+      else if (s->_type == FLOAT) s->a.f32 += s->b.f32;
       break;
     case SUB:
-      if (s->Type == INT8) s->A.i8[0] -= s->B.i8[0];
-      else if (s->Type == INT16) s->A.i16[0] -= s->B.i16[0];
-      else if (s->Type == INT32) s->A.i32 -= s->B.i32;
-      else if (s->Type == FLOAT) s->A.f32 -= s->B.f32;
+      if (s->_type == INT8) s->a.i8[0] -= s->b.i8[0];
+      else if (s->_type == INT16) s->a.i16[0] -= s->b.i16[0];
+      else if (s->_type == INT32) s->a.i32 -= s->b.i32;
+      else if (s->_type == FLOAT) s->a.f32 -= s->b.f32;
       break;
     case MULTI:
-      if (s->Type == INT8) s->A.i8[0] *= s->B.i8[0];
-      else if (s->Type == INT16) s->A.i16[0] *= s->B.i16[0];
-      else if (s->Type == INT32) s->A.i32 *= s->B.i32;
-      else if (s->Type == FLOAT) s->A.f32 *= s->B.f32;
+      if (s->_type == INT8) s->a.i8[0] *= s->b.i8[0];
+      else if (s->_type == INT16) s->a.i16[0] *= s->b.i16[0];
+      else if (s->_type == INT32) s->a.i32 *= s->b.i32;
+      else if (s->_type == FLOAT) s->a.f32 *= s->b.f32;
       break;
     case DIV:
-      if (s->Type == INT8) s->A.i8[0] /= s->B.i8[0];
-      else if (s->Type == INT16) s->A.i16[0] /= s->B.i16[0];
-      else if (s->Type == INT32) s->A.i32 /= s->B.i32;
-      else if (s->Type == FLOAT) s->A.f32 /= s->B.f32;
+      if (s->_type == INT8) s->a.i8[0] /= s->b.i8[0];
+      else if (s->_type == INT16) s->a.i16[0] /= s->b.i16[0];
+      else if (s->_type == INT32) s->a.i32 /= s->b.i32;
+      else if (s->_type == FLOAT) s->a.f32 /= s->b.f32;
       break;
     case MOD:
-      if (s->Type == INT8) s->A.i8[0] %= s->B.i8[0];
-      else if (s->Type == INT16) s->A.i16[0] %= s->B.i16[0];
-      else if (s->Type == INT32) s->A.i32 %= s->B.i32;
+      if (s->_type == INT8) s->a.i8[0] %= s->b.i8[0];
+      else if (s->_type == INT16) s->a.i16[0] %= s->b.i16[0];
+      else if (s->_type == INT32) s->a.i32 %= s->b.i32;
       break;
     case AND:
-      if (s->Type == INT8) s->A.i8[0] &= s->B.i8[0];
-      else if (s->Type == INT16) s->A.i16[0] &= s->B.i16[0];
-      else if (s->Type == INT32) s->A.i32 &= s->B.i32;
+      if (s->_type == INT8) s->a.i8[0] &= s->b.i8[0];
+      else if (s->_type == INT16) s->a.i16[0] &= s->b.i16[0];
+      else if (s->_type == INT32) s->a.i32 &= s->b.i32;
       break;
     case OR:
-      if (s->Type == INT8) s->A.i8[0] |= s->B.i8[0];
-      else if (s->Type == INT16) s->A.i16[0] |= s->B.i16[0];
-      else if (s->Type == INT32) s->A.i32 |= s->B.i32;
+      if (s->_type == INT8) s->a.i8[0] |= s->b.i8[0];
+      else if (s->_type == INT16) s->a.i16[0] |= s->b.i16[0];
+      else if (s->_type == INT32) s->a.i32 |= s->b.i32;
       break;
     case XOR:
-      if (s->Type == INT8) s->A.i8[0] ^= s->B.i8[0];
-      else if (s->Type == INT16) s->A.i16[0] ^= s->B.i16[0];
-      else if (s->Type == INT32) s->A.i32 ^= s->B.i32;
+      if (s->_type == INT8) s->a.i8[0] ^= s->b.i8[0];
+      else if (s->_type == INT16) s->a.i16[0] ^= s->b.i16[0];
+      else if (s->_type == INT32) s->a.i32 ^= s->b.i32;
       break;
     case INV:
-      if (s->Type == INT8) s->A.i8[0] = ~s->A.i8[0];
-      else if (s->Type == INT16) s->A.i16[0] = ~s->A.i16[0];
-      else if (s->Type == INT32) s->A.i32 = ~s->A.i32;
+      if (s->_type == INT8) s->a.i8[0] = ~s->a.i8[0];
+      else if (s->_type == INT16) s->a.i16[0] = ~s->a.i16[0];
+      else if (s->_type == INT32) s->a.i32 = ~s->a.i32;
       break;
     case ZERO:
-      s->A.i16[0] = 0;
-      s->A.i16[1] = 0;
-      s->B.i16[0] = 0;
-      s->B.i16[1] = 0;
+      s->a.i16[0] = 0;
+      s->a.i16[1] = 0;
+      s->b.i16[0] = 0;
+      s->b.i16[1] = 0;
       break;
     case SWITCH:
-      s->A.i8[0] ^= s->B.i8[0];
-      s->B.i8[0] ^= s->A.i8[0];
-      s->A.i8[0] ^= s->B.i8[0];
-      s->A.i8[1] ^= s->B.i8[1];
-      s->B.i8[1] ^= s->A.i8[1];
-      s->A.i8[1] ^= s->B.i8[1];
-      s->A.i8[2] ^= s->B.i8[2];
-      s->B.i8[2] ^= s->A.i8[2];
-      s->A.i8[2] ^= s->B.i8[2];
-      s->A.i8[3] ^= s->B.i8[3];
-      s->B.i8[3] ^= s->A.i8[3];
-      s->A.i8[3] ^= s->B.i8[3];
+      s->a.i8[0] ^= s->b.i8[0];
+      s->b.i8[0] ^= s->a.i8[0];
+      s->a.i8[0] ^= s->b.i8[0];
+      s->a.i8[1] ^= s->b.i8[1];
+      s->b.i8[1] ^= s->a.i8[1];
+      s->a.i8[1] ^= s->b.i8[1];
+      s->a.i8[2] ^= s->b.i8[2];
+      s->b.i8[2] ^= s->a.i8[2];
+      s->a.i8[2] ^= s->b.i8[2];
+      s->a.i8[3] ^= s->b.i8[3];
+      s->b.i8[3] ^= s->a.i8[3];
+      s->a.i8[3] ^= s->b.i8[3];
       break;
     case STORE:
-      if (s->Type == INT8) *((uint8_t*)(s->Mem)) = s->A.i8[0];
-      else if (s->Type == INT16) *((uint16_t*)(s->Mem)) = s->A.i16[0];
-      else if (s->Type == INT32) *((uint32_t*)(s->Mem)) = s->A.i32;
-      else if (s->Type == FLOAT) *((float*)(s->Mem)) = s->A.f32;
+      if (s->_type == INT8) *((uint8_t*)(s->_m)) = s->a.i8[0];
+      else if (s->_type == INT16) *((uint16_t*)(s->_m)) = s->a.i16[0];
+      else if (s->_type == INT32) *((uint32_t*)(s->_m)) = s->a.i32;
+      else if (s->_type == FLOAT) *((float*)(s->_m)) = s->a.f32;
       break;
     case LOAD:
-      if (s->Type == INT8) s->A.i8[0] = *((uint8_t*)(s->Mem));
-      else if (s->Type == INT16) s->A.i16[0] = *((uint16_t*)(s->Mem));
-      else if (s->Type == INT32) s->A.i32 = *((uint32_t*)(s->Mem));
-      else if (s->Type == FLOAT) s->A.f32 = *((float*)(s->Mem));
+      if (s->_type == INT8) s->a.i8[0] = *((uint8_t*)(s->_m));
+      else if (s->_type == INT16) s->a.i16[0] = *((uint16_t*)(s->_m));
+      else if (s->_type == INT32) s->a.i32 = *((uint32_t*)(s->_m));
+      else if (s->_type == FLOAT) s->a.f32 = *((float*)(s->_m));
       break;
     case T_INT8:
-      s->Type = 0;
+      s->_type = 0;
       break;
     case T_INT16:
-      s->Type = 1;
+      s->_type = 1;
       break;
     case T_INT32:
-      s->Type = 2;
+      s->_type = 2;
       break;
     case T_FLOAT:
-      s->Type = 3;
+      s->_type = 3;
       break;
     case IN:
     case OUT:
       if (prev >= 'A' && prev <= 'Z'){
-        api(prev, code, s);
+        api(prev, token, s);
       } else {
-        api(0, code, s);
+        api(0, token, s);
       }
       break;
     case ENDIF:
@@ -421,25 +408,25 @@ int8_t step(uint8_t code, State * s){
       break;
 
     default:
-      if (code >= '0' && code <= '9'){
+      if (token >= '0' && token <= '9'){
         if (!prev || ((prev < '0' || prev > '9') && prev != T_INT8 && prev != T_INT16 && prev != T_INT32 && prev != T_FLOAT)){
-          if (s->Type == FLOAT) {
-            s->A.f32 = (code - '0');
+          if (s->_type == FLOAT) {
+            s->a.f32 = (token - '0');
           } else {
-            s->A.i16[0] = (code - '0');
-            s->A.i16[1] = 0;
+            s->a.i16[0] = (token - '0');
+            s->a.i16[1] = 0;
           }
         } else {
-          if (s->Type == INT8) s->A.i8[0] = s->A.i8[0]*10 + (code - '0');
-          else if (s->Type == INT16) s->A.i16[0] = s->A.i16[0]*10 + (code - '0');
-          else if (s->Type == INT32) s->A.i32 = s->A.i32*10 + (code - '0');
-          else if (s->Type == FLOAT) s->A.f32 = s->A.f32*10 + (code - '0');
+          if (s->_type == INT8) s->a.i8[0] = s->a.i8[0]*10 + (token - '0');
+          else if (s->_type == INT16) s->a.i16[0] = s->a.i16[0]*10 + (token - '0');
+          else if (s->_type == INT32) s->a.i32 = s->a.i32*10 + (token - '0');
+          else if (s->_type == FLOAT) s->a.f32 = s->a.f32*10 + (token - '0');
         }
       } else {
         pe();
       }
       break;
   }
-  s->prev = code;
+  s->_prev_token = token;
   return 0;
 }

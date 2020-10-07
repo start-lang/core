@@ -35,30 +35,31 @@ typedef union {
 } Register;
 
 typedef struct {
-  Register A;
-  Register B;
-  uint8_t Ans:1;
-  uint8_t Type:2;
-  uint8_t Function;
-  uint8_t* StackStart;
-  uint8_t* Mem;
-  uint8_t* block;
-  uint8_t* block_begin;
 
-  #if defined(MAX_ITERATION_COUNT) || defined(PRINT_ITERATION_COUNT)
-    uint16_t _ic;
-  #endif
+  Register a;
+  Register b;
 
-  uint8_t* mem_begin;
-  uint8_t prev; // eq
-  uint8_t lookahead; // change to bool :1
-  int8_t stack; //eq
-  int8_t inc; // pode ser foward (1) ou backward (-1) -> bool
-  int8_t r;
+  uint8_t* src;
+  uint8_t* _src0;
+  uint8_t* _m;
+  uint8_t* _m0;
+  uint8_t* v_stack0; // TODO: remove virtual stack
+
+  uint16_t _ic;
+
+  uint8_t _ans:1;
+  uint8_t _type:2;
+  uint8_t _forward:1;
+  uint8_t _lookahead:1;
+
+  uint8_t _prev_token;
+  int8_t  _matching;
+  int8_t  _prev_step_result;
+
 } State;
 
 int8_t blockrun(State * s);
-int8_t step(uint8_t code, State * s);
+int8_t step(uint8_t token, State * s);
 
 extern void api(uint8_t pre, uint8_t op, State * s);
 

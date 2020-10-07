@@ -223,25 +223,19 @@ uint8_t step(uint8_t token, State * s){
   }
 
   if ((token >= 'A' && token <= 'Z') || token == '_'){
-    if (!s->_id) {
-      s->_id = (uint8_t*) malloc(16);
-      memset(s->_id, 0, 16);
-    }
-    if (s->_idlen == 16){ // ta feio
-      s->_id = (uint8_t*) realloc(s->_id, 32);
-    }
+    s->_id = (uint8_t*) realloc(s->_id, s->_idlen + 1);
     s->_id[s->_idlen] = token;
     s->_idlen++;
     s->_prev_token = token;
     return 0;
   } else if (s->_idlen) {
+    s->_id = (uint8_t*) realloc(s->_id, s->_idlen + 1);
+    s->_id[s->_idlen] = 0;
     if (token == NEW_VAR) {
-      s->_id = (uint8_t*) realloc(s->_id, s->_idlen + 1);
       s->_vars = (Variable*) realloc(s->_vars, (s->_varc + 1)*sizeof(Variable));
       s->_vars[s->_varc] = (Variable){.name = s->_id, .pos = s->_m - s->_m0};
       s->_varc++;
     } else if (token == STARTFUNCTION) {
-      s->_id = (uint8_t*) realloc(s->_id, s->_idlen + 1);
       s->a.i16[0] = 0; // length src
       s->b.i16[0] = 1; // open/close
       s->_funcs = (RTFunction*) realloc(s->_funcs, (s->_funcc + 1)*sizeof(RTFunction));

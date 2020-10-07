@@ -1,12 +1,12 @@
 #include <stdint.h>
 #include <tokens.h>
 
+#ifndef STAR_T_H
+#define STAR_T_H
+
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-#ifndef STAR_T_H
-#define STAR_T_H
 
 #define MEM_SIZE 64
 

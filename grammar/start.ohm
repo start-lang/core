@@ -1,0 +1,107 @@
+start {
+
+	main
+    	= block
+    
+    function_def
+    	= id "{" block "}"
+    
+    if_statement 
+    	= "(" block ":"? block ")" 
+    
+    while_statement 
+    	= "[" (statement | "x" | "c")*  "]" 
+        
+    block
+    	= statement *
+    
+    statement
+    	= nop | operators | number | string
+        | if_statement
+        | while_statement
+        | function_def | set_var | jmp_var
+
+	jmp_var
+    	= id
+        
+    set_var
+    	=	id "^"
+
+	operators
+    	= type
+        | mem
+        | cmp
+        | math
+        | stack
+        | bitwise
+
+	type
+    	= "b"
+        | "s"
+        | "i"
+        | "f"
+        
+    mem
+    	= ">"
+        | "<"
+        | "z"
+        | "@"
+        | "!"
+        | ";"
+        | "#"
+        | "m"
+     
+	cmp
+    	= "?" cmp_op
+     
+     cmp_op
+     	= ">"
+        | "<"
+        | "="
+        | "!"
+        | "l"
+        | "g"
+        | "?"
+        | "z"
+        | "h"
+        
+	math 
+    	= "+"
+        | "-"
+        | "*"
+        | "/"
+        | "%"
+     
+	stack
+    	= "$"
+        | "p"
+        | "o"
+        | "h"
+        
+	bitwise 
+    	= "&"
+        | "|"
+        | "^"
+        | "<"
+        | ">"
+        | "~"
+	
+    string_char
+    	= ~escape_char any --non_esc
+        |  "\\" escape_char --escaped
+    
+    escape_char
+    	= "\\" | "\"" 
+    
+    string
+    	= "\"" string_char * "\""
+    
+    id 
+    	= (upper | "_")+
+	
+    number
+    	= digit+
+    
+    nop 
+    	= space
+}

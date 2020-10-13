@@ -52,3 +52,10 @@ cov: build
 		gcov star_t.c > /dev/null && \
 		./lib/microcuts/tools/coverage.py
 	@ make clean > /dev/null
+
+svg:
+	@ pip3 --version || { echo "please install pip for python3"; }
+	@ python3 -c "import railroad" || { pip3 install --user railroad-diagrams; }
+	@ rm -f grammar/railroad-svg/*.svg
+	@ cd grammar/railroad-svg && python3 update-svg.py desktop && python3 update-svg.py mobile
+	@ cd grammar/railroad-svg && python3 update-svg.py desktop blog && python3 update-svg.py mobile blog

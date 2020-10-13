@@ -579,6 +579,8 @@ uint8_t step(uint8_t token, State * s){
     case ENDIF:
     case NOP:
     case 0:
+    case '\n':
+    case '\t':
       break;
     default:
       if (token >= '0' && token <= '9'){

@@ -31,6 +31,7 @@ char * load_file(const char * fname){
 int8_t run(char * src) {
   s = (State*) malloc(sizeof(State));
   memset(s, 0, sizeof(State));
+  memset(out, 0, 256);
   s->src = (uint8_t*) src;
   clock_t begin = clock();
   int8_t result = blockrun(s, 1);
@@ -82,6 +83,10 @@ Function ext[] = {
   {(uint8_t*)"PRINTSTR", f_printstr}, 
   {NULL, undef},
 };
+
+char * getBuffer(){
+  return out;
+}
 
 void clean(){
   free_memory(s);
@@ -367,7 +372,6 @@ int main(void){
 
   begin_section("Pi");
   {
-    memset(out, 0, 256);
     char * src = load_file("test/pi.st"); 
     char pi[] = "3.141592653";
     assert_str_eq(pi, (run(src), out));
@@ -377,7 +381,6 @@ int main(void){
 
   begin_section("Quine");
   {
-    memset(out, 0, 256);
     char * src = load_file("test/quine.st"); 
     assert_str_eq(src, (run(src), out));
     free(src);

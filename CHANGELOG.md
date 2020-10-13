@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   - syntax: Token `GOTO_ZERO 'z'`
 ### Changed
   - syntax: All upper case strings are now translated to api calls or memory jumps
+  - syntax: Newline and tab are now treated as NOP
 ### Removed
   - syntax: Token `TYPE_SET 't'`
   - syntax: Token `OUT '.'`

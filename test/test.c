@@ -66,7 +66,7 @@ int8_t f_printstr(State * s){
   return 0;
 }
 
-int8_t exceptionHandler(State * s){
+int8_t exception_handler(State * s){
   return 0;
 }
 
@@ -76,7 +76,7 @@ int8_t undef(State * s){
 }
 
 Function ext[] = {
-  {(uint8_t*)"", exceptionHandler},
+  {(uint8_t*)"", exception_handler},
   {(uint8_t*)"X", f_x}, 
   {(uint8_t*)"Y", f_y}, 
   {(uint8_t*)"PRINT", f_print}, 

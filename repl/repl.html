@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en-us">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <title>repl</title>
+    <style>
+      body {
+        font-family: monospace;
+        margin: 0;
+        padding-top: 3em;
+        padding: none;
+        font-size: 1.5em;
+        margin-left: 10%;
+        background-color: #383b42;
+        color: white;
+      }
+
+      textarea {
+        width: 90%;
+        font-size: 1em;
+        resize: none;
+        border: 1px solid white; 
+        color: white;
+        background-color: #383b42;   
+        margin-bottom: 0.3em;
+      }
+
+      textarea[readonly]{
+        background-color:#1c1f26;
+        color: lightgray;
+      }
+
+      img {
+        height: 3.7em;
+        margin: 1em; 
+        float: left;
+      }
+
+      h1 {
+        line-height: 3em;
+        margin: 0;
+      }
+
+      input[type=button] {
+        border: 1px solid white;
+        color: white;
+        background-color: #1c1f26;
+        font-size: .8em;
+      }
+
+      input[type=button]:hover {
+        border: 1px solid white;
+        color: white;
+        background-color: #5597ff;
+        font-size: .8em;
+      }
+
+      a {
+        color: white;
+      }
+
+      a:visited {
+        color: #5597ff;
+      }
+    </style>
+    <script type="text/javascript" src="https://unpkg.com/ohm-js@15.2.1/dist/ohm.js"></script>
+    <script type="text/ohm-js" src="/grammar/start.ohm"></script>
+  </head>
+  <body>
+    <img src="/docs/start_logo.svg">
+    <h1>REPL</h1>
+    <br>
+    <p>Input code:</p>
+    <textarea id="code" rows="6" spellcheck=false >"Hello World" PRINTSTR</textarea>
+    <br>
+    <input type="button" value="run" onclick="run_code();">
+    <p>Output:</p>
+    <textarea id="output" rows="10" readonly></textarea>
+    <br>
+    <br>
+    <a href="https://github.com/start-lang">Github</a>
+
+    <script type="text/javascript" src="/repl/repl.js"></script>
+    <script async type="text/javascript" src="/repl/core.js"></script>
+  </body>
+</html>
+
+

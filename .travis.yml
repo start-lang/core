@@ -2,9 +2,10 @@ language: cpp
 dist: focal
 services:
   - docker
-
 compiler:
   - gcc
 script:
   - make cov
   - make wasm
+after_success:
+  - bash <(curl -s https://codecov.io/bash)

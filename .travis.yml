@@ -1,0 +1,10 @@
+language: cpp
+dist: focal
+services:
+  - docker
+
+compiler:
+  - gcc
+script:
+  - make cov
+  - make wasm

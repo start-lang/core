@@ -10,6 +10,10 @@ State * s;
 char out[256] = "";
 double time_spent;
 
+int8_t step_callback(State * s) {
+  return 0;
+}
+
 char * load_file(const char * fname){
   char *source = NULL;
   FILE *fp = fopen(fname, "r");
@@ -77,10 +81,10 @@ int8_t undef(State * s){
 
 Function ext[] = {
   {(uint8_t*)"", exception_handler},
-  {(uint8_t*)"X", f_x}, 
-  {(uint8_t*)"Y", f_y}, 
-  {(uint8_t*)"PRINT", f_print}, 
-  {(uint8_t*)"PRINTSTR", f_printstr}, 
+  {(uint8_t*)"X", f_x},
+  {(uint8_t*)"Y", f_y},
+  {(uint8_t*)"PRINT", f_print},
+  {(uint8_t*)"PRINTSTR", f_printstr},
   {NULL, undef},
 };
 
@@ -241,7 +245,7 @@ int main(void){
   assert_eq((run("1(2)"), s->reg.i8[0]), 1);
   assert_eq((run("1(2:)"), s->reg.i8[0]), 1);
   assert_eq((run("1(:2)"), s->reg.i8[0]), 2);
-  // false 
+  // false
   assert_eq(run("?!(1:2)"), 0);
   assert_eq((run("?!(1:2)"), s->reg.i8[0]), 2);
   assert_eq((run("(2:3)"), s->reg.i8[0]), 3);
@@ -372,7 +376,7 @@ int main(void){
 
   begin_section("Pi");
   {
-    char * src = load_file("test/pi.st"); 
+    char * src = load_file("test/pi.st");
     char pi[] = "3.141592653";
     assert_str_eq(pi, (run(src), out));
     free(src);
@@ -381,7 +385,7 @@ int main(void){
 
   begin_section("Quine");
   {
-    char * src = load_file("test/quine.st"); 
+    char * src = load_file("test/quine.st");
     assert_str_eq(src, (run(src), out));
     free(src);
   }
@@ -390,7 +394,7 @@ int main(void){
   // begin_section("e");
   // {
   //   memset(out, 0, 256);
-  //   char * src = load_file("test/e.st"); 
+  //   char * src = load_file("test/e.st");
   //   assert_eq(run(src), 0);
   //   free(src);
   // }
@@ -405,7 +409,7 @@ int main(void){
   assert_eq((run("1!z"), s->_m - s->_m0), 1);
   assert_eq((run("1!>1!>1!2<z"), s->_m - s->_m0), 3);
   end_section();
-  
+
   // end_tests();
 
   printf("state size: %ld\n", sizeof(State));

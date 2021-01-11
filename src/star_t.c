@@ -100,7 +100,7 @@ int8_t blockrun(State * s, uint8_t last){
     s->_forward = 1;
     s->_prev_step_result = JM_ERR0;
   }
-  
+
   while (1){
     if (*(s->src) == 0){
       if (last){
@@ -121,14 +121,17 @@ int8_t blockrun(State * s, uint8_t last){
         return JM_ERR0;
       }
     #endif
-    
+
     #ifdef PRINT_ITERATION_COUNT
       if (s->_ic % PRINT_ITERATION_COUNT == 0) {
         msg("%d\n", s->_ic);
       }
     #endif
-      
+
     s->_prev_step_result = step(*(s->src), s);
+    if (step_callback(s) != 0){
+      return 0; // TODO change return val?
+    }
     if (s->sub){
       blockrun(s->sub, 1);
       for (uint8_t i = 0; i < s->sub->_varc; i++){
@@ -243,9 +246,21 @@ uint8_t step(uint8_t token, State * s){
     s->_id = (uint8_t*) realloc(s->_id, s->_idlen + 1);
     s->_id[s->_idlen] = 0;
     if (token == NEW_VAR) {
-      s->_vars = (Variable*) realloc(s->_vars, (s->_varc + 1)*sizeof(Variable));
-      s->_vars[s->_varc] = (Variable){.name = s->_id, .pos = s->_m - s->_m0};
-      s->_varc++;
+      uint8_t found = 0;
+      for (uint8_t i = 0; i < s->_varc; i++){
+        if (strcmp((char*)s->_vars[i].name, (char*)s->_id) == 0){
+          found = i + 1; //TODO
+          break;
+        }
+      }
+      if (!found){
+        s->_vars = (Variable*) realloc(s->_vars, (s->_varc + 1)*sizeof(Variable));
+        s->_vars[s->_varc] = (Variable){.name = s->_id, .pos = s->_m - s->_m0};
+        s->_varc++;
+      } else {
+        (s->_vars[found - 1]).pos = s->_m - s->_m0;
+        free(s->_id);
+      }
     } else if (token == STARTFUNCTION) {
       s->_lensrc = 0; // length src
       s->_fmatching = 1; // open/close
@@ -539,17 +554,17 @@ uint8_t step(uint8_t token, State * s){
       else if (s->_type == INT32) *((uint32_t*) s->_m) = ~*((uint32_t*) s->_m);
       break;
     case SWITCH:
-      if (s->_type == INT8) 
-        s->_m[0] ^= REG.i8[0], 
-        REG.i8[0] ^= s->_m[0], 
+      if (s->_type == INT8)
+        s->_m[0] ^= REG.i8[0],
+        REG.i8[0] ^= s->_m[0],
         s->_m[0] ^= REG.i8[0];
-      else if (s->_type == INT16) 
-        *((uint16_t*) s->_m) ^= REG.i16[0], 
-        REG.i16[0] ^= *((uint16_t*) s->_m), 
+      else if (s->_type == INT16)
+        *((uint16_t*) s->_m) ^= REG.i16[0],
+        REG.i16[0] ^= *((uint16_t*) s->_m),
         *((uint16_t*) s->_m) ^= REG.i16[0];
-      else 
-        *((uint32_t*) s->_m) ^= REG.i32, 
-        REG.i32 ^= *((uint32_t*) s->_m), 
+      else
+        *((uint32_t*) s->_m) ^= REG.i32,
+        REG.i32 ^= *((uint32_t*) s->_m),
         *((uint32_t*) s->_m) ^= REG.i32;
       break;
     case STORE:

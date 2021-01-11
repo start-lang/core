@@ -74,6 +74,7 @@ typedef struct _State {
   
 } State;
 
+extern int8_t step_callback(State * s);
 
 #define RM ((Register*)s->_m)[0]
 #define REG s->reg
@@ -88,8 +89,6 @@ typedef struct {
 } Function;
 
 extern Function ext[];
-
-extern void api(uint8_t pre, uint8_t op, State * s);
 
 #ifdef __cplusplus
 }

@@ -5,11 +5,15 @@
 #include <time.h>
 
 //expf: run get_buffer clean
- 
+
 uint8_t ** M;
 State * s;
 char out[256] = "";
 double time_spent;
+
+int8_t step_callback(State * s) {
+  return 0;
+}
 
 int8_t run(char * src) {
   setvbuf(stdout, NULL, _IONBF, 0);
@@ -56,11 +60,12 @@ int8_t undef(State * s){
 
 Function ext[] = {
   {(uint8_t*)"", exception_handler},
-  {(uint8_t*)"PC", f_print}, 
+  {(uint8_t*)"PC", f_print},
   {(uint8_t*)"PS", f_printstr},
   {(uint8_t*)"PN", f_printnum},
-  {(uint8_t*)"PRINT", f_print}, 
-  {(uint8_t*)"PRINTSTR", f_printstr}, 
+  {(uint8_t*)"PRINT", f_print},
+  {(uint8_t*)"PRINTSTR", f_printstr},
+  {(uint8_t*)"PRINTNUM", f_printnum},
   {NULL, undef},
 };
 

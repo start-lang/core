@@ -11,7 +11,7 @@ DBGFLAGS = -D DEBUG_INTERPRETER              \
 INCLUDES = -Isrc                             \
            -Ilib/microcuts/src               \
 		   lib/microcuts/src/microcuts.c     \
-		   src/star_t.c 
+		   src/star_t.c
 
 TEST = test/test.c
 REPL = repl/repl.c
@@ -34,17 +34,17 @@ test: build
 	@ gcc -Wall -D EXPOSE_INTERNALS -D STOPFAIL ${INCLUDES} ${TEST} -o ${OUTPUT} && \
 		chmod +x ${OUTPUT} && ./${OUTPUT}
 	@ make clean > /dev/null
- 
+
 debug: build
 	@ gcc -Wall $(DBGFLAGS) ${INCLUDES} ${TEST} -o ${OUTPUT} && \
 		chmod +x ${OUTPUT} && ./${OUTPUT}
 	@ make clean > /dev/null
- 
+
 mleak: build
 	@ gcc -Wall -g -D EXPOSE_INTERNALS ${INCLUDES} ${TEST} -o ${OUTPUT} && \
 		chmod +x ${OUTPUT} && valgrind --leak-check=full --show-error-list=yes --track-origins=yes ${OUTPUT}
 	@ make clean > /dev/null
- 
+
 gdb: build
 	@ gcc -Wall -g -D EXPOSE_INTERNALS ${INCLUDES} ${TEST} -o ${OUTPUT} && \
 		chmod +x ${OUTPUT} && valgrind --leak-check=full --vgdb=yes --vgdb-error=1 ${OUTPUT}
@@ -74,3 +74,5 @@ svg:
 
 repl: wasm svg
 	@ python3 -m http.server
+
+ci-check: cov wasm

@@ -53,13 +53,13 @@ typedef struct _State {
   uint8_t _type:2;
   uint8_t _forward:1;
   uint8_t _lookahead:1;
-  uint8_t  _prev_step_result:3;
-  uint8_t  _string:1;
-  uint8_t  _srcinput:1;
+  uint8_t _prev_step_result:3;
+  uint8_t _string:1;
+  uint8_t _srcinput:1;
 
   uint8_t _idlen;
   uint8_t _prev_token;
-  int8_t  _matching;
+  int8_t _matching;
 
   Variable * _vars;
   uint8_t _varc;
@@ -69,9 +69,9 @@ typedef struct _State {
 
   uint16_t _lensrc;
   uint16_t _fmatching;
-  
+
   struct _State * sub;
-  
+
 } State;
 
 extern int8_t step_callback(State * s);

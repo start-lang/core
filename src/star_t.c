@@ -423,7 +423,7 @@ uint8_t step(uint8_t token, State * s){
       return -1;
       break;
     case LEFT:
-      if (prev == SHIFT_LEFT){
+      if (prev == BITWISE_OP){
         if (s->_type == INT8) s->_m[0] <<= REG.i8[0];
         else if (s->_type == INT16) *((uint16_t*) s->_m) <<= REG.i16[0];
         else if (s->_type == INT32) *((uint32_t*) s->_m) <<= REG.i32;
@@ -437,7 +437,7 @@ uint8_t step(uint8_t token, State * s){
         break;
       }
     case RIGHT:
-      if (prev == SHIFT_RIGHT){
+      if (prev == BITWISE_OP){
         if (s->_type == INT8) s->_m[0] >>= REG.i8[0];
         else if (s->_type == INT16) *((uint16_t*) s->_m) >>= REG.i16[0];
         else if (s->_type == INT32) *((uint32_t*) s->_m) >>= REG.i32;
@@ -548,10 +548,11 @@ uint8_t step(uint8_t token, State * s){
       else if (s->_type == INT16) *((uint16_t*) s->_m) ^= REG.i16[0];
       else if (s->_type == INT32) *((uint32_t*) s->_m) ^= REG.i32;
       break;
-    case INV:
-      if (s->_type == INT8) s->_m[0] = ~s->_m[0];
-      else if (s->_type == INT16) *((uint16_t*) s->_m) = ~*((uint16_t*) s->_m);
-      else if (s->_type == INT32) *((uint32_t*) s->_m) = ~*((uint32_t*) s->_m);
+    case NOT:
+      s->_ans = !s->_ans;
+      if (s->_type == INT8) REG.i8[0] = ~REG.i8[0];
+      else if (s->_type == INT16) REG.i16[0] = ~REG.i16[0];
+      else if (s->_type == INT32) REG.i32 = ~REG.i32;
       break;
     case SWITCH:
       if (s->_type == INT8)
@@ -596,6 +597,7 @@ uint8_t step(uint8_t token, State * s){
     case 0:
     case '\n':
     case '\t':
+    case BITWISE_OP:
       break;
     default:
       if (token >= '0' && token <= '9'){

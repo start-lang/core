@@ -65,6 +65,14 @@ int8_t f_print(State * s){
   return 0;
 }
 
+int8_t f_printnum(State * s){
+  if (s->_type == INT8) s->reg.i8[0] = sprintf(out, "%u", s->reg.i8[0]);
+  else if (s->_type == INT16) s->reg.i16[0] = sprintf(out, "%u", s->reg.i16[0]);
+  else if (s->_type == INT32) s->reg.i32 = sprintf(out, "%u", s->reg.i32);
+  else if (s->_type == FLOAT) s->reg.f32 = sprintf(out, "%f", s->reg.f32);
+  return 0;
+}
+
 int8_t f_printstr(State * s){
   strcat(out, (char*) s->_m);
   return 0;
@@ -85,6 +93,7 @@ Function ext[] = {
   {(uint8_t*)"Y", f_y},
   {(uint8_t*)"PRINT", f_print},
   {(uint8_t*)"PRINTSTR", f_printstr},
+  {(uint8_t*)"PRINTNUM", f_printnum},
   {NULL, undef},
 };
 
@@ -233,6 +242,12 @@ int main(void){
   assert_eq((run("12@1-"), RM.i8[0]), 11);
   assert_eq((run("12@1--"), RM.i8[0]), 10);
   assert_eq((run("2@3*"), RM.i8[0]), 6);
+  assert_eq((run("8@2/"), RM.i8[0]), 4);
+  assert_eq((run("12!1+"), RM.i8[0]), 13);
+  assert_eq((run("12!1-"), RM.i8[0]), 11);
+  assert_eq((run("12!1--"), RM.i8[0]), 10);
+  assert_eq((run("2!3*"), RM.i8[0]), 6);
+  assert_eq((run("8!2/"), RM.i8[0]), 4);
   end_section();
 
   begin_section("IF");
@@ -408,6 +423,24 @@ int main(void){
   begin_section("Goto zero");
   assert_eq((run("1!z"), s->_m - s->_m0), 1);
   assert_eq((run("1!>1!>1!2<z"), s->_m - s->_m0), 3);
+  end_section();
+
+  begin_section("BITWISE");
+  assert_eq((run("2!3w<"), RM.i8[0]), 16);
+  assert_eq((run("16!3w>"), RM.i8[0]), 2);
+  assert_eq((run("15!4w< 15|"), RM.i8[0]), 255);
+  assert_eq((run("s255!8w< 255|"), RM.i8[0]), 255);
+  assert_eq((run("s255!8w< 255|"), RM.i8[1]), 255);
+  assert_eq((run("s255!8w< 255|"), RM.i16[0]), 65535);
+  assert_eq((run("2!1&"), RM.i8[0]), 0);
+  assert_eq((run("2!1|"), RM.i8[0]), 3);
+  assert_eq((run("3!1^"), RM.i8[0]), 2);
+  assert_str_eq((run("255 PRINTNUM"), out), "255");
+  assert_str_eq((run("255~ PRINTNUM"), out), "0");
+  assert_str_eq((run("0~ PRINTNUM"), out), "255");
+  assert_str_eq((run("128~ PRINTNUM"), out), "127");
+  assert_str_eq((run("s0~ PRINTNUM"), out), "65535");
+  assert_eq((run("3~"), RM.i8[0]), 0); // TODO: fix microcuts int conversion
   end_section();
 
   // end_tests();

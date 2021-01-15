@@ -48,12 +48,13 @@
 #define C_NOT_NULL      '?'
 #define C_ZERO          'z'
 
+#define BITWISE_OP      'w'
 #define AND             '&'
 #define OR              '|'
 #define XOR             '^'
 #define SHIFT_LEFT      '<'
 #define SHIFT_RIGHT     '>'
-#define INV             '~'
+#define NOT             '~'
 
 #define T_INT8          'b'
 #define T_INT16         's'

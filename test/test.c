@@ -353,8 +353,8 @@ int main(void){
 
   begin_section("IDS");
   assert_eq((run("ABC^1!>2!>3!ABC;"), s->reg.i8[0]), 1);
-  assert_eq((run("N^8!>B^0!>A^1!?=[N1-?!A;B@A+]"), RM.i8[0]), 21);
-  assert_eq((run("N^>B^0!>A^1!N8!?=[N1-?!A;B@A+]"), RM.i8[0]), 21);
+  assert_eq((run("N^8!>B^0!>A^1!?=[N 1-?!A;B@A+]"), RM.i8[0]), 21);
+  assert_eq((run("N^>B^0!>A^1!N 8!?=[N 1-?!A;B@A+]"), RM.i8[0]), 21);
   end_section();
 
   begin_section("Functions");
@@ -372,8 +372,8 @@ int main(void){
   // inner undef
   assert_eq((run("Z{1!K }2!>Z"), (*M)[1]), 111);
   assert_eq((run("Z{K{1!}K }2!>Z"), (*M)[1]), 1);
-  assert_eq((run("FIB{;>0!>1!?=[2<1-?!2>;<@>+]}8!FIB2>;"), RM.i32), 21);
-  assert_eq((run("iFIB{i;>0!>1!?=[2<1-?!2>;<@>+]}46!FIB2>;"), RM.i32), 1836311903);
+  assert_eq((run("FIB{;>0!>1!?=[2<1-?!2>;<@>+]}8!FIB 2>;"), RM.i32), 21);
+  assert_eq((run("iFIB{i;>0!>1!?=[2<1-?!2>;<@>+]}46!FIB 2>;"), RM.i32), 1836311903);
   end_section();
 
   begin_section("Run");

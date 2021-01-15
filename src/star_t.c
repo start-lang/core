@@ -236,7 +236,8 @@ uint8_t step(uint8_t token, State * s){
     return 0;
   }
 
-  if ((token >= 'A' && token <= 'Z') || token == '_'){
+  if ((token >= 'A' && token <= 'Z') || token == '_'
+      || (s->_idlen && (token >= '0' && token <= '9'))){
     s->_id = (uint8_t*) realloc(s->_id, s->_idlen + 1);
     s->_id[s->_idlen] = token;
     s->_idlen++;

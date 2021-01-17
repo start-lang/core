@@ -588,9 +588,15 @@ uint8_t step(uint8_t token, State * s){
       s->_type = 1;
       break;
     case T_INT32:
+      if (s->_type == FLOAT) {
+        REG.i32 = (uint32_t) REG.f32;
+      }
       s->_type = 2;
       break;
     case T_FLOAT:
+      if (s->_type == INT32) {
+        REG.f32 = (float) REG.i32;
+      }
       s->_type = 3;
       break;
     case ENDIF:

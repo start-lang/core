@@ -443,7 +443,18 @@ int main(void){
   assert_eq((run("3~"), RM.i8[0]), 0); // TODO: fix microcuts int conversion
   end_section();
 
-  // end_tests();
+  begin_section("TYPE_CASTING");
+  assert_str_eq((run("f3!2/ ; PRINTNUM"), out), "1.500000");
+  //float to int
+  assert_str_eq((run("f3!2/ ;i PRINTNUM"), out), "1");
+  //float to int to float
+  assert_str_eq((run("f3!2/ ;if PRINTNUM"), out), "1.000000");
+  //byte to int to float
+  assert_str_eq((run("b32 if PRINTNUM"), out), "32.000000");
+  end_section();
+
+
+  end_tests();
 
   printf("state size: %ld\n", sizeof(State));
 

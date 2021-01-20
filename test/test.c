@@ -230,6 +230,9 @@ int main(void){
   assert_eq((run("2@1@?>"), s->reg.i8[0]), 2);
   assert_eq((run("2@1@?>"), (*M)[0]), 1);
   assert_eq((run("2@1@?>"), s->_ans), 1);
+  assert_eq((run(""), s->_ans), 0);
+  assert_eq((run("t"), s->_ans), 1);
+  assert_eq((run("t~"), s->_ans), 0);
   end_section();
 
   begin_section("OP");

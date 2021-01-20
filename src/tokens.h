@@ -55,6 +55,7 @@
 #define SHIFT_LEFT      '<'
 #define SHIFT_RIGHT     '>'
 #define NOT             '~'
+#define BOOL_TRUE       't'
 
 #define T_INT8          'b'
 #define T_INT16         's'

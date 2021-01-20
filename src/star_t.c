@@ -597,6 +597,9 @@ uint8_t step(uint8_t token, State * s){
       }
       s->_type = 3;
       break;
+    case BOOL_TRUE:
+      s->_ans = 1;
+      break;
     case ENDIF:
     case NOP:
     case 0:

@@ -134,18 +134,14 @@ int8_t blockrun(State * s, uint8_t last){
     }
     if (s->sub){
       blockrun(s->sub, 1);
-      for (uint8_t i = 0; i < s->sub->_varc; i++){
-        free(s->sub->_vars[i].name);
-      }
-      if (s->sub->_vars){
-        free(s->sub->_vars);
-      }
       if (s->sub->_id){
         free(s->sub->_id);
       }
       // restore posible changes
       s->_funcs = s->sub->_funcs;
       s->_funcc = s->sub->_funcc;
+      s->_vars = s->sub->_vars;
+      s->_varc = s->sub->_varc;
       free(s->sub);
       s->sub = NULL;
     }
@@ -183,6 +179,8 @@ void new_sub(uint8_t * src, State * s) {
   sub->_src0 = sub->src;
   sub->_funcs = s->_funcs; // share funcs
   sub->_funcc = s->_funcc; // share funcs
+  sub->_vars = s->_vars; // share vars
+  sub->_varc = s->_varc; // share vars
   sub->_matching = 1;
   sub->_forward = 1;
   sub->_prev_step_result = JM_ERR0;

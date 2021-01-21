@@ -291,9 +291,8 @@ int main(void){
   assert_eq((run("b3p4po"), s->reg.i8[0]), 4);
   assert_eq((run("b3p4poo"), s->reg.i8[0]), 3);
   assert_eq((run("b3p4pooh"), s->reg.i16[0]), 0);
-  assert_eq((run("b1p2p3p4p5p o+o+o+o+"), RM.i8[0]), 15);
-  assert_eq((run("b1p2p3p4p5p ?=[ <+; ?h]"), RM.i8[0]), 15);
-  assert_eq((run("b1p2p3p4p5p ?=[ o+ ?h]"), RM.i8[0]), 15);
+  assert_eq((run("b1p2p3p4p5p 0 o+o+o+o+o+"), RM.i8[0]), 15);
+  assert_eq((run("b1p2p3p4p5p 0 t[ o+ ?h]"), RM.i8[0]), 15);
   end_section();
 
   begin_section("WHILE");
@@ -426,7 +425,7 @@ int main(void){
   // end_section();
 
   begin_section("Malloc");
-  assert_eq((run("2m"), s->_mlen), 2);
+  assert_eq((run("4m"), s->_mlen), 4);
   assert_eq((run("20m"), s->_mlen), 20);
   end_section();
 

@@ -45,7 +45,7 @@ typedef struct _State {
   uint8_t* _m0;
   uint16_t _mlen;
   uint8_t* _id;
-  uint8_t* v_stack0; // TODO: remove virtual stack
+  uint8_t _stack_h;
 
   uint16_t _ic;
 

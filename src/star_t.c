@@ -327,6 +327,7 @@ uint8_t step(uint8_t token, State * s){
     s->_lookahead = 0;
     switch (prev) {
       case POP:
+        s->_stack_h--;
         switch (token) {
           case SUM:
           case SUB:
@@ -342,9 +343,9 @@ uint8_t step(uint8_t token, State * s){
             step(LOAD, s);
             break;
           default:
-            step(LOAD, s);
             s->_prev_token = 0;
             step(LEFT, s);
+            step(LOAD, s);
             step(token, s);
         }
         break;
@@ -399,7 +400,7 @@ uint8_t step(uint8_t token, State * s){
             else if (s->_type == FLOAT) s->_ans = mload(s).f32 == 0;
             break;
           case STACK_HEIGHT:
-            s->_ans = (s->_m - s->v_stack0) != 0;
+            s->_ans = s->_stack_h > 0;
             break;
           default:
             return JM_PEXC;
@@ -498,17 +499,14 @@ uint8_t step(uint8_t token, State * s){
         break;
       }
     case STACK_HEIGHT:
-      REG.i16[0] = (s->_m - s->v_stack0) + 1;
+      REG.i16[0] = s->_stack_h;
       REG.i16[1] = 0;
       break;
     case PUSH:
-      if (!s->v_stack0){
-        s->v_stack0 = s->_m;
-      } else {
-        s->_prev_token = 0;
-        step(RIGHT, s);
-      }
       step(STORE, s);
+      s->_prev_token = 0;
+      step(RIGHT, s);
+      s->_stack_h++;
       break;
     case IF:
     case ELSE:

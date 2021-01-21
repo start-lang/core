@@ -31,7 +31,7 @@ clean: build
 	@ rm -rf build/*
 
 test: build
-	@ gcc -Wall -D EXPOSE_INTERNALS -D STOPFAIL ${INCLUDES} ${TEST} -o ${OUTPUT} && \
+	@ gcc -Wall -D EXPOSE_INTERNALS -D STOPFAIL -D LONG_TEST ${INCLUDES} ${TEST} -o ${OUTPUT} && \
 		chmod +x ${OUTPUT} && ./${OUTPUT}
 	@ make clean > /dev/null
 
@@ -41,7 +41,7 @@ debug: build
 	@ make clean > /dev/null
 
 mleak: build
-	@ gcc -Wall -g -D EXPOSE_INTERNALS ${INCLUDES} ${TEST} -o ${OUTPUT} && \
+	@ gcc -Wall -Wcast-align=strict -fsanitize=alignment -fsanitize=undefined -g -D EXPOSE_INTERNALS ${INCLUDES} ${TEST} -o ${OUTPUT} && \
 		chmod +x ${OUTPUT} && valgrind --leak-check=full --show-error-list=yes --track-origins=yes ${OUTPUT}
 	@ make clean > /dev/null
 

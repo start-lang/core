@@ -5,7 +5,8 @@
 #include <star_t.h>
 #include <time.h>
 
-uint8_t ** M;
+Register RM;
+uint8_t * M;
 State * s;
 char out[256] = "";
 double time_spent;
@@ -44,7 +45,11 @@ int8_t run(char * src) {
   // if (s->_ic > 100){
   //   printf("%d %d IPS\n", s->_ic, (int)(s->_ic/time_spent));
   // }
-  M = &(s->_m0);
+  RM.i8[0] = s->_m[0];
+  RM.i8[1] = s->_m[1];
+  RM.i8[2] = s->_m[2];
+  RM.i8[3] = s->_m[3];
+  M = s->_m0;
   return result;
 }
 
@@ -148,7 +153,7 @@ int main(void){
   end_section();
 
   begin_section("STORE");
-  assert_eq((run("3!"), (*M)[0]), 3);
+  assert_eq((run("3!"), M[0]), 3);
   // store 3/2
   assert_eq((run("f3!2/"), RM.f32), 3.0f/2.0f);
   end_section();
@@ -158,17 +163,17 @@ int main(void){
 
   begin_section("Move/Load");
   // 3 [4|0> 4
-  assert_eq((run("3!>4!"), (*M)[0]), 3);
-  assert_eq((run("3!>4!"), (*M)[1]), 4);
+  assert_eq((run("3!>4!"), M[0]), 3);
+  assert_eq((run("3!>4!"), M[1]), 4);
   // [3|0> 3 4
-  assert_eq((run(">4!<3!"), (*M)[0]), 3);
-  assert_eq((run(">4!<3!"), (*M)[1]), 4);
+  assert_eq((run(">4!<3!"), M[0]), 3);
+  assert_eq((run(">4!<3!"), M[1]), 4);
   // [1|0> 3 4
-  assert_eq((run(">4!<3!1"), (*M)[0]), 3);
-  assert_eq((run(">4!<3!1"), (*M)[1]), 4);
+  assert_eq((run(">4!<3!1"), M[0]), 3);
+  assert_eq((run(">4!<3!1"), M[1]), 4);
   assert_eq((run(">4!<3!1"), s->reg.i8[0]), 1);
   // [3|0> 3 4
-  assert_eq((run(">4!<3!1;"), RM.i8[0]), 3);
+  assert_eq((run(">4!<3!1;"), M[0]), 3);
   // 0. [0|0>     - start
   // 1. ? [0|0>   - > right
   // 2. ? [4|0>   - 4 read const 4 into REG
@@ -186,36 +191,36 @@ int main(void){
   // register contains string length
   assert_eq((run("2!\"abc\""), s->reg.i8[0]), 3);
   // memory pointer stays the same
-  assert_eq((run("2!\"abc\"3!"), (*M)[0]), 3);
-  assert_eq((run("2!\"abc\"3!"), (*M)[1]), 'b');
-  assert_eq((run("2!\"abc\"3!"), (*M)[2]), 'c');
-  assert_eq((run("2!\"abc\"3!"), (*M)[3]), 0);
+  assert_eq((run("2!\"abc\"3!"), M[0]), 3);
+  assert_eq((run("2!\"abc\"3!"), M[1]), 'b');
+  assert_eq((run("2!\"abc\"3!"), M[2]), 'c');
+  assert_eq((run("2!\"abc\"3!"), M[3]), 0);
   // going foward to the end of the string using >
-  assert_eq((run("2!\"abc\">3!"), (*M)[0]), 'a');
-  assert_eq((run("2!\"abc\">3!"), (*M)[1]), 'b');
-  assert_eq((run("2!\"abc\">3!"), (*M)[2]), 'c');
-  assert_eq((run("2!\"abc\">3!"), (*M)[3]), 0);
-  assert_eq((run("2!\"abc\">3!"), (*M)[4]), 3);
+  assert_eq((run("2!\"abc\">3!"), M[0]), 'a');
+  assert_eq((run("2!\"abc\">3!"), M[1]), 'b');
+  assert_eq((run("2!\"abc\">3!"), M[2]), 'c');
+  assert_eq((run("2!\"abc\">3!"), M[3]), 0);
+  assert_eq((run("2!\"abc\">3!"), M[4]), 3);
   // escape
   assert_eq((run("2!\"a\\\"c\">3!"), s->reg.i8[0]), 3);
-  assert_eq((run("2!\"a\\\"c\">3!"), (*M)[0]), 'a');
-  assert_eq((run("2!\"a\\\"c\">3!"), (*M)[1]), '\"');
-  assert_eq((run("2!\"a\\\"c\">3!"), (*M)[2]), 'c');
-  assert_eq((run("2!\"a\\\"c\">3!"), (*M)[3]), 0);
-  assert_eq((run("2!\"a\\\"c\">3!"), (*M)[4]), 3);
-  assert_eq((run("2!\"\\\"\">3!"), (*M)[0]), '\"');
-  assert_eq((run("2!\"\\\"\">3!"), (*M)[1]), 0);
-  assert_eq((run("2!\"\\\"\">3!"), (*M)[2]), 3);
+  assert_eq((run("2!\"a\\\"c\">3!"), M[0]), 'a');
+  assert_eq((run("2!\"a\\\"c\">3!"), M[1]), '\"');
+  assert_eq((run("2!\"a\\\"c\">3!"), M[2]), 'c');
+  assert_eq((run("2!\"a\\\"c\">3!"), M[3]), 0);
+  assert_eq((run("2!\"a\\\"c\">3!"), M[4]), 3);
+  assert_eq((run("2!\"\\\"\">3!"), M[0]), '\"');
+  assert_eq((run("2!\"\\\"\">3!"), M[1]), 0);
+  assert_eq((run("2!\"\\\"\">3!"), M[2]), 3);
   // // ends with 0
-  assert_eq((run("2!\"\""), (*M)[0]), 0);
+  assert_eq((run("2!\"\""), M[0]), 0);
   end_section();
 
   begin_section("SWITCH");
   assert_eq((run("2"), s->reg.i8[0]), 2);
-  assert_eq((run("2@"), (*M)[0]), 2);
+  assert_eq((run("2@"), M[0]), 2);
   assert_eq((run("2@"), s->reg.i8[0]), 0);
   assert_eq((run("2@3"), s->reg.i8[0]), 3);
-  assert_eq((run("2@3"), (*M)[0]), 2);
+  assert_eq((run("2@3"), M[0]), 2);
   end_section();
 
   begin_section("COMP");
@@ -228,7 +233,7 @@ int main(void){
   assert_eq((run("0@1@?>"), s->_ans), 0);
   assert_eq((run("1@1@?>"), s->_ans), 0);
   assert_eq((run("2@1@?>"), s->reg.i8[0]), 2);
-  assert_eq((run("2@1@?>"), (*M)[0]), 1);
+  assert_eq((run("2@1@?>"), M[0]), 1);
   assert_eq((run("2@1@?>"), s->_ans), 1);
   assert_eq((run(""), s->_ans), 0);
   assert_eq((run("t"), s->_ans), 1);
@@ -280,8 +285,8 @@ int main(void){
   end_section();
 
   begin_section("Stack");
-  assert_eq((run("b3p4p"), (*M)[0]), 3);
-  assert_eq((run("b3p4p"), (*M)[1]), 4);
+  assert_eq((run("b3p4p"), M[0]), 3);
+  assert_eq((run("b3p4p"), M[1]), 4);
   assert_eq((run("b3p4ph"), s->reg.i16[0]), 2);
   assert_eq((run("b3p4po"), s->reg.i8[0]), 4);
   assert_eq((run("b3p4poo"), s->reg.i8[0]), 3);
@@ -361,37 +366,38 @@ int main(void){
   end_section();
 
   begin_section("Functions");
-  assert_eq((run("X"), (*M)[0]), 123);
-  assert_eq((run("Y"), (*M)[0]), 100);
-  assert_eq((run("X Y"), (*M)[0]), 100);
+  assert_eq((run("X"), M[0]), 123);
+  assert_eq((run("Y"), M[0]), 100);
+  assert_eq((run("X Y"), M[0]), 100);
   // undef
-  assert_eq((run("X Y Z"), (*M)[0]), 111);
+  assert_eq((run("X Y Z"), M[0]), 111);
   end_section();
 
   begin_section("Functions2");
-  assert_eq((run("Z{1!}2!Z"), (*M)[0]), 1);
-  assert_eq((run("Z{1!}2!>Z"), (*M)[0]), 2);
-  assert_eq((run("Z{1!}2!>Z"), (*M)[1]), 1);
+  assert_eq((run("Z{1!}2!Z"), M[0]), 1);
+  assert_eq((run("Z{1!}2!>Z"), M[0]), 2);
+  assert_eq((run("Z{1!}2!>Z"), M[1]), 1);
   // inner undef
-  assert_eq((run("Z{1!K }2!>Z"), (*M)[1]), 111);
-  assert_eq((run("Z{K{1!}K }2!>Z"), (*M)[1]), 1);
+  assert_eq((run("Z{1!K }2!>Z"), M[1]), 111);
+  assert_eq((run("Z{K{1!}K }2!>Z"), M[1]), 1);
   assert_eq((run("FIB{;>0!>1!?=[2<1-?!2>;<@>+]}8!FIB 2>;"), RM.i32), 21);
   assert_eq((run("iFIB{i;>0!>1!?=[2<1-?!2>;<@>+]}46!FIB 2>;"), RM.i32), 1836311903);
   end_section();
 
   begin_section("Run");
-  assert_eq((run("\"1!\"#"), (*M)[0]), 1);
-  assert_eq((run("\"Z{1!K}2!>Z\"#"), (*M)[1]), 111);
-  assert_eq((run("\"Z{1!K}2!\"#>Z"), (*M)[1]), 111);
+  assert_eq((run("\"1!\"#"), M[0]), 1);
+  assert_eq((run("\"Z{1!K}2!>Z\"#"), M[1]), 111);
+  assert_eq((run("\"Z{1!K}2!\"#>Z"), M[1]), 111);
   end_section();
 
   begin_section("Return");
-  assert_eq((run("r1!"), (*M)[0]), 0);
-  assert_eq((run("1!r2!"), (*M)[0]), 1);
-  assert_eq((run("Z{11!rK}2!>Z"), (*M)[1]), 11);
-  assert_eq((run("\"Z{11!rK}2!\"#>Z"), (*M)[1]), 11);
+  assert_eq((run("r1!"), M[0]), 0);
+  assert_eq((run("1!r2!"), M[0]), 1);
+  assert_eq((run("Z{11!rK}2!>Z"), M[1]), 11);
+  assert_eq((run("\"Z{11!rK}2!\"#>Z"), M[1]), 11);
   end_section();
 
+  #ifdef LONG_TEST
   begin_section("Pi");
   {
     char * src = load_file("test/pi.st");
@@ -400,6 +406,7 @@ int main(void){
     free(src);
   }
   end_section();
+  #endif
 
   begin_section("Quine");
   {

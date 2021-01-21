@@ -76,7 +76,6 @@ typedef struct _State {
 
 extern int8_t step_callback(State * s);
 
-#define RM ((Register*)s->_m)[0]
 #define REG s->reg
 
 int8_t blockrun(State * s, uint8_t last);

@@ -429,10 +429,8 @@ uint8_t step(uint8_t token, State * s){
       memset(s->_m0 + 1, 0, s->_mlen - at - 1);
       break;
     case GTZERO:
-      REG.i8[0] = 0;
       while (s->_m[0]) {
         s->_m++;
-        REG.i8[0]++;
       }
       break;
     case RETURN:

@@ -188,7 +188,7 @@ void new_sub(uint8_t * src, State * s) {
 }
 
 Register mload(State * s) {
-  Register x;
+  Register x = {.i32 = 0};
   if (s->_type == INT8) {
     x.i8[0] = s->_m[0];
   } else if (s->_type == INT16) {
@@ -259,7 +259,7 @@ uint8_t step(uint8_t token, State * s){
     return 0;
   } else if (s->_idlen) {
     s->_id = (uint8_t*) realloc(s->_id, s->_idlen + 1);
-    s->_id[s->_idlen] = 0;
+    s->_id[s->_idlen] = '\0';
     if (token == NEW_VAR) {
       uint8_t found = 0;
       for (uint8_t i = 0; i < s->_varc; i++){

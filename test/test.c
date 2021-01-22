@@ -117,7 +117,8 @@ int main(void){
   begin_section("NOP");
   assert_eq(run(" "), 0);
   assert_eq(run("   "), 0);
-  // assert_eq(run(" ` "), -1);
+  assert_eq(run(" \x01 "), JM_PEXC);
+  assert_eq(run(" ?\x01 "), JM_PEXC);
   end_section();
 
   begin_section("DATA TYPES");
@@ -185,6 +186,7 @@ int main(void){
   // 8. 3 [1|0> 4 - < right
   // 9. 3 [4|0> 4 - ; load
   assert_eq((run(">4!<3!1>;"), RM.i8[0]), 4);
+  assert_eq((run("s>4!<3!1>;"), RM.i8[0]), 4);
   end_section();
 
   begin_section("STRING");
@@ -238,6 +240,38 @@ int main(void){
   assert_eq((run(""), s->_ans), 0);
   assert_eq((run("t"), s->_ans), 1);
   assert_eq((run("t~"), s->_ans), 0);
+  assert_eq((run("3!;?="), s->_ans), 1);
+  assert_eq((run("3!;?!"), s->_ans), 0);
+  assert_eq((run("3!;?<"), s->_ans), 0);
+  assert_eq((run("3!;?>"), s->_ans), 0);
+  assert_eq((run("3!;?l"), s->_ans), 1);
+  assert_eq((run("3!;?g"), s->_ans), 1);
+  assert_eq((run("3!;??"), s->_ans), 1);
+  assert_eq((run("3!;?z"), s->_ans), 0);
+  assert_eq((run("s3!;?="), s->_ans), 1);
+  assert_eq((run("s3!;?!"), s->_ans), 0);
+  assert_eq((run("s3!;?<"), s->_ans), 0);
+  assert_eq((run("s3!;?>"), s->_ans), 0);
+  assert_eq((run("s3!;?l"), s->_ans), 1);
+  assert_eq((run("s3!;?g"), s->_ans), 1);
+  assert_eq((run("s3!;??"), s->_ans), 1);
+  assert_eq((run("s3!;?z"), s->_ans), 0);
+  assert_eq((run("i3!;?="), s->_ans), 1);
+  assert_eq((run("i3!;?!"), s->_ans), 0);
+  assert_eq((run("i3!;?<"), s->_ans), 0);
+  assert_eq((run("i3!;?>"), s->_ans), 0);
+  assert_eq((run("i3!;?l"), s->_ans), 1);
+  assert_eq((run("i3!;?g"), s->_ans), 1);
+  assert_eq((run("i3!;??"), s->_ans), 1);
+  assert_eq((run("i3!;?z"), s->_ans), 0);
+  assert_eq((run("f3!2/;?="), s->_ans), 1);
+  assert_eq((run("f3!2/;?!"), s->_ans), 0);
+  assert_eq((run("f3!2/;?<"), s->_ans), 0);
+  assert_eq((run("f3!2/;?>"), s->_ans), 0);
+  assert_eq((run("f3!2/;?l"), s->_ans), 1);
+  assert_eq((run("f3!2/;?g"), s->_ans), 1);
+  assert_eq((run("f3!2/;??"), s->_ans), 1);
+  assert_eq((run("f3!2/;?z"), s->_ans), 0);
   end_section();
 
   begin_section("OP");
@@ -247,15 +281,36 @@ int main(void){
   // 3. [1|0> 12  - 1  read const 1 into REG
   // 4. [1|0> 13  - +  MEM op REG -> MEM
   assert_eq((run("12@1+"), RM.i8[0]), 13);
+  assert_eq((run("s12@1+"), RM.i16[0]), 13);
+  assert_eq((run("f12@1+"), RM.f32), 13);
   assert_eq((run("12@1-"), RM.i8[0]), 11);
   assert_eq((run("12@1--"), RM.i8[0]), 10);
+  assert_eq((run("s12@1--"), RM.i16[0]), 10);
+  assert_eq((run("f12@1--"), RM.f32), 10);
   assert_eq((run("2@3*"), RM.i8[0]), 6);
+  assert_eq((run("s2@3*"), RM.i16[0]), 6);
+  assert_eq((run("i2@3*"), RM.i32), 6);
+  assert_eq((run("f2@3*"), RM.f32), 6);
   assert_eq((run("8@2/"), RM.i8[0]), 4);
+  assert_eq((run("s8@2/"), RM.i16[0]), 4);
+  assert_eq((run("i8@2/"), RM.i32), 4);
+  assert_eq((run("s9@6%"), RM.i16[0]), 3);
+  assert_eq((run("i9@6%"), RM.i32), 3);
   assert_eq((run("12!1+"), RM.i8[0]), 13);
   assert_eq((run("12!1-"), RM.i8[0]), 11);
   assert_eq((run("12!1--"), RM.i8[0]), 10);
   assert_eq((run("2!3*"), RM.i8[0]), 6);
   assert_eq((run("8!2/"), RM.i8[0]), 4);
+  assert_eq((run("s2!1&;"), RM.i16[0]), 0);
+  assert_eq((run("i2!1&;"), RM.i32), 0);
+  assert_eq((run("s2!1|;"), RM.i16[0]), 3);
+  assert_eq((run("i2!1|;"), RM.i32), 3);
+  assert_eq((run("s2!1^;"), RM.i16[0]), 3);
+  assert_eq((run("i2!1^;"), RM.i32), 3);
+  assert_eq((run("i0~"), s->reg.i8[0]), 255);
+  assert_eq((run("i0~"), s->reg.i8[1]), 255);
+  assert_eq((run("i0~"), s->reg.i8[2]), 255);
+  assert_eq((run("i0~"), s->reg.i8[3]), 255);
   end_section();
 
   begin_section("IF");
@@ -276,6 +331,9 @@ int main(void){
   assert_eq(run("?=(1:2)"), 0);
   assert_eq((run("?=(1:2)"), s->_ans), 1);
   assert_eq((run("?=(1:2)"), s->reg.i8[0]), 1);
+  // not
+  assert_eq((run("?=~(1:2)"), s->_ans), 0);
+  assert_eq((run("?=~(1:2)"), s->reg.i8[0]), 2);
   // 0 > 1 ?
   assert_eq((run("0@1@?>(2:3)!"), s->_m[0]), 3);
   // 1 > 1 ?
@@ -362,6 +420,8 @@ int main(void){
   assert_eq((run("ABC^1!>2!>3!ABC;"), s->reg.i8[0]), 1);
   assert_eq((run("N^8!>B^0!>A^1!?=[N 1-?!A;B@A+]"), RM.i8[0]), 21);
   assert_eq((run("N^>B^0!>A^1!N 8!?=[N 1-?!A;B@A+]"), RM.i8[0]), 21);
+  assert_eq((run("A^0!>2!A;"), RM.i8[0]), 0);
+  assert_eq((run("A^0!>2!A;>A^ A;"), RM.i8[0]), 2);
   end_section();
 
   begin_section("Functions");
@@ -441,6 +501,12 @@ int main(void){
   assert_eq((run("s255!8w< 255|"), RM.i8[0]), 255);
   assert_eq((run("s255!8w< 255|"), RM.i8[1]), 255);
   assert_eq((run("s255!8w< 255|"), RM.i16[0]), 65535);
+  assert_eq((run("i255!8w< 255|8w< 255|8w< 255|"), RM.i8[0]), 255);
+  assert_eq((run("i255!8w< 255|8w< 255|8w< 255|"), RM.i8[1]), 255);
+  assert_eq((run("i255!8w< 255|8w< 255|8w< 255|"), RM.i8[2]), 255);
+  assert_eq((run("i255!8w< 255|8w< 255|8w< 255|"), RM.i8[3]), 255);
+  assert_eq((run("s256!1w>"), RM.i8[0]), 128);
+  assert_eq((run("i256!1w>"), RM.i8[0]), 128);
   assert_eq((run("2!1&"), RM.i8[0]), 0);
   assert_eq((run("2!1|"), RM.i8[0]), 3);
   assert_eq((run("3!1^"), RM.i8[0]), 2);

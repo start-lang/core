@@ -10,9 +10,10 @@ uint8_t * M;
 State * s;
 char out[256] = "";
 double time_spent;
+uint8_t stop = 0;
 
 int8_t step_callback(State * s) {
-  return 0;
+  return stop;
 }
 
 char * load_file(const char * fname){
@@ -34,6 +35,7 @@ char * load_file(const char * fname){
 }
 
 int8_t run(char * src) {
+  stop = 0;
   s = (State*) malloc(sizeof(State));
   memset(s, 0, sizeof(State));
   memset(out, 0, 256);
@@ -92,6 +94,15 @@ int8_t undef(State * s){
   return 0;
 }
 
+int8_t f_error(State * s){
+  return JM_ERR0;
+}
+
+int8_t f_quit(State * s){
+  stop = 1;
+  return 0;
+}
+
 Function ext[] = {
   {(uint8_t*)"", exception_handler},
   {(uint8_t*)"X", f_x},
@@ -99,6 +110,8 @@ Function ext[] = {
   {(uint8_t*)"PRINT", f_print},
   {(uint8_t*)"PRINTSTR", f_printstr},
   {(uint8_t*)"PRINTNUM", f_printnum},
+  {(uint8_t*)"QUIT", f_quit},
+  {(uint8_t*)"ERROR", f_error},
   {NULL, undef},
 };
 
@@ -430,6 +443,10 @@ int main(void){
   assert_eq((run("X Y"), M[0]), 100);
   // undef
   assert_eq((run("X Y Z"), M[0]), 111);
+  // return
+  assert_eq((run("32 QUIT 64"), s->reg.i8[0]), 32);
+  assert_eq((run("X QUIT"), M[0]), 123);
+  assert_eq(run("ERROR"), JM_ERR0);
   end_section();
 
   begin_section("Functions2");

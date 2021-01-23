@@ -58,6 +58,9 @@ uint8_t jump(State * s){
       if (s->_prev_step_result == JM_EWHI && ! s->_matching){
         break;
       }
+      if (s->_prev_step_result == JM_NXWH){
+        break;
+      }
     }
     if (s->src - s->_src0 == 0 && ! s->_forward) {
       return 1;
@@ -527,7 +530,7 @@ uint8_t step(uint8_t token, State * s){
           jmpmatch = JM_EWHI;
         } else if (token == BREAK){
           //jump to ENDWHILE ] + 1
-          jmpmatch = JM_EWHI;
+          jmpmatch = JM_NXWH;
         } else if (token == CONTINUE){
           //jump to while [
           s->_forward = 0;

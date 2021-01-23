@@ -16,8 +16,9 @@ extern "C" {
 #define JM_EWHI 3
 #define JM_WHI0 4
 #define JM_WHI1 5
-#define JM_ERR0 6
-#define JM_PEXC 7
+#define JM_NXWH 6
+#define JM_ERR0 7
+#define JM_PEXC 8
 
 typedef union {
   uint8_t i8 [4];
@@ -53,7 +54,7 @@ typedef struct _State {
   uint8_t _type:2;
   uint8_t _forward:1;
   uint8_t _lookahead:1;
-  uint8_t _prev_step_result:3;
+  uint8_t _prev_step_result:4;
   uint8_t _string:1;
   uint8_t _srcinput:1;
 

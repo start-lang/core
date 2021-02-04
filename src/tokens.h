@@ -32,6 +32,7 @@
 #define LOAD            ';'
 #define RUN             '#'
 #define NEW_VAR         '^'
+#define ROTATE_REG      'k'
 
 #define SUM             '+'
 #define SUB             '-'

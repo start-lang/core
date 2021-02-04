@@ -37,9 +37,7 @@
 uint8_t jump(State * s){
   uint8_t token = *(s->src);
   while (token) {
-    if (!token){
-      return 1;
-    } else if (token == IF){
+    if (token == IF){
       s->_matching++;
     } else if (token == ELSE && s->_prev_step_result == JM_EIFE && s->_matching == 1) {
       break;
@@ -508,6 +506,15 @@ uint8_t step(uint8_t token, State * s){
       s->_prev_token = 0;
       step(RIGHT, s);
       s->_stack_h++;
+      break;
+    case ROTATE_REG:
+      {
+        uint8_t t = REG.i8[3];
+        REG.i8[3] = REG.i8[2];
+        REG.i8[2] = REG.i8[1];
+        REG.i8[1] = REG.i8[0];
+        REG.i8[0] = t;
+      }
       break;
     case IF:
     case ELSE:

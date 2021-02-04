@@ -385,6 +385,10 @@ int main(void){
   assert_eq((run("1! t[ 2 t[ 3 x 4! ] 5 ?=]"), RM.i8[0]), 1);
   assert_eq((run("1! t[ 2 t[ 3 (x:c) 4! t] 5 ?=]"), s->reg.i8[0]), 5);
   assert_eq((run("0! t[ t[7?=(0! x :1+) 3 t] 5 ??]"), s->reg.i8[0]), 5);
+  assert_eq((run("t[t[1?=(c:(c:x))]]"), REG.i8[0]), 1);
+  assert_eq((run("t[t[1?=(c:(c:2x))]]"), REG.i8[0]), 2);
+  assert_eq((run("t[t[1?=(c:(c:x))]3]"), REG.i8[0]), 3);
+  assert_eq((run("t[t[1?=(c:(c:x))]]4"), REG.i8[0]), 4);
   end_section();
 
   begin_section("Fibonacci");
@@ -547,6 +551,22 @@ int main(void){
   assert_str_eq((run("f3!2/ ;if PRINTNUM"), out), "1.000000");
   //byte to int to float
   assert_str_eq((run("b32 if PRINTNUM"), out), "32.000000");
+  end_section();
+
+  begin_section("ROTATE REGISTER");
+  assert_eq((run("3k"), REG.i8[0]), 0);
+  assert_eq((run("3k"), REG.i8[1]), 3);
+  assert_eq((run("3kk"), REG.i8[2]), 3);
+  assert_eq((run("3kkk"), REG.i8[3]), 3);
+  assert_eq((run("3kkkk"), REG.i8[0]), 3);
+  assert_eq((run("1k"), REG.i16[0]), 256);
+  assert_eq((run("1k1"), REG.i16[0]), 257);
+  assert_eq((run("1k1"), REG.i32), 257);
+  assert_eq((run("1kk1"), REG.i32), 65537);
+  assert_eq((run("1kkk1"), REG.i32), 16777217);
+  assert_eq((run("1kkkk12"), REG.i32), 12);
+  assert_eq((run("s300kk200"), REG.i16[0]), 200);
+  assert_eq((run("s300kk200"), REG.i16[1]), 300);
   end_section();
 
 

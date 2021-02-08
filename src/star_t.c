@@ -694,26 +694,31 @@ uint8_t step(uint8_t token, State * s){
       }
       break;
     case XOR:
-      if (s->_type == INT8) s->_m[0] ^= REG.i8[0];
-      else if (s->_type == INT16) {
-        Register t = mload(s);
-        t.i16[0] ^= REG.i16[0];
-        s->_m[0] = t.i8[0];
-        s->_m[1] = t.i8[1];
-      } else if (s->_type == INT32) {
-        Register t = mload(s);
-        t.i32 ^= REG.i32;
-        s->_m[0] = t.i8[0];
-        s->_m[1] = t.i8[1];
-        s->_m[2] = t.i8[2];
-        s->_m[3] = t.i8[3];
+      if (prev == BITWISE_OP){
+        if (s->_type == INT8) s->_m[0] ^= REG.i8[0];
+        else if (s->_type == INT16) {
+          Register t = mload(s);
+          t.i16[0] ^= REG.i16[0];
+          s->_m[0] = t.i8[0];
+          s->_m[1] = t.i8[1];
+        } else if (s->_type == INT32) {
+          Register t = mload(s);
+          t.i32 ^= REG.i32;
+          s->_m[0] = t.i8[0];
+          s->_m[1] = t.i8[1];
+          s->_m[2] = t.i8[2];
+          s->_m[3] = t.i8[3];
+        }
       }
       break;
     case NOT:
-      s->_ans = !s->_ans;
-      if (s->_type == INT8) REG.i8[0] = ~REG.i8[0];
-      else if (s->_type == INT16) REG.i16[0] = ~REG.i16[0];
-      else if (s->_type == INT32) REG.i32 = ~REG.i32;
+      if (prev == BITWISE_OP){
+        if (s->_type == INT8) REG.i8[0] = ~REG.i8[0];
+        else if (s->_type == INT16) REG.i16[0] = ~REG.i16[0];
+        else if (s->_type == INT32) REG.i32 = ~REG.i32;
+      } else {
+        s->_ans = !s->_ans;
+      }
       break;
     case SWITCH:
       if (s->_type == INT8)

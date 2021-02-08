@@ -318,12 +318,12 @@ int main(void){
   assert_eq((run("i2!1&;"), RM.i32), 0);
   assert_eq((run("s2!1|;"), RM.i16[0]), 3);
   assert_eq((run("i2!1|;"), RM.i32), 3);
-  assert_eq((run("s2!1^;"), RM.i16[0]), 3);
-  assert_eq((run("i2!1^;"), RM.i32), 3);
-  assert_eq((run("i0~"), s->reg.i8[0]), 255);
-  assert_eq((run("i0~"), s->reg.i8[1]), 255);
-  assert_eq((run("i0~"), s->reg.i8[2]), 255);
-  assert_eq((run("i0~"), s->reg.i8[3]), 255);
+  assert_eq((run("s2!1w^;"), RM.i16[0]), 3);
+  assert_eq((run("i2!1w^;"), RM.i32), 3);
+  assert_eq((run("i0w~"), s->reg.i8[0]), 255);
+  assert_eq((run("i0w~"), s->reg.i8[1]), 255);
+  assert_eq((run("i0w~"), s->reg.i8[2]), 255);
+  assert_eq((run("i0w~"), s->reg.i8[3]), 255);
   end_section();
 
   begin_section("IF");
@@ -532,15 +532,15 @@ int main(void){
   assert_eq((run("i255!8w< 255|8w< 255|8w< 255|"), RM.i8[3]), 255);
   assert_eq((run("s256!1w>"), RM.i8[0]), 128);
   assert_eq((run("i256!1w>"), RM.i8[0]), 128);
-  assert_eq((run("2!1&"), RM.i8[0]), 0);
-  assert_eq((run("2!1|"), RM.i8[0]), 3);
-  assert_eq((run("3!1^"), RM.i8[0]), 2);
+  assert_eq((run("2!1w&"), RM.i8[0]), 0);
+  assert_eq((run("2!1w|"), RM.i8[0]), 3);
+  assert_eq((run("3!1w^"), RM.i8[0]), 2);
   assert_str_eq((run("255 PRINTNUM"), out), "255");
-  assert_str_eq((run("255~ PRINTNUM"), out), "0");
-  assert_str_eq((run("0~ PRINTNUM"), out), "255");
-  assert_str_eq((run("128~ PRINTNUM"), out), "127");
-  assert_str_eq((run("s0~ PRINTNUM"), out), "65535");
-  assert_eq((run("3~"), RM.i8[0]), 0); // TODO: fix microcuts int conversion
+  assert_str_eq((run("255w~ PRINTNUM"), out), "0");
+  assert_str_eq((run("0w~ PRINTNUM"), out), "255");
+  assert_str_eq((run("128w~ PRINTNUM"), out), "127");
+  assert_str_eq((run("s0w~ PRINTNUM"), out), "65535");
+  assert_eq((run("3w~"), RM.i8[0]), 0); // TODO: fix microcuts int conversion
   end_section();
 
   begin_section("TYPE_CASTING");
@@ -567,6 +567,10 @@ int main(void){
   assert_eq((run("1kkkk12"), REG.i32), 12);
   assert_eq((run("s300kk200"), REG.i16[0]), 200);
   assert_eq((run("s300kk200"), REG.i16[1]), 300);
+  assert_eq((run("sA^300!>B^200! A;kkB; "), REG.i16[0]), 200);
+  assert_eq((run("sA^300!>B^200! A;kkB; "), REG.i16[1]), 300);
+  assert_eq((run("sA^300!>B^200! T^ A;kkB; "), REG.i16[0]), 200);
+  assert_eq((run("sA^300!>B^200! T^ A;kkB; "), REG.i16[1]), 300);
   end_section();
 
 

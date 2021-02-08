@@ -1,4 +1,4 @@
-.PHONY: test
+.PHONY: test cli
 
 MAX_INT = 10000
 
@@ -15,6 +15,7 @@ INCLUDES = -Isrc                             \
 
 TEST = test/test.c
 REPL = repl/repl.c
+CLI  = cli/bin.c
 
 EXPF = $(shell cat ${REPL} | grep expf | cut -d' ' -f2- | tr -d '\n' \
          | xargs -d' ' -n1 -I '{}' printf '\\"_{}\\", ' | sed 's/..$$//')
@@ -58,6 +59,14 @@ cov: build
 		./lib/microcuts/tools/coverage.py
 	@ make clean > /dev/null
 
+cli: build
+	@ gcc -Wall -D EXPOSE_INTERNALS -D STOPFAIL -D LONG_TEST ${INCLUDES} ${CLI} -o cli/bin && \
+		chmod +x cli/bin
+	@ make clean > /dev/null
+
+test-pi: cli
+	@ cli/bin -f test/pi.st
+
 wasm: test
 	@ docker run --rm -v ${shell pwd}:/src -u ${shell id -u}:${shell id -g} \
 		emscripten/emsdk emcc -D EXPOSE_INTERNALS -D STOPFAIL ${INCLUDES} ${REPL} \
@@ -75,4 +84,4 @@ svg:
 repl: wasm svg
 	@ python3 -m http.server
 
-ci-check: cov wasm
+ci-check: mleak cov wasm

@@ -42,7 +42,7 @@ debug: build
 	@ make clean > /dev/null
 
 mleak: build
-	@ gcc -Wall -Wcast-align=strict -fsanitize=alignment -fsanitize=undefined -g -D EXPOSE_INTERNALS ${INCLUDES} ${TEST} -o ${OUTPUT} && \
+	@ ulimit -n 65536 && gcc -Wall -Wcast-aligcn=strict -fsanitize=alignment -fsanitize=undefined -g -D EXPOSE_INTERNALS ${INCLUDES} ${TEST} -o ${OUTPUT} && \
 		chmod +x ${OUTPUT} && valgrind --leak-check=full --show-error-list=yes --track-origins=yes ${OUTPUT}
 	@ make clean > /dev/null
 
@@ -53,9 +53,9 @@ gdb: build
 
 cov: build
 	@ rm -f *.gc*
-	@ gcc --coverage -D EXPOSE_INTERNALS ${INCLUDES} ${TEST} -o ${OUTPUT} && \
+	 gcc --coverage -D EXPOSE_INTERNALS ${INCLUDES} ${TEST} -o ${OUTPUT} && \
 		chmod +x ${OUTPUT} && ./${OUTPUT} && \
-		gcov star_t.c > /dev/null && \
+		gcov src/star_t.c -o ${OUTPUT}-star_t.gcda > /dev/null && \
 		./lib/microcuts/tools/coverage.py
 	@ make clean > /dev/null
 

@@ -177,6 +177,7 @@ void new_sub(uint8_t * src, State * s) {
   sub->src = src;
   sub->_m = s->_m;
   sub->_m0 = sub->_m;
+  sub->_mlen = s->_mlen - (sub->_m - s->_m);
   sub->_src0 = sub->src;
   sub->_funcs = s->_funcs; // share funcs
   sub->_funcc = s->_funcc; // share funcs

@@ -74,12 +74,21 @@ wasm: test
 		-s EXPORTED_FUNCTIONS="[${EXPF}]" \
 		-o repl/core.js
 
-svg:
-	@ pip3 --version || { echo "please install pip for python3"; }
-	@ python3 -c "import railroad" || { pip3 install --user railroad-diagrams; }
+.ONESHELL:
+build/.venv:
+	@ python3 -m venv build/.venv
+	@ source build/.venv/bin/activate
+	@ python3 -m pip install railroad-diagrams==1.1.0
+
+.ONESHELL:
+svg: build/.venv
+	@ source build/.venv/bin/activate
 	@ rm -f grammar/railroad-svg/*.svg
-	@ cd grammar/railroad-svg && python3 update-svg.py desktop && python3 update-svg.py mobile
-	@ cd grammar/railroad-svg && python3 update-svg.py desktop blog && python3 update-svg.py mobile blog
+	@ cd grammar/railroad-svg
+	@ python3 update-svg.py desktop
+	@ python3 update-svg.py mobile
+	@ python3 update-svg.py desktop blog
+	@ python3 update-svg.py mobile blog
 
 repl: wasm svg
 	@ python3 -m http.server

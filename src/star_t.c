@@ -100,6 +100,7 @@ int8_t blockrun(State * s, uint8_t last){
     s->_matching = 1;
     s->_forward = 1;
     s->_prev_step_result = JM_ERR0;
+    s->reg.i8[0] = 1;
   }
 
   while (1){

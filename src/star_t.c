@@ -135,9 +135,6 @@ int8_t blockrun(State * s, uint8_t last){
     }
     if (s->sub){
       blockrun(s->sub, 1);
-      if (s->sub->_id){
-        free(s->sub->_id);
-      }
       if (s->sub->_freesrc){
         free(s->sub->_src0);
       }

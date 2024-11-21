@@ -1,5 +1,6 @@
 .PHONY: test cli
 
+UNAME = $(shell uname)
 MAX_INT = 10000
 
 DBGFLAGS = -D DEBUG_INTERPRETER              \
@@ -42,8 +43,13 @@ debug: build
 	@ make clean > /dev/null
 
 mleak: build
+ifeq ($(UNAME), Linux)
 	@ ulimit -n 65536 && gcc -Wall -Wcast-aligcn=strict -fsanitize=alignment -fsanitize=undefined -g -D EXPOSE_INTERNALS ${INCLUDES} ${TEST} -o ${OUTPUT} && \
 		chmod +x ${OUTPUT} && valgrind --leak-check=full --show-error-list=yes --track-origins=yes ${OUTPUT}
+else
+	@ gcc --coverage -D EXPOSE_INTERNALS ${INCLUDES} ${TEST} -o ${OUTPUT} && \
+		chmod +x ${OUTPUT} && leaks -atExit -- ./${OUTPUT}
+endif
 	@ make clean > /dev/null
 
 gdb: build

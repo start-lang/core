@@ -215,6 +215,29 @@ int main(void){
   // 9. 3 [4|0> 4 - ; load
   assert_eq((run(">4!<3!1>;"), RM.i8[0]), 4);
   assert_eq((run("s>4!<3!1>;"), RM.i8[0]), 4);
+  assert_eq((run(""), s->_m - s->_m0), 0);
+  assert_eq((run(">"), s->_m - s->_m0), 1);
+  assert_eq((run(">>"), s->_m - s->_m0), 2);
+  assert_eq((run("2>"), s->_m - s->_m0), 2);
+  assert_eq((run(">>>"), s->_m - s->_m0), 3);
+  assert_eq((run("3>"), s->_m - s->_m0), 3);
+  assert_eq((run(">2>"), s->_m - s->_m0), 3);
+  assert_eq((run(">>>>"), s->_m - s->_m0), 4);
+  assert_eq((run("2>2>"), s->_m - s->_m0), 4);
+  assert_eq((run("3>1>"), s->_m - s->_m0), 4);
+  assert_eq((run("4>0>"), s->_m - s->_m0), 4);
+  assert_eq((run("s>"), s->_m - s->_m0), 2);
+  assert_eq((run("s1>"), s->_m - s->_m0), 2);
+  assert_eq((run("s2>"), s->_m - s->_m0), 4);
+  assert_eq((run("s3>"), s->_m - s->_m0), 6);
+  assert_eq((run("i>"), s->_m - s->_m0), 4);
+  assert_eq((run("i2>"), s->_m - s->_m0), 8);
+  assert_eq((run("i3>"), s->_m - s->_m0), 12);
+  assert_eq((run("f>"), s->_m - s->_m0), 4);
+  assert_eq((run("f>>"), s->_m - s->_m0), 8);
+  // undefined behavior: float constant is converted to int8 by truncation
+  // assert_eq((run("f1>"), s->_m - s->_m0), 4);
+  assert_eq((run("f1>"), s->_m - s->_m0), 0); // TODO: add warning
   end_section();
 
   begin_section("STRING");

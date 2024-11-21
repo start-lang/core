@@ -50,13 +50,14 @@ typedef struct _State {
 
   uint16_t _ic;
 
-  uint8_t _ans:1;
-  uint8_t _type:2;
-  uint8_t _forward:1;
-  uint8_t _lookahead:1;
-  uint8_t _prev_step_result:4;
-  uint8_t _string:1;
-  uint8_t _srcinput:1;
+  uint16_t _ans:1;
+  uint16_t _type:2;
+  uint16_t _forward:1;
+  uint16_t _lookahead:1;
+  uint16_t _prev_step_result:4;
+  uint16_t _string:1;
+  uint16_t _srcinput:1;
+  uint16_t _freesrc:1;
 
   uint8_t _idlen;
   uint8_t _prev_token;

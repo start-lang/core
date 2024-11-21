@@ -138,6 +138,9 @@ int8_t blockrun(State * s, uint8_t last){
       if (s->sub->_id){
         free(s->sub->_id);
       }
+      if (s->sub->_freesrc){
+        free(s->sub->_src0);
+      }
       // restore posible changes
       s->_funcs = s->sub->_funcs;
       s->_funcc = s->sub->_funcc;
@@ -421,7 +424,13 @@ uint8_t step(uint8_t token, State * s){
       s->_string = 1;
       break;
     case RUN:
-      new_sub((uint8_t*) s->_m, s);
+      {
+        uint16_t len = strlen((char*) s->_m);
+        uint8_t * src = (uint8_t*) malloc(len + 1);
+        strcpy((char*) src, (char*) s->_m);
+        new_sub(src, s);
+        s->sub->_freesrc = 1;
+      }
       break;
     case MALLOC:
       s->_mlen = REG.i16[0] * (s->_type + 1);

@@ -166,6 +166,21 @@ int main(void){
   assert_eq((run("f16@32"), RM.f32), 16);
   end_section();
 
+  begin_section("DATA ALIGNMENT");
+  assert_eq((run("s257!0"), RM.i16[0]), 257);
+  assert_eq((run(">s257!0"), RM.i16[0]), 257);
+  assert_eq((run("2>s257!0"), RM.i16[0]), 257);
+  assert_eq((run("3>s257!0"), RM.i16[0]), 257);
+  assert_eq((run("i65537!0"), RM.i32), 65537);
+  assert_eq((run(">i65537!0"), RM.i32), 65537);
+  assert_eq((run("2>i65537!0"), RM.i32), 65537);
+  assert_eq((run("3>i65537!0"), RM.i32), 65537);
+  assert_eq((run("f3!2/0"), RM.f32), 3.0f/2.0f);
+  assert_eq((run(">f3!2/0"), RM.f32), 3.0f/2.0f);
+  assert_eq((run("2>f3!2/0"), RM.f32), 3.0f/2.0f);
+  assert_eq((run("3>f3!2/0"), RM.f32), 3.0f/2.0f);
+  end_section();
+
   begin_section("STORE");
   assert_eq((run("3!"), M[0]), 3);
   // store 3/2

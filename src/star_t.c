@@ -191,12 +191,10 @@ void new_sub(uint8_t * src, State * s) {
 
 Register mload(State * s) {
   Register x = {.i32 = 0};
-  if (s->_type == INT8) {
-    x.i8[0] = s->_m[0];
-  } else if (s->_type == INT16) {
+  if (s->_type == INT16) {
     x.i8[0] = s->_m[0];
     x.i8[1] = s->_m[1];
-  } else {
+  } else if (s->_type != INT8) {
     x.i8[0] = s->_m[0];
     x.i8[1] = s->_m[1];
     x.i8[2] = s->_m[2];

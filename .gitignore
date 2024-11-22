@@ -2,3 +2,4 @@ build/
 cli/bin
 *.gc*
 *.DS_Store
+.vscode/

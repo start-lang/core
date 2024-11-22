@@ -4,6 +4,9 @@ UNAME = $(shell uname)
 MAX_INT = 10000
 
 CC = clang
+GCOV = llvm-cov-19 gcov
+#CC = gcc
+#GCOV = gcov
 
 DBGFLAGS = -D DEBUG_INTERPRETER              \
            -D EXPOSE_INTERNALS               \
@@ -63,7 +66,7 @@ cov: build
 	@ rm -f *.gc*
 	 ${CC} --coverage -D EXPOSE_INTERNALS ${INCLUDES} ${TEST} -o ${OUTPUT} && \
 		chmod +x ${OUTPUT} && ./${OUTPUT} && \
-		gcov src/star_t.c -o ${OUTPUT}-star_t.gcda > /dev/null && \
+		${GCOV} src/star_t.c -o ${OUTPUT}-star_t.gcda > /dev/null && \
 		./lib/microcuts/tools/coverage.py
 	@ make clean > /dev/null
 

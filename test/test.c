@@ -115,11 +115,11 @@ Function ext[] = {
   {NULL, undef},
 };
 
-char * getBuffer(){
+char * getBuffer(void){
   return out;
 }
 
-void clean(){
+void clean(void){
   free_memory(s);
 }
 

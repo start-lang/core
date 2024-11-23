@@ -16,6 +16,7 @@ int8_t step_callback(State * s) {
   return stop;
 }
 
+#ifdef ENABLE_FILES
 char * load_file(const char * fname){
   char *source = NULL;
   FILE *fp = fopen(fname, "r");
@@ -33,6 +34,7 @@ char * load_file(const char * fname){
   }
   return NULL;
 }
+#endif
 
 int8_t run(char * src) {
   stop = 0;
@@ -521,12 +523,22 @@ int main(void){
   assert_eq((run("\"Z{11!rK}2!\"#>Z"), M[1]), 11);
   end_section();
 
+  #ifdef ENABLE_FILES
   #ifdef LONG_TEST
   begin_section("Pi");
   {
     char * src = load_file("test/pi.st");
     char pi[] = "3.141592653";
     assert_str_eq(pi, (run(src), out));
+    free(src);
+  }
+  end_section();
+
+  begin_section("e");
+  {
+    memset(out, 0, 256);
+    char * src = load_file("test/e.st");
+    assert_eq(run(src), 0);
     free(src);
   }
   end_section();
@@ -539,15 +551,7 @@ int main(void){
     free(src);
   }
   end_section();
-
-  // begin_section("e");
-  // {
-  //   memset(out, 0, 256);
-  //   char * src = load_file("test/e.st");
-  //   assert_eq(run(src), 0);
-  //   free(src);
-  // }
-  // end_section();
+  #endif
 
   begin_section("Malloc");
   assert_eq((run("4m"), s->_mlen), 4);

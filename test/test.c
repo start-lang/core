@@ -3,7 +3,6 @@
 #include <string.h>
 #include <microcuts.h>
 #include <star_t.h>
-#include <time.h>
 
 Register RM;
 uint8_t * M;
@@ -42,13 +41,7 @@ int8_t run(char * src) {
   memset(s, 0, sizeof(State));
   memset(out, 0, 256);
   s->src = (uint8_t*) src;
-  clock_t begin = clock();
   int8_t result = blockrun(s, 1);
-  clock_t end = clock();
-  time_spent = (double)(end - begin) / CLOCKS_PER_SEC;
-  // if (s->_ic > 100){
-  //   printf("%d %d IPS\n", s->_ic, (int)(s->_ic/time_spent));
-  // }
   RM.i8[0] = s->_m[0];
   RM.i8[1] = s->_m[1];
   RM.i8[2] = s->_m[2];
@@ -78,7 +71,7 @@ int8_t f_printnum(State * s){
   if (s->_type == INT8) s->reg.i8[0] = sprintf(out, "%u", s->reg.i8[0]);
   else if (s->_type == INT16) s->reg.i16[0] = sprintf(out, "%u", s->reg.i16[0]);
   else if (s->_type == INT32) s->reg.i32 = sprintf(out, "%u", s->reg.i32);
-  else if (s->_type == FLOAT) s->reg.f32 = sprintf(out, "%f", s->reg.f32);
+  else if (s->_type == FLOAT) s->reg.f32 = sprintf(out, "%.2f", s->reg.f32);
   return 0;
 }
 
@@ -121,14 +114,30 @@ char * getBuffer(void){
   return out;
 }
 
-void clean(void){
+int clean(void){
+  int o = s->_ic;
   free_memory(s);
+  return o;
 }
 
-int main(void){
-  setvbuf(stdout, NULL, _IONBF, 0);
-  set_cleanup(clean);
+void print_info(void){
+  printf("state size: %lu\n", sizeof(State));
+}
 
+#ifndef EXPORT
+#define EXPORT
+#endif
+
+void validate(void);
+
+EXPORT int main(void){
+  print_info();
+  set_cleanup(clean);
+  set_target(validate);
+  return run_target();
+}
+
+void validate(void){
   begin_section("NOP");
   assert_eq(run(" "), 0);
   assert_eq(run("   "), 0);
@@ -588,13 +597,13 @@ int main(void){
   end_section();
 
   begin_section("TYPE_CASTING");
-  assert_str_eq((run("f3!2/ ; PRINTNUM"), out), "1.500000");
+  assert_str_eq((run("f3!2/ ; PRINTNUM"), out), "1.50");
   //float to int
   assert_str_eq((run("f3!2/ ;i PRINTNUM"), out), "1");
   //float to int to float
-  assert_str_eq((run("f3!2/ ;if PRINTNUM"), out), "1.000000");
+  assert_str_eq((run("f3!2/ ;if PRINTNUM"), out), "1.00");
   //byte to int to float
-  assert_str_eq((run("b32 if PRINTNUM"), out), "32.000000");
+  assert_str_eq((run("b32 if PRINTNUM"), out), "32.00");
   end_section();
 
   begin_section("ROTATE REGISTER");
@@ -616,11 +625,4 @@ int main(void){
   assert_eq((run("sA^300!>B^200! T^ A;kkB; "), REG.i16[0]), 200);
   assert_eq((run("sA^300!>B^200! T^ A;kkB; "), REG.i16[1]), 300);
   end_section();
-
-
-  end_tests();
-
-  printf("state size: %ld\n", sizeof(State));
-
-  return 0;
 }

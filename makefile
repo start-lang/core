@@ -42,6 +42,11 @@ test: build
 		chmod +x ${OUTPUT} && ./${OUTPUT}
 	@ make clean > /dev/null
 
+test-benchmark: build
+	@ ${CC} -Wall -O3 -flto ${DEFFLAGS} -D STOPFAIL -D LONG_TEST -D BENCHMARK=1000 ${INCLUDES} ${TEST} -o ${OUTPUT} && \
+		chmod +x ${OUTPUT} && ./${OUTPUT}
+	@ make clean > /dev/null
+
 debug: build
 	@ ${CC} -Wall ${DEFFLAGS} $(DBGFLAGS) ${INCLUDES} ${TEST} -o ${OUTPUT} && \
 		chmod +x ${OUTPUT} && ./${OUTPUT}

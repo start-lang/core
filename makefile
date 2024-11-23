@@ -3,13 +3,13 @@
 UNAME = $(shell uname)
 MAX_INT = 10000
 
-CC = clang
-GCOV = llvm-cov-19 gcov
-#CC = gcc
-#GCOV = gcov
+CC := clang
+GCOV := $(if $(filter clang,${CC}),llvm-cov-19) gcov
+
+DEFFLAGS = -D EXPOSE_INTERNALS               \
+		   -D PRINT_TIMINGS
 
 DBGFLAGS = -D DEBUG_INTERPRETER              \
-           -D EXPOSE_INTERNALS               \
 		   -D MAX_ITERATION_COUNT=${MAX_INT} \
 		   -D STOPFAIL                       \
 		   -D PRINT_ITERATION_COUNT=10
@@ -38,40 +38,40 @@ clean: build
 	@ rm -rf build/*
 
 test: build
-	@ ${CC} -Wall -D EXPOSE_INTERNALS -D STOPFAIL -D LONG_TEST ${INCLUDES} ${TEST} -o ${OUTPUT} && \
+	@ ${CC} -Wall ${DEFFLAGS} -D STOPFAIL -D LONG_TEST ${INCLUDES} ${TEST} -o ${OUTPUT} && \
 		chmod +x ${OUTPUT} && ./${OUTPUT}
 	@ make clean > /dev/null
 
 debug: build
-	@ ${CC} -Wall $(DBGFLAGS) ${INCLUDES} ${TEST} -o ${OUTPUT} && \
+	@ ${CC} -Wall ${DEFFLAGS} $(DBGFLAGS) ${INCLUDES} ${TEST} -o ${OUTPUT} && \
 		chmod +x ${OUTPUT} && ./${OUTPUT}
 	@ make clean > /dev/null
 
 mleak: build
 ifeq ($(UNAME), Linux)
-	@ ulimit -n 65536 && ${CC} -Wall -Wstrict-prototypes -Werror -Wcast-align -fsanitize=alignment -fsanitize=undefined -g -D EXPOSE_INTERNALS ${INCLUDES} ${TEST} -o ${OUTPUT} && \
+	@ ulimit -n 65536 && ${CC} -Wall -Wstrict-prototypes -Werror -Wcast-align -fsanitize=alignment -fsanitize=undefined -g ${DEFFLAGS} ${INCLUDES} ${TEST} -o ${OUTPUT} && \
 		chmod +x ${OUTPUT} && valgrind --leak-check=full --show-error-list=yes --track-origins=yes ${OUTPUT}
 else
-	@ ${CC} --coverage -D EXPOSE_INTERNALS ${INCLUDES} ${TEST} -o ${OUTPUT} && \
+	@ ${CC} --coverage ${DEFFLAGS} ${INCLUDES} ${TEST} -o ${OUTPUT} && \
 		chmod +x ${OUTPUT} && leaks -atExit -- ./${OUTPUT}
 endif
 	@ make clean > /dev/null
 
 gdb: build
-	@ ${CC} -Wall -g -D EXPOSE_INTERNALS ${INCLUDES} ${TEST} -o ${OUTPUT} && \
+	@ ${CC} -Wall -g ${DEFFLAGS} ${INCLUDES} ${TEST} -o ${OUTPUT} && \
 		chmod +x ${OUTPUT} && valgrind --leak-check=full --vgdb=yes --vgdb-error=1 ${OUTPUT}
 	@ make clean > /dev/null
 
 cov: build
 	@ rm -f *.gc*
-	 ${CC} --coverage -D EXPOSE_INTERNALS ${INCLUDES} ${TEST} -o ${OUTPUT} && \
+	 ${CC} --coverage ${DEFFLAGS} ${INCLUDES} ${TEST} -o ${OUTPUT} && \
 		chmod +x ${OUTPUT} && ./${OUTPUT} && \
 		${GCOV} src/star_t.c -o ${OUTPUT}-star_t.gcda > /dev/null && \
 		./lib/microcuts/tools/coverage.py
 	@ make clean > /dev/null
 
 cli: build
-	@ gcc -Wall -D EXPOSE_INTERNALS -D STOPFAIL -D LONG_TEST ${INCLUDES} ${CLI} -o cli/bin && \
+	@ gcc -Wall ${DEFFLAGS} -D STOPFAIL -D LONG_TEST ${INCLUDES} ${CLI} -o cli/bin && \
 		chmod +x cli/bin
 	@ make clean > /dev/null
 
@@ -80,7 +80,7 @@ test-pi: cli
 
 wasm: test
 	@ docker run --rm -v ${shell pwd}:/src -u ${shell id -u}:${shell id -g} \
-		emscripten/emsdk emcc -D EXPOSE_INTERNALS -D STOPFAIL ${INCLUDES} ${REPL} \
+		emscripten/emsdk emcc ${DEFFLAGS} -D STOPFAIL ${INCLUDES} ${REPL} \
 		-s EXPORTED_RUNTIME_METHODS='["ccall","cwrap"]' \
 		-s EXPORTED_FUNCTIONS="[${EXPF}]" \
 		-o repl/core.js

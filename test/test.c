@@ -249,6 +249,10 @@ void validate(void){
   // undefined behavior: float constant is converted to int8 by truncation
   // assert_eq((run("f1>"), s->_m - s->_m0), 4);
   assert_eq((run("f1>"), s->_m - s->_m0), 0); // TODO: add warning
+  // invalid moves
+  assert_eq(run("<"), JM_REOB);
+  assert_eq((run("s1000>"), 1000 > MEM_SIZE), 1);
+  assert_eq(run("s1000>"), JM_REOB);
   end_section();
 
   begin_section("STRING");

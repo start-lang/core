@@ -467,7 +467,7 @@ uint8_t step(uint8_t token, State * s){
         if (s->_m - mod >= s->_m0) {
           s->_m -= mod;
         } else {
-          // TODO
+          return JM_REOB;
         }
         break;
       }
@@ -496,10 +496,10 @@ uint8_t step(uint8_t token, State * s){
         uint8_t mod = (prev >= '0' && prev <= '9') ? REG.i8[0] : 1;
         if (s->_type == INT16) mod *= 2;
         else if (s->_type != INT8) mod *= 4;
-        if (s->_m + mod >= s->_m0) {
+        if (s->_m + mod < s->_m0 + s->_mlen) {
           s->_m += mod;
         } else {
-          // TODO
+          return JM_REOB;
         }
         break;
       }

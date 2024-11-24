@@ -524,7 +524,7 @@ int main(void){
   #ifdef LONG_TEST
   begin_section("Pi");
   {
-    char * src = load_file("test/pi.st");
+    char * src = load_file("test/bf/pi.st");
     char pi[] = "3.141592653";
     assert_str_eq(pi, (run(src), out));
     free(src);
@@ -543,7 +543,7 @@ int main(void){
   // begin_section("e");
   // {
   //   memset(out, 0, 256);
-  //   char * src = load_file("test/e.st");
+  //   char * src = load_file("test/bf/e.st");
   //   assert_eq(run(src), 0);
   //   free(src);
   // }

@@ -217,6 +217,7 @@ uint8_t step(uint8_t token, State * s){
   #endif
 
   uint8_t prev = s->_prev_token;
+  s->_prev_token = token;
   if (s->_string){
     if (token != SCAPE) {
       s->_m[0] = token;
@@ -229,7 +230,6 @@ uint8_t step(uint8_t token, State * s){
         s->_string = 0;
       }
     }
-    s->_prev_token = token;
     return 0;
   }
 
@@ -247,7 +247,6 @@ uint8_t step(uint8_t token, State * s){
       s->_fmatching++;
     }
     s->_lensrc++;
-    s->_prev_token = token;
     return 0;
   }
 
@@ -256,7 +255,6 @@ uint8_t step(uint8_t token, State * s){
     s->_id = (uint8_t*) realloc(s->_id, s->_idlen + 1);
     s->_id[s->_idlen] = token;
     s->_idlen++;
-    s->_prev_token = token;
     return 0;
   } else if (s->_idlen) {
     s->_id = (uint8_t*) realloc(s->_id, s->_idlen + 1);
@@ -286,7 +284,6 @@ uint8_t step(uint8_t token, State * s){
       s->_id = NULL;
       s->_idlen = 0;
       s->_srcinput = 1;
-      s->_prev_token = token;
       return 0;
     } else {
       uint8_t found = 0;
@@ -556,7 +553,6 @@ uint8_t step(uint8_t token, State * s){
           jmpmatch = JM_WHI1;
         }
         // printf("%c %d??\n", prev, jmpmatch);
-        s->_prev_token = token;
         return jmpmatch;
       }
     case SUM:
@@ -819,6 +815,5 @@ uint8_t step(uint8_t token, State * s){
       }
       break;
   }
-  s->_prev_token = token;
   return 0;
 }

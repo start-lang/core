@@ -403,6 +403,9 @@ uint8_t step(uint8_t token, State * s){
           default:
             return JM_PEXC;
         }
+        break;
+      default:
+        return JM_PEXC;
     }
     return 0;
   }

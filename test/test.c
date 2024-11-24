@@ -536,7 +536,7 @@ void validate(void){
   #ifdef LONG_TEST
   begin_section("Pi");
   {
-    char * src = load_file("test/pi.st");
+    char * src = load_file("test/bf/pi.st");
     char pi[] = "3.141592653";
     assert_str_eq(pi, (run(src), out));
     free(src);

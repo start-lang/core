@@ -258,6 +258,18 @@ uint8_t step(uint8_t token, State * s){
     return 0;
   }
 
+  if (token == PRINT) {
+    s->_id = (uint8_t*) malloc(2);
+    s->_id[0] = 'P';
+    s->_id[1] = 'C';
+    s->_idlen = 2;
+  } else if (token == INPUT) {
+    s->_id = (uint8_t*) malloc(2);
+    s->_id[0] = 'I';
+    s->_id[1] = 'N';
+    s->_idlen = 2;
+  }
+
   if ((token >= 'A' && token <= 'Z') || token == '_'
       || (s->_idlen && (token >= '0' && token <= '9'))){
     s->_id = (uint8_t*) realloc(s->_id, s->_idlen + 1);
@@ -819,6 +831,8 @@ uint8_t step(uint8_t token, State * s){
     case 0:
     case '\n':
     case '\t':
+    case PRINT:
+    case INPUT:
     case BITWISE_OP:
       break;
     default:

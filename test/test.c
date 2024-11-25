@@ -8,6 +8,8 @@ Register RM;
 uint8_t * M;
 State * s;
 char out[256] = "";
+char input[256] = "";
+char * input_ptr = input;
 double time_spent;
 uint8_t stop = 0;
 
@@ -40,6 +42,7 @@ int8_t run(char * src) {
   s = (State*) malloc(sizeof(State));
   memset(s, 0, sizeof(State));
   memset(out, 0, 256);
+  input_ptr = input;
   s->src = (uint8_t*) src;
   int8_t result = blockrun(s, 1);
   RM.i8[0] = (s->_m - s->_m0 + 0) >= s->_mlen ? 123 : s->_m[0];
@@ -47,6 +50,7 @@ int8_t run(char * src) {
   RM.i8[2] = (s->_m - s->_m0 + 2) >= s->_mlen ? 123 : s->_m[2];
   RM.i8[3] = (s->_m - s->_m0 + 3) >= s->_mlen ? 123 : s->_m[3];
   M = s->_m0;
+  memset(input, 0, 256);
   return result;
 }
 
@@ -64,6 +68,12 @@ int8_t f_print(State * s){
   char tmp[2] = {(char) s->_m[0], 0};
   strcat(out, tmp);
   printf(".");
+  return 0;
+}
+
+int8_t f_input(State * s){
+  s->_m[0] = *input_ptr;
+  input_ptr++;
   return 0;
 }
 
@@ -103,6 +113,9 @@ Function ext[] = {
   {(uint8_t*)"X", f_x},
   {(uint8_t*)"Y", f_y},
   {(uint8_t*)"PRINT", f_print},
+  {(uint8_t*)"PC", f_print},
+  {(uint8_t*)"INPUT", f_input},
+  {(uint8_t*)"IN", f_input},
   {(uint8_t*)"PRINTSTR", f_printstr},
   {(uint8_t*)"PRINTNUM", f_printnum},
   {(uint8_t*)"QUIT", f_quit},
@@ -563,13 +576,32 @@ void validate(void){
   assert_eq((run("\"Z{11!rK}2!\"#>Z"), M[1]), 11);
   end_section();
 
+  begin_section("IO");
+  assert_str_eq((run("32!."), out), " ");
+  assert_str_eq((run("\"Hello\"[.>]"), out), "Hello");
+  strcat(input, "Hello");
+  assert_str_eq((run(",[>,]"), (char *)s->_m0), "Hello");
+  strcat(input, "123");
+  assert_str_eq((run("34!>,[>,]34!"), (char *)s->_m0), "\"123\"");
+  strcat(input, "123");
+  assert_eq((run("A^,[>,]33!A#"), M[0]), 123);
+  strcat(input, "123");
+  assert_eq((run("I{A^,[>,]33!A#}I"), M[0]), 123);
+  strcat(input, "123\n231");
+  assert_eq((run("I{A^,[>,10?!(0?!)]33!A#}I>I"), M[0]), 123);
+  strcat(input, "123\n231");
+  assert_eq((run("I{A^,[>,10?!(0?!)]33!A#}I>I"), M[1]), 231);
+  end_section();
+
   #ifdef ENABLE_FILES
   #ifdef LONG_TEST
   begin_section("Pi");
   {
     char * src = load_file("test/bf/pi.st");
+    strcat(input, "\n");
     assert_eq((run(src), s->_type), 1);
     char pi[] = "3.141592653";
+    strcat(input, "\n");
     assert_str_eq(pi, (run(src), out));
     free(src);
   }
@@ -703,5 +735,7 @@ void validate(void){
   assert_eq((run("+++++[>>+>+<<<-]>>>[<<<+>>>-]>+<<[-----[>]>>[<<<+++>>>[-]]"), M[1]), 3);
   assert_eq((run("++++[>>+>+<<<-]>>>[<<<+>>>-]>+<<[-----[>]>>[<<<+++>>>[-]]"), M[1]), 0);
   assert_eq((run("++++++[>>+>+<<<-]>>>[<<<+>>>-]>+<<[-----[>]>>[<<<+++>>>[-]]"), M[1]), 0);
+  strcat(input, "Hello");
+  assert_str_eq((run(">,[>,]<[.<]"), out), "olleH");
   end_section();
 }

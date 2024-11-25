@@ -7,6 +7,7 @@ CC := clang
 GCOV := $(if $(filter clang,${CC}),llvm-cov-19) gcov
 
 DEFFLAGS = -D EXPOSE_INTERNALS               \
+		   -D ENABLE_FILES                   \
 		   -D PRINT_TIMINGS
 
 DBGFLAGS = -D DEBUG_INTERPRETER              \

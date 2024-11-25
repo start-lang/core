@@ -616,6 +616,7 @@ void validate(void){
   }
   end_section();
 
+  #ifdef MAX_ITERATION_COUNT
   begin_section("e");
   {
     memset(out, 0, 256);
@@ -625,11 +626,21 @@ void validate(void){
   }
   end_section();
   #endif
+  #endif
 
   begin_section("Quine");
   {
     char * src = load_file("test/quine.st");
     assert_str_eq(src, (run(src), out));
+    free(src);
+  }
+  end_section();
+
+  begin_section("Calc");
+  {
+    strcat(input, "22+62");
+    char * src = load_file("test/bf/calc.st");
+    assert_str_eq((run(src), out), "84");
     free(src);
   }
   end_section();

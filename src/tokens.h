@@ -15,6 +15,8 @@
 #define COND_MODIFIER   '?'
 #define LEFT            '<'
 #define RIGHT           '>'
+#define PRINT           '.'
+#define INPUT           ','
 
 #define STARTFUNCTION   '{'
 #define ENDFUNCTION     '}'

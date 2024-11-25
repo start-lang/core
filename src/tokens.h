@@ -35,6 +35,7 @@
 #define RUN             '#'
 #define NEW_VAR         '^'
 #define ROTATE_REG      'k'
+#define TYPE_CAST       'e'
 
 #define SUM             '+'
 #define SUB             '-'

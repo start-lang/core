@@ -804,6 +804,13 @@ uint8_t step(uint8_t token, State * s){
         REG.i8[3] = s->_m[3];
       }
       break;
+    case TYPE_CAST:
+      if (s->_type == T_FLOAT) {
+        REG.i32 = REG.f32;
+      } else {
+        REG.f32 = REG.i32;
+      }
+      break;
     case T_INT8:
       s->_type = 0;
       break;

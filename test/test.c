@@ -556,6 +556,16 @@ int main(void){
   begin_section("Pi");
   {
     char * src = load_file("test/bf/pi.st");
+    assert_eq((run(src), s->_type), 1);
+    char pi[] = "3.141592653";
+    assert_str_eq(pi, (run(src), out));
+    free(src);
+  }
+  end_section();
+  begin_section("Pi_old");
+  {
+    char * src = load_file("test/bf/pi_old.st");
+    assert_eq((run(src), s->_type), 1);
     char pi[] = "3.141592653";
     assert_str_eq(pi, (run(src), out));
     free(src);
@@ -652,7 +662,7 @@ int main(void){
   end_section();
 
 
-  begin_section("BF");
+  begin_section("BF-LIKE");
   //+++[-]
   assert_eq((run("+++??[-??]"),  M[0]), 0);
   //+++
@@ -671,6 +681,17 @@ int main(void){
   assert_eq((run("++++++??[>>+>+<<<-??]>>>??[<<<+>>>-??]>+<<??[-----??[>??]>>??[<<<+++>>>??[-??]??]"), M[1]), 0);
   end_section();
 
+  begin_section("BF");
+  assert_eq((run("+++[-]"),  M[0]), 0);
+  assert_eq((run("+++"), M[0]), 3);
+  assert_eq((run("+++++[>>+<<-]"), M[2]), 5);
+  assert_eq((run("+++++>+++[<+>-]"), M[0]), 8);
+  assert_eq((run("+++++++>+++++[<->-]"), M[0]), 2);
+  assert_eq((run("+++[>+++++<-]"), M[1]), 15);
+  assert_eq((run("+++++[>>+>+<<<-]>>>[<<<+>>>-]>+<<[-----[>]>>[<<<+++>>>[-]]"), M[1]), 3);
+  assert_eq((run("++++[>>+>+<<<-]>>>[<<<+>>>-]>+<<[-----[>]>>[<<<+++>>>[-]]"), M[1]), 0);
+  assert_eq((run("++++++[>>+>+<<<-]>>>[<<<+>>>-]>+<<[-----[>]>>[<<<+++>>>[-]]"), M[1]), 0);
+  end_section();
 
   end_tests();
 

@@ -33,6 +33,7 @@ clean: build
 	@ rm -rf build/*
 
 test: build
+	@ ${MAKE} -C test -s all
 	@ gcc -Wall -D EXPOSE_INTERNALS -D STOPFAIL -D LONG_TEST ${INCLUDES} ${TEST} -o ${OUTPUT} && \
 		chmod +x ${OUTPUT} && ./${OUTPUT}
 	@ make clean > /dev/null
@@ -44,7 +45,7 @@ debug: build
 
 mleak: build
 ifeq ($(UNAME), Linux)
-	@ ulimit -n 65536 && gcc -Wall -Wcast-aligcn=strict -fsanitize=alignment -fsanitize=undefined -g -D EXPOSE_INTERNALS ${INCLUDES} ${TEST} -o ${OUTPUT} && \
+	@ ulimit -n 65536 && gcc -Wall -Wcast-align=strict -fsanitize=alignment -fsanitize=undefined -g -D EXPOSE_INTERNALS ${INCLUDES} ${TEST} -o ${OUTPUT} && \
 		chmod +x ${OUTPUT} && valgrind --leak-check=full --show-error-list=yes --track-origins=yes ${OUTPUT}
 else
 	@ gcc --coverage -D EXPOSE_INTERNALS ${INCLUDES} ${TEST} -o ${OUTPUT} && \

@@ -356,6 +356,7 @@ uint8_t step(uint8_t token, State * s){
         }
         break;
       case COND_MODIFIER:
+        s->_cond = 1;
         switch (token) {
           case C_EQ:
             if (s->_type == INT8) s->_ans = REG.i8[0] == s->_m[0];
@@ -540,6 +541,14 @@ uint8_t step(uint8_t token, State * s){
         uint8_t jmpmatch = JM_NONE;
         s->_matching = 1;
         s->_forward = 1;
+
+        if (!s->_cond && (token == WHILE || token == ENDWHILE)){
+          if (s->_type == INT8) s->_ans = s->_m[0] != 0;
+          else if (s->_type == INT16) s->_ans = mload(s).i16[0] != 0;
+          else if (s->_type == INT32) s->_ans = mload(s).i32 != 0;
+          else if (s->_type == FLOAT) s->_ans = mload(s).f32 != 0;
+        }
+
         if (token == IF && !s->_ans){
           // jump to else : + 1 or endif ) + 1
           jmpmatch = JM_EIFE;
@@ -548,6 +557,7 @@ uint8_t step(uint8_t token, State * s){
           jmpmatch = JM_ENIF;
         } else if (token == WHILE && !s->_ans){
           //jump to ENDWHILE ] + 1
+          s->_cond = 0;
           jmpmatch = JM_EWHI;
         } else if (token == BREAK){
           //jump to ENDWHILE ] + 1
@@ -559,6 +569,7 @@ uint8_t step(uint8_t token, State * s){
           jmpmatch = JM_WHI0;
         } else if (token == ENDWHILE && s->_ans){
           //jump to WHILE [ + 1
+          s->_cond = 0;
           s->_forward = 0;
           s->_matching = -1;
           jmpmatch = JM_WHI1;
@@ -731,6 +742,7 @@ uint8_t step(uint8_t token, State * s){
         else if (s->_type == INT32) REG.i32 = ~REG.i32;
       } else {
         s->_ans = !s->_ans;
+        s->_cond = 1;
       }
       break;
     case SWITCH:
@@ -800,6 +812,7 @@ uint8_t step(uint8_t token, State * s){
       break;
     case BOOL_TRUE:
       s->_ans = 1;
+      s->_cond = 1;
       break;
     case ENDIF:
     case NOP:

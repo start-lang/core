@@ -42,10 +42,10 @@ int8_t run(char * src) {
   memset(out, 0, 256);
   s->src = (uint8_t*) src;
   int8_t result = blockrun(s, 1);
-  RM.i8[0] = s->_m[0];
-  RM.i8[1] = s->_m[1];
-  RM.i8[2] = s->_m[2];
-  RM.i8[3] = s->_m[3];
+  RM.i8[0] = (s->_m - s->_m0 + 0) >= s->_mlen ? 123 : s->_m[0];
+  RM.i8[1] = (s->_m - s->_m0 + 1) >= s->_mlen ? 123 : s->_m[1];
+  RM.i8[2] = (s->_m - s->_m0 + 2) >= s->_mlen ? 123 : s->_m[2];
+  RM.i8[3] = (s->_m - s->_m0 + 3) >= s->_mlen ? 123 : s->_m[3];
   M = s->_m0;
   return result;
 }
@@ -524,6 +524,33 @@ void validate(void){
 
   begin_section("Run");
   assert_eq((run("\"1!\"#"), M[0]), 1);
+  assert_eq((run("\"\\\"1!\\\"#\"#"), M[0]), 1);
+  assert_eq((run("\"\\\"\\\\\"1!\\\\\"#\\\"#\"#"), M[0]), 1);
+  assert_eq((run("\"\\\"\\\\\"\\\\\\\"1!\\\\\\\"#\\\\\"#\\\"#\"#"), M[0]), 1);
+  {
+    char src[256] = "";
+    int max = 20;
+    int i = 4;
+    while(++i <= max && 6 + 2 + 2*i + i * i < 256){
+      strcat(src, "s256mb");
+      for (int j = 0; j < i; j++){
+        for (int k = 0; k < j; k++){
+          strcat(src, "\\");
+        }
+        strcat(src, "\"");
+      }
+      strcat(src, "1!");
+      for (int j = i - 1; j > 0; j--){
+        for (int k = 0; k < j; k++){
+          strcat(src, "\\");
+        }
+        strcat(src, "\"#");
+      }
+      strcat(src, "\"#");
+      assert_eq((run(src), M[0]), 1);
+      src[0] = 0;
+    }
+  }
   assert_eq((run("\"1!>2!>3!\"#"), M[0]), 1);
   assert_eq((run("\"Z{1!K}2!>Z\"#"), M[1]), 111);
   assert_eq((run("\"Z{1!K}2!\"#>Z"), M[1]), 111);
@@ -569,6 +596,13 @@ void validate(void){
   begin_section("Malloc");
   assert_eq((run("4m"), s->_mlen), 4);
   assert_eq((run("20m"), s->_mlen), 20);
+  // memory overflow
+  assert_eq((run("5m"), s->_mlen), 5);
+  assert_eq(run("5m\"123\""), 0);
+  assert_eq(run("5m\"1234\""), 0);
+  assert_eq(run("5m\"12345\""), JM_REOB);
+  assert_eq(run("5m\"123456\""), JM_REOB);
+  assert_eq(run("7m\"123456\""), 0);
   end_section();
 
   begin_section("Goto zero");

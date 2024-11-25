@@ -219,17 +219,25 @@ uint8_t step(uint8_t token, State * s){
   uint8_t prev = s->_prev_token;
   s->_prev_token = token;
   if (s->_string){
+    if (s->_m - s->_m0 >= s->_mlen){
+      return JM_REOB;
+    }
     if (token != SCAPE) {
       s->_m[0] = token;
       REG.i8[0]++;
-      s->_m++;
       if (token == STRING && prev != SCAPE) {
-        *((uint8_t*)(s->_m - 1)) = 0;
+        s->_m[0] = 0;
         s->_m -= REG.i8[0];
-        REG.i8[0] -= 1;
+        REG.i8[0]--;
         s->_string = 0;
       }
+    } else if (prev == SCAPE) {
+      s->_m[0] = token;
+      REG.i8[0]++;
+    } else {
+      return 0;
     }
+    s->_m++;
     return 0;
   }
 

@@ -10,9 +10,9 @@ if len(sys.argv) != 2:
 with open(sys.argv[1], "r") as f:
     code = f.read()
 
-# find "# init:(.*)"
 init = re.search(r"# init:(.*)", code)
 code = re.sub(r"#.*", "", code)
+code = re.sub(r"[^\[\]+-.,<>]", "", code)
 code = code.replace("\n", "")
 code = code.replace(" ", "")
 out = ""
@@ -35,15 +35,6 @@ for c in code:
         count = 1
     last = c
 out += last
-out = out.replace("<", "<")
-out = out.replace(">", ">")
-out = out.replace("-", "-")
-out = out.replace("+", "+")
-out = out.replace("[", "[")
-out = out.replace("]", "]")
-out = out.replace(".", ".")
-out = out.replace(",", ",")
-out = out
 r = 100 - len(out) / len(code) * 100
 rc = len(code) - len(out)
 print(f'reduction: {r:.2f}% ({len(code)} - {rc} chars)', file=sys.stderr)

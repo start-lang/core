@@ -613,6 +613,16 @@ int main(void){
   }
   end_section();
 
+  begin_section("Calc");
+  {
+    strcat(input, "22+62");
+    char * src = load_file("test/bf/calc.st");
+    //force_debug = 1;
+    assert_str_eq((run(src), out), "84");
+    free(src);
+  }
+  end_section();
+
   // begin_section("e");
   // {
   //   memset(out, 0, 256);

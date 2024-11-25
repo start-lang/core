@@ -4,23 +4,23 @@
 #include <microcuts.h>
 #include <star_t.h>
 #include <time.h>
+#include <stdf.h>
+#include <debug_utils.h>
 
-Register RM;
-uint8_t * M;
 State * s;
-uint8_t stop = 0;
+char * src;
 uint8_t debug = 0;
+uint8_t force_debug = 0;
+uint8_t print_step_count = 1;
+uint32_t max_steps = 0;
+uint16_t max_output = 0;
+uint64_t steps = 0;
 
 int8_t step_callback(State * s) {
-  if (debug) {
-    for (uint8_t * i = s->_m0; i <= s->_m + 2; i++){
-      if (i == s->_m) {
-        printf("[%d:%d:%d> ", REG.i32, s->_ans, s->_type);
-      }
-      printf("[%d] ", i[0]);
-    }
-    printf("\t\t- %c \n", s->src[0]);
-  }
+  debug_state(s, debug, debug);
+  if (max_steps && steps >= max_steps) stop = 1;
+  if (max_output && output_len >= max_output) stop = 1;
+  steps++;
   return stop;
 }
 
@@ -38,6 +38,9 @@ char * load_file(const char * fname){
     }
     fclose(fp);
     return source;
+  } else {
+    printf("Failed loading file\n");
+    exit(1);
   }
   return NULL;
 }
@@ -48,78 +51,11 @@ int8_t run(char * src) {
   memset(s, 0, sizeof(State));
   s->src = (uint8_t*) src;
   int8_t result = blockrun(s, 1);
-  RM.i8[0] = s->_m[0];
-  RM.i8[1] = s->_m[1];
-  RM.i8[2] = s->_m[2];
-  RM.i8[3] = s->_m[3];
-  M = s->_m0;
   return result;
 }
 
-int8_t f_print(State * s){
-  printf("%c", (char) s->_m[0]);
-  return 0;
-}
-
-int8_t f_printstr(State * s){
-  // string:str(_m) ... '/0'
-  printf("%s\n", (char*) s->_m);
-  return 0;
-}
-
-int8_t f_printnum(State * s){
-  // num:8/16/32/f(r0) -> _m:str
-  char * m = (char *) s->_m;
-  if (s->_type == INT8) s->reg.i8[0] = sprintf(m, "%d", s->reg.i8[0]);
-  else if (s->_type == INT16) s->reg.i16[0] = sprintf(m, "%d", s->reg.i16[0]);
-  else if (s->_type == INT32) s->reg.i32 = sprintf(m, "%d", s->reg.i32);
-  else if (s->_type == FLOAT) s->reg.f32 = sprintf(m, "%f", s->reg.f32);
-  return 0;
-}
-
-int8_t f_debug_num(State * s){
-  // num:8/16/32/f(r0)
-  if (s->_type == INT8) s->reg.i8[0] = printf("%d\n", s->reg.i8[0]);
-  else if (s->_type == INT16) s->reg.i16[0] = printf("%d\n", s->reg.i16[0]);
-  else if (s->_type == INT32) s->reg.i32 = printf("%d\n", s->reg.i32);
-  else if (s->_type == FLOAT) s->reg.f32 = printf("%f\n", s->reg.f32);
-  return 0;
-}
-
-int8_t exception_handler(State * s){
-  fprintf(stderr, "Something went wrong\n");
-  return 0;
-}
-
-int8_t undef(State * s){
-  fprintf(stderr, "Undefined function or variable: %s\n", (char *) s->_id);
-  return 0;
-}
-
-int8_t f_error(State * s){
-  fprintf(stderr, "Raising error\n");
-  return JM_ERR0;
-}
-
-int8_t f_quit(State * s){
-  fprintf(stderr, "Quit\n");
-  stop = 1;
-  return 0;
-}
-
 Function ext[] = {
-  {(uint8_t*)"", exception_handler},
-  {(uint8_t*)"PC", f_print},
-  {(uint8_t*)"PS", f_printstr},
-  {(uint8_t*)"PN", f_printnum},
-  {(uint8_t*)"PRINT", f_print},
-  {(uint8_t*)"PRINTSTR", f_printstr},
-  {(uint8_t*)"PRINTNUM", f_printnum},
-  {(uint8_t*)"QUIT", f_quit},
-  {(uint8_t*)"ERROR", f_error},
-  {(uint8_t*)"DT", f_printstr},
-  {(uint8_t*)"WS", f_printstr},
-  {NULL, undef},
+  STAR_T_FUNCTIONS,
 };
 
 void help(char* cmd){
@@ -127,48 +63,74 @@ void help(char* cmd){
   exit(0);
 }
 
-int main(int argc, char* argv[]){
-  setvbuf(stdout, NULL, _IONBF, 0);
-
-  if (argc == 1) {
-    help(argv[0]);
-    return 0;
-  } else {
-    if (strcmp("-h", argv[1]) == 0 || strcmp("--help", argv[1]) == 0) {
+void arg_parse(int argc, char* argv[]){
+  for (int i = 1; i < argc; i++) {
+    if (strcmp("-h", argv[i]) == 0 || strcmp("--help", argv[i]) == 0) {
       help(argv[0]);
-      return 0;
-    } else if (strcmp("-f", argv[1]) == 0 || strcmp("--file", argv[1]) == 0) {
-      if (argc != 3) {
-        help(argv[0]);
-      }
-      char * src = load_file(argv[2]);
+      exit(0);
+    } else if (strcmp("-f", argv[i]) == 0 || strcmp("--file", argv[i]) == 0) {
+      if (i + 1 >= argc) { help(argv[0]); exit(1); }
+      src = load_file(argv[++i]);
       if (!src) {
         fprintf(stderr, "Failed loading file\n");
-        exit(0);
+        exit(1);
       }
-      int8_t r = run(src);
-      free_memory(s);
-      return r;
-    }
-    int pos = 1;
-    if (strcmp("-d", argv[1]) == 0 || strcmp("--debug", argv[1]) == 0) {
-      pos++;
+    } else if (strcmp("-d", argv[i]) == 0 || strcmp("--debug", argv[i]) == 0) {
       debug = 1;
+    } else if (strcmp("-S", argv[i]) == 0 || strcmp("--max-steps", argv[i]) == 0) {
+      if (i + 1 >= argc) { help(argv[0]); exit(1); }
+      max_steps = atoi(argv[++i]) * 1000;
+    } else if (strcmp("-O", argv[i]) == 0 || strcmp("--max-output", argv[i]) == 0) {
+      if (i + 1 >= argc) { help(argv[0]); exit(1); }
+      max_output = atoi(argv[++i]);
+    } else if (argv[i][0] != '-') {
+      src = realloc(src, 1);
+      src[0] = 0;
+      for (int j = i; j < argc; j++) {
+        int size = strlen(src) + strlen(argv[j]) + 1;
+        src = realloc(src, size);
+        strcat(src, argv[j]);
+        strcat(src, " ");
+      }
+      break;
     }
-
-    int size = 0;
-    char * src = malloc(1);
-    src[0] = 0;
-    for (int i = pos; i < argc; i++) {
-      size += strlen(argv[i]) + 1;
-      src = realloc(src, size);
-      strcat(src, argv[i]);
-      strcat(src, " ");
-    }
-    printf("%s\n", src);
-    int8_t r = run(src);
-    free_memory(s);
-    return r;
   }
-  return 0;
+}
+
+void remove_whitespace() {
+    if (!src) return;
+    char *p = src;
+    char *q = src;
+    int in_space = 0;
+    while (*p) {
+      if (*p == '\n') {
+        p++;
+      } else if (*p == ' ') {
+        if (!in_space) {
+          *q++ = ' ';
+          in_space = 1;
+        }
+        p++;
+      } else {
+        *q++ = *p++;
+        in_space = 0;
+      }
+    }
+    *q = '\0';
+}
+
+int main(int argc, char* argv[]){
+  setvbuf(stdout, NULL, _IONBF, 0);
+  arg_parse(argc, argv);
+  if (!src) {
+    help(argv[0]);
+    exit(1);
+  }
+  remove_whitespace();
+  int8_t r = run(src);
+  free_memory(s);
+  if (print_step_count) {
+    printf("%ld op\n", steps);
+  }
+  return r;
 }

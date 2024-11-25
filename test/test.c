@@ -3,6 +3,7 @@
 #include <string.h>
 #include <microcuts.h>
 #include <star_t.h>
+#include <debug_utils.h>
 #include <time.h>
 
 Register RM;
@@ -13,9 +14,10 @@ char input[256] = "";
 char * input_ptr = input;
 double time_spent;
 uint8_t stop = 0;
+uint8_t force_debug = 0;
 
 int8_t step_callback(State * s) {
-  return stop;
+  return debug_state(s, force_debug, 1) ? 1 : stop;
 }
 
 char * load_file(const char * fname){
@@ -50,6 +52,7 @@ int8_t run(char * src) {
   // if (s->_ic > 100){
   //   printf("%d %d IPS\n", s->_ic, (int)(s->_ic/time_spent));
   // }
+  force_debug = 0;
   RM.i8[0] = (s->_m - s->_m0 + 0) >= s->_mlen ? 123 : s->_m[0];
   RM.i8[1] = (s->_m - s->_m0 + 1) >= s->_mlen ? 123 : s->_m[1];
   RM.i8[2] = (s->_m - s->_m0 + 2) >= s->_mlen ? 123 : s->_m[2];
@@ -702,7 +705,6 @@ int main(void){
   assert_eq((run("sA^300!>B^200! T^ A;kkB; "), REG.i16[0]), 200);
   assert_eq((run("sA^300!>B^200! T^ A;kkB; "), REG.i16[1]), 300);
   end_section();
-
 
   begin_section("BF-LIKE");
   //+++[-]

@@ -10,9 +10,11 @@ DBGFLAGS = -D DEBUG_INTERPRETER              \
 		   -D PRINT_ITERATION_COUNT=10
 
 INCLUDES = -Isrc                             \
+           -Ilib/tools                       \
            -Ilib/microcuts/src               \
 		   lib/microcuts/src/microcuts.c     \
-		   src/star_t.c
+		   src/star_t.c 				     \
+		   lib/tools/debug_utils.c
 
 TEST = test/test.c
 REPL = repl/repl.c

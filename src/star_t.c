@@ -835,6 +835,7 @@ uint8_t step(uint8_t token, State * s){
       break;
     case ENDIF:
     case NOP:
+    case DEBUG:
     case 0:
     case '\n':
     case '\t':

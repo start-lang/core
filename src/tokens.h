@@ -12,6 +12,7 @@
 #define ENDARRAY        '}' // unused
 
 #define NOP             ' '
+#define DEBUG           '`'
 #define COND_MODIFIER   '?'
 #define LEFT            '<'
 #define RIGHT           '>'

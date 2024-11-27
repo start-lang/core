@@ -9,6 +9,8 @@ extern "C" {
 
 uint8_t debug_state(State * s, uint8_t force_debug, uint8_t style);
 
+void print_exec_info(void);
+
 #ifdef __cplusplus
 }
 #endif

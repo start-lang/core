@@ -10,18 +10,14 @@
 State * s;
 char * src;
 uint8_t debug = 0;
-uint8_t force_debug = 0;
 uint8_t print_step_count = 1;
-uint32_t max_steps = 0;
-uint16_t max_output = 0;
-uint64_t steps = 0;
+extern uint32_t max_steps;
+extern uint16_t max_output;
+extern uint64_t steps;
+extern uint64_t keep_vars;
 
 int8_t step_callback(State * s) {
-  debug_state(s, debug, debug);
-  if (max_steps && steps >= max_steps) stop = 1;
-  if (max_output && output_len >= max_output) stop = 1;
-  steps++;
-  return stop;
+  return stop || debug_state(s, debug, debug);
 }
 
 char * load_file(const char * fname){
@@ -77,6 +73,7 @@ void arg_parse(int argc, char* argv[]){
       }
     } else if (strcmp("-d", argv[i]) == 0 || strcmp("--debug", argv[i]) == 0) {
       debug = 1;
+      keep_vars = 1;
     } else if (strcmp("-S", argv[i]) == 0 || strcmp("--max-steps", argv[i]) == 0) {
       if (i + 1 >= argc) { help(argv[0]); exit(1); }
       max_steps = atoi(argv[++i]) * 1000;
@@ -119,6 +116,8 @@ void remove_whitespace() {
     *q = '\0';
 }
 
+extern uint16_t mem_used;
+
 int main(int argc, char* argv[]){
   setvbuf(stdout, NULL, _IONBF, 0);
   arg_parse(argc, argv);
@@ -131,6 +130,7 @@ int main(int argc, char* argv[]){
   free_memory(s);
   if (print_step_count) {
     printf("%ld op\n", steps);
+    printf("%d bytes used\n", mem_used);
   }
   return r;
 }

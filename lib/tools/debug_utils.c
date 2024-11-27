@@ -1,11 +1,34 @@
 #include <stdint.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include <tokens.h>
 #include <termios.h>
 #include <unistd.h>
 #include <debug_utils.h>
 
-#define WIDTH 42
+#define WIDTH 130
+
+typedef struct {
+  uint8_t* name;
+  uint16_t pos;
+  uint8_t type;
+} TypedVariable;
+
+TypedVariable * vars = NULL;
+uint8_t varc = 0;
+
+uint8_t first_callback = 1;
+uint8_t keep_vars = 0;
+uint16_t mem_offset = 0;
+uint16_t code_offset = 0;
+uint16_t mem_used = 0;
+uint32_t max_steps = 0;
+uint16_t max_output = 0;
+uint64_t steps = 0;
+uint32_t forward_steps = 0;
+uint16_t forward_multiply = 1;
+extern uint16_t output_len;
 
 uint8_t getch() {
   struct termios oldt, newt;
@@ -30,43 +53,107 @@ uint8_t getch() {
 }
 
 void print_state_mem(State * s) {
-  printf("\033[K\033[90m[ ");
-  uint8_t length = s->_mlen > WIDTH ? WIDTH : s->_mlen;
-  for (uint8_t i = 0; i < length; i++) {
-    if (s->_m0 + i == s->_m) {
-      printf("\033[36m");
+  printf("\033[K\033[90m");
+  if (mem_offset) {
+    printf("\033[0m%3d\033[90m", mem_offset);
+  } else {
+    printf("  0");
+  }
+  printf("[ ");
+  uint8_t max_len = (WIDTH - 15)/4;
+  uint8_t length = s->_mlen - mem_offset > max_len ? max_len : s->_mlen - mem_offset;
+  uint8_t show_value = 1;
+  for (uint8_t i = mem_offset; i < length + mem_offset; i++) {
+    TypedVariable * v = NULL;
+    for (uint8_t j = 0; j < varc; j++) {
+      if (vars[j].pos == i) {
+        v = vars + j;
+        break;
+      }
     }
-    printf("%03d ", s->_m0[i]);
-    if (s->_m0 + i == s->_m) {
-      printf("\033[90m");
+    if (show_value) {
+      if (s->_m0 + i == s->_m) {
+        if (v && s->_type != v->type) {
+          v = NULL;
+          printf("\033[33m");
+        } else {
+          printf("\033[36m");
+        }
+      }
+      if (!v) {
+        printf("%03d ", s->_m0[i]);
+      } else {
+        uint8_t vlen = 0;
+        uint8_t type = v->type;
+        uint8_t type_len = type == INT8 ? 1 : type == INT16 ? 2 : type == INT32 ? 4 : 4;
+        if (i + type_len - 1 > length + mem_offset) {
+          printf("%03d ", s->_m0[i]);
+          continue;
+        }
+
+        if (type == INT8) vlen = printf("%d", s->_m0[i]);
+        else if (type == INT16) vlen = printf("%d", *(uint16_t*) (s->_m0 + i));
+        else if (type == INT32) vlen = printf("%d", *(uint32_t*) (s->_m0 + i));
+        else if (type == FLOAT) vlen = printf("%f", *(float*) (s->_m0 + i));
+        for (uint8_t j = 0; j < type_len * 4 - vlen; j++) {
+          printf(" ");
+        }
+        i += type_len - 1;
+        printf("\033[90m");
+        continue;
+      }
+      if (s->_m0 + i == s->_m) {
+        printf("\033[90m");
+      }
+    } else {
+      if (s->_m0 + i == s->_m) {
+        if (v && s->_type != v->type) {
+          v = NULL;
+          printf("\033[33m");
+        } else {
+          printf("\033[36m");
+        }
+      }
+      printf("%03d ", s->_m0[i]);
+      if (s->_m0 + i == s->_m) {
+        printf("\033[90m");
+      }
     }
   }
-  printf("]\033[0m %ld %d\n", s->_m - s->_m0, s->_mlen);
+  printf("][%d/%d]\n", length, s->_mlen);
 }
 
 void print_state_vars(State * s) {
-  if (s->_varc == 0) return;
-  printf("\033[K\033[90m  ");
-  uint8_t length = s->_mlen > WIDTH ? WIDTH : s->_mlen;
-  uint8_t type_len = 0;
-  for (uint8_t i = 0; i < length; i++) {
+  printf("\033[K\033[90m     ");
+  uint16_t current_pos = s->_m - s->_m0;
+  uint8_t type_len = s->_type == INT8 ? 1 : s->_type == INT16 ? 2 : s->_type == INT32 ? 4 : 4;
+  uint8_t max_len = (WIDTH - 15)/4;
+  uint8_t length = s->_mlen - mem_offset > max_len ? max_len : s->_mlen - mem_offset;
+  if (current_pos + type_len - 1 < mem_offset) {
+    mem_offset = current_pos;
+  } else if (current_pos + type_len - 1 >= mem_offset + max_len) {
+    mem_offset = current_pos - max_len + type_len;
+  }
+  uint8_t type_hl = 0;
+  for (uint8_t i = mem_offset; i < length + mem_offset; i++) {
     uint8_t found = 0;
     if (s->_m0 + i == s->_m) {
       printf("\033[4m\033[31m");
-      type_len = s->_type == INT8 ? 1 : s->_type == INT16 ? 2 : s->_type == INT32 ? 4 : 4;
-    } else if (type_len) {
+      type_hl = type_len;
+    } else if (type_hl) {
       printf("\033[4m\033[31m");
-      type_len--;
-      if (!type_len) {
+      type_hl--;
+      if (!type_hl) {
         printf("\033[24m\033[90m");
       }
     }
-    for (uint8_t j = 0; j < s->_varc; j++) {
-      if (s->_vars[j].pos == i) {
+    for (uint8_t j = 0; j < varc; j++) {
+      if (vars[j].pos == i) {
         printf("\033[31m");
-        printf("%-3s", s->_vars[j].name);
+        printf("%-3s", vars[j].name);
         printf("\033[90m");
         found = 1;
+        break;
       }
     }
     if (!found) {
@@ -80,12 +167,16 @@ void print_state_vars(State * s) {
 void print_state_code(State * s) {
   printf("\033[K\033[90m");
   uint8_t * src = s->_src0;
+  uint16_t i = 0;
   while (*src) {
     if (src == s->src) {
       printf("\033[42m");
     }
     if (*src == '\n') {
       printf("\\n");
+      i++;
+    } else if (*src == DEBUG) {
+      printf("\033[33m%c\033[90m", *src);
     } else {
       printf("%c", *src);
     }
@@ -93,6 +184,11 @@ void print_state_code(State * s) {
       printf("\033[0m\033[90m");
     }
     src++;
+    i++;
+    if (i > WIDTH) {
+      i = 0;
+      printf("\n");
+    }
   }
   if (src == s->src) {
     printf("\033[41m ");
@@ -100,18 +196,16 @@ void print_state_code(State * s) {
   printf("\033[0m\n");
 }
 
-uint8_t print_head(State * s) {
-  char * rep = s->_type == INT8 ? "int8" : s->_type == INT16 ? "int16" : s->_type == INT32 ? "int32" : "float";
-  char value[10];
-  if (s->_type == INT8) sprintf(value, "%d", REG.i8[0]);
-  else if (s->_type == INT16) sprintf(value, "%d", REG.i16[0]);
-  else if (s->_type == INT32) sprintf(value, "%d", REG.i32);
-  else if (s->_type == FLOAT) sprintf(value, "%f", REG.f32);
-  printf("\033[K[%d %d %d %d:%d:%d(%s/%s)>  ", REG.i8[0], REG.i8[1], REG.i8[2], REG.i8[3], s->_ans, s->_type, rep, value);
-  uint8_t c = getch();
-  //usleep(100000);
-  printf("(%c)", c);
-  return c;
+void print_head(State * s) {
+  char t = s->_type == INT8 ? 'b' : s->_type == INT16 ? 's' : s->_type == INT32 ? 'i' : 'f';
+  char i = s->_cond ? s->_ans ? 't' : 'f' : '?';
+  printf("\033[K[%d %d %d %d:%c:%c(", REG.i8[0], REG.i8[1], REG.i8[2], REG.i8[3], i, t);
+
+  if (s->_type == INT8) printf("%d", REG.i8[0]);
+  else if (s->_type == INT16) printf("%d", REG.i16[0]);
+  else if (s->_type == INT32) printf("%d", REG.i32);
+  else if (s->_type == FLOAT) printf("%f", REG.f32);
+  printf(")>  f %d F %d x%d", 10 * forward_multiply, 100 * forward_multiply, forward_multiply);
 }
 
 uint8_t print_step(State * s, uint8_t color) {
@@ -124,7 +218,7 @@ uint8_t print_step(State * s, uint8_t color) {
       }
       printf("[%d] ", i[0]);
     }
-    if (s->src[0] == MARK) {
+    if (s->src[0] == DEBUG) {
       printf("\n");
     } else {
       printf("\t\t- %c \n", s->src[0]);
@@ -133,28 +227,110 @@ uint8_t print_step(State * s, uint8_t color) {
   return 0;
 }
 
-uint8_t debug_state(State * s, uint8_t force_debug, uint8_t style){
-  if (!force_debug && s->src[0] != MARK) return 0;
+void flush_term(uint8_t lines) {
+  printf("\033[%dF\33[u\033[K", lines);
+  for (uint8_t i = 0; i < lines; i++) {
+    printf("\n\033[K");
+  }
+  printf("\033[%dF\33[u\033[K", lines);
+}
 
-  if (force_debug == 0 && s->src[0] == MARK){
+uint8_t force_force_debug = 0;
+
+uint8_t debug_state(State * s, uint8_t force_debug, uint8_t style){
+  printf("\033[s");
+
+  if (first_callback) {
+    first_callback = 0;
+    uint8_t * src = s->_src0;
+    while (*src) {
+      if (*src == DEBUG) {
+        keep_vars = 1;
+        break;
+      }
+      src++;
+    }
+  }
+
+  if (s->src[0] == DEBUG) force_force_debug = force_debug = style = 1;
+  if (force_force_debug) force_debug = style = 1;
+
+  if (keep_vars && s->src[0] == NEW_VAR) {
+    vars = (TypedVariable*) realloc(vars, (varc + 1) * sizeof(TypedVariable));
+    Variable * v = s->_vars + s->_varc - 1;
+    vars[varc] = (TypedVariable){.name = v->name, .pos = v->pos, .type = s->_type};
+    varc++;
+  }
+
+  if (!force_debug && s->src[0] != DEBUG) return 0;
+  uint8_t lines = 4 + strlen((char*) s->_src0) / WIDTH;
+  uint8_t stop = 0;
+  if (max_steps && steps >= max_steps - 1) stop = 1;
+  if (max_output && output_len >= max_output) stop = 1;
+  steps++;
+  uint8_t type_len = s->_type == INT8 ? 1 : s->_type == INT16 ? 2 : s->_type == INT32 ? 4 : 4;
+  uint16_t current_pos = s->_m - s->_m0;
+  if (current_pos + type_len > mem_used) {
+    mem_used = current_pos + type_len;
+  }
+
+  if (forward_steps) {
+    forward_steps--;
+    return 0;
+  }
+
+  if (force_debug == 0 && s->src[0] == DEBUG && 0){
     print_step(s, 1);
   } else if (style == 0) {
     printf("\033[1F");
     print_step(s, 0);
     print_state_code(s);
   } else {
-    uint8_t lines = 2;
-    if (s->_varc > 0) lines = 3;
-    printf("\033[%dF", lines);
-    //print_mem(s->_m0, s->_mlen > 10 ? 10 : s->_mlen, s->_m - s->_m0);
-    //print_code(s->_src0, s->src);
+    printf("\n");
     print_state_vars(s);
     print_state_mem(s);
     print_state_code(s);
-    uint8_t c = print_head(s);
-    if (c == 'q') {
-      return 1;
+    print_head(s);
+
+    int8_t c = getch();
+    switch (c) {
+      case 1: // up
+        break;
+      case 2: // down
+        break;
+      case 3: // right
+        break;
+      case 4: // left
+        break;
+      case 'q':
+        stop = 1;
+        flush_term(lines);
+        break;
+      case 'f':
+        forward_steps = 10 * forward_multiply;
+        break;
+      case 'F':
+        forward_steps = 100 * forward_multiply;
+        break;
+      case 'x':
+        if (forward_multiply < 1000) forward_multiply *= 10;
+        break;
+      case 'z':
+        if (forward_multiply > 10) forward_multiply /= 10;
+        break;
+      case 'C':
+        forward_steps = 1000000000;
+        flush_term(lines);
+        return 0;
+      default:
+        break;
     }
+    printf("\033[%dF\33[u\033[K", lines);
   }
-  return 0;
+  return stop;
+}
+
+void print_exec_info(void) {
+  printf("%ld op\n", steps);
+  printf("%d bytes used\n", mem_used);
 }

@@ -15,6 +15,7 @@ char * input_ptr = input;
 double time_spent;
 uint8_t stop = 0;
 uint8_t force_debug = 0;
+uint16_t output_len = 0;
 
 int8_t step_callback(State * s) {
   return debug_state(s, force_debug, 1) ? 1 : stop;

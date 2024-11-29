@@ -1,3 +1,7 @@
 [submodule "lib/microcuts"]
 	path = lib/microcuts
 	url = https://github.com/start-lang/microcuts.git
+[submodule "lib/wunstd"]
+	path = lib/wunstd
+	url = https://github.com/start-lang/wunstd.git
+	branch = main

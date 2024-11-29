@@ -33,6 +33,7 @@ OUTPUT   = build/test_star_t
 
 init:
 	@ [ "$$(ls -A lib/microcuts)" ] || git submodule update --init --recursive
+	@ [ "$$(ls -A lib/wunstd)" ] || git submodule update --init --recursive
 
 build: init
 	@ mkdir -p build

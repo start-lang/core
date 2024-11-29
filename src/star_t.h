@@ -60,6 +60,7 @@ typedef struct _State {
   uint16_t _string:1;
   uint16_t _srcinput:1;
   uint16_t _freesrc:1;
+  uint16_t _cond:1;
 
   uint8_t _idlen;
   uint8_t _prev_token;

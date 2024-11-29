@@ -38,6 +38,7 @@ clean: build
 	@ rm -rf build/*
 
 test: build
+	@ ${MAKE} -C test -s all
 	@ ${CC} -Wall ${DEFFLAGS} -D STOPFAIL -D LONG_TEST ${INCLUDES} ${TEST} -o ${OUTPUT} && \
 		chmod +x ${OUTPUT} && ./${OUTPUT}
 	@ make clean > /dev/null

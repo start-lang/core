@@ -39,12 +39,12 @@ out = out.replace("<", "<")
 out = out.replace(">", ">")
 out = out.replace("-", "-")
 out = out.replace("+", "+")
-out = out.replace("[", "??[")
-out = out.replace("]", "??]")
+out = out.replace("[", "[")
+out = out.replace("]", "]")
 out = out.replace(".", " PRINT ")
 out = out.replace(",", "10!")
 out = out
-r = -100 + len(out) / len(code) * 100
+r = 100 - len(out) / len(code) * 100
 rc = len(code) - len(out)
-print(f'increase: {r:.2f}% ({len(code)} + {-rc} chars)', file=sys.stderr)
-print(out, end="")
+print(f'reduction: {r:.2f}% ({len(code)} - {rc} chars)', file=sys.stderr)
+print(out);

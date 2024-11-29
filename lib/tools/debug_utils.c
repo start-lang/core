@@ -5,6 +5,7 @@
 #include <tokens.h>
 #include <termios.h>
 #include <unistd.h>
+#include <time.h>
 #include <debug_utils.h>
 
 #define WIDTH 130
@@ -18,8 +19,13 @@ typedef struct {
 TypedVariable * vars = NULL;
 uint8_t varc = 0;
 
+clock_t start_time;
+uint8_t breakpoint = 0;
 uint8_t first_callback = 1;
-uint8_t keep_vars = 0;
+uint8_t follow_vars = 0;
+uint8_t follow_mem = 0;
+uint16_t srclen = 0;
+uint32_t timeout = 0;
 uint16_t mem_offset = 0;
 uint16_t code_offset = 0;
 uint16_t mem_used = 0;
@@ -27,6 +33,7 @@ uint32_t max_steps = 0;
 uint16_t max_output = 0;
 uint64_t steps = 0;
 uint32_t forward_steps = 0;
+uint32_t time_spent = 0;
 uint16_t forward_multiply = 1;
 extern uint16_t output_len;
 
@@ -235,57 +242,68 @@ void flush_term(uint8_t lines) {
   printf("\033[%dF\33[u\033[K", lines);
 }
 
-uint8_t force_force_debug = 0;
-
-uint8_t debug_state(State * s, uint8_t force_debug, uint8_t style){
+uint8_t debug_state(State * s, uint8_t enable, uint8_t interactive){
   printf("\033[s");
 
   if (first_callback) {
+    start_time = clock();
     first_callback = 0;
     uint8_t * src = s->_src0;
     while (*src) {
       if (*src == DEBUG) {
-        keep_vars = 1;
+        follow_vars = 1;
         break;
       }
       src++;
+      srclen++;
     }
+  } else if (s->src - s->_src0 == srclen) {
+    time_spent = (clock() - start_time) * 1000 / CLOCKS_PER_SEC;
   }
 
-  if (s->src[0] == DEBUG) force_force_debug = force_debug = style = 1;
-  if (force_force_debug) force_debug = style = 1;
+  uint8_t stop = 0;
+  if (max_steps && steps >= max_steps - 1) stop = 1;
+  if (max_output && output_len >= max_output) stop = 1;
+  steps++;
 
-  if (keep_vars && s->src[0] == NEW_VAR) {
+  if (timeout && steps % 10000 == 0) {
+    if ((clock() - start_time) * 1000 / CLOCKS_PER_SEC > timeout) stop = 1;
+  }
+
+  if (s->src[0] == DEBUG) breakpoint = enable = interactive = 1;
+
+  if (breakpoint) enable = interactive = 1;
+
+  if (follow_vars && s->src[0] == NEW_VAR) {
     vars = (TypedVariable*) realloc(vars, (varc + 1) * sizeof(TypedVariable));
     Variable * v = s->_vars + s->_varc - 1;
     vars[varc] = (TypedVariable){.name = v->name, .pos = v->pos, .type = s->_type};
     varc++;
   }
 
-  if (!force_debug && s->src[0] != DEBUG) return 0;
-  uint8_t lines = 4 + strlen((char*) s->_src0) / WIDTH;
-  uint8_t stop = 0;
-  if (max_steps && steps >= max_steps - 1) stop = 1;
-  if (max_output && output_len >= max_output) stop = 1;
-  steps++;
-  uint8_t type_len = s->_type == INT8 ? 1 : s->_type == INT16 ? 2 : s->_type == INT32 ? 4 : 4;
-  uint16_t current_pos = s->_m - s->_m0;
-  if (current_pos + type_len > mem_used) {
-    mem_used = current_pos + type_len;
+  if (follow_mem) {
+    uint8_t type_len = s->_type == INT8 ? 1 : s->_type == INT16 ? 2 : s->_type == INT32 ? 4 : 4;
+    uint16_t current_pos = s->_m - s->_m0;
+    if (current_pos + type_len > mem_used) {
+      mem_used = current_pos + type_len;
+    }
   }
 
-  if (forward_steps) {
-    forward_steps--;
-    return 0;
-  }
+  if (!enable && s->src[0] != DEBUG) return stop;
 
-  if (force_debug == 0 && s->src[0] == DEBUG && 0){
+  if (enable == 0 && s->src[0] == DEBUG && 0){
     print_step(s, 1);
-  } else if (style == 0) {
+  } else if (interactive == 0) {
     printf("\033[1F");
     print_step(s, 0);
     print_state_code(s);
   } else {
+    uint8_t lines = 4 + strlen((char*) s->_src0) / WIDTH;
+
+    if (forward_steps) {
+      forward_steps--;
+      return 0;
+    }
     printf("\n");
     print_state_vars(s);
     print_state_mem(s);
@@ -318,6 +336,10 @@ uint8_t debug_state(State * s, uint8_t force_debug, uint8_t style){
       case 'z':
         if (forward_multiply > 10) forward_multiply /= 10;
         break;
+      case 'c':
+        breakpoint = enable = interactive = 0;
+        flush_term(lines);
+        return 0;
       case 'C':
         forward_steps = 1000000000;
         flush_term(lines);
@@ -331,6 +353,8 @@ uint8_t debug_state(State * s, uint8_t force_debug, uint8_t style){
 }
 
 void print_exec_info(void) {
+  if (!steps) return;
   printf("%ld op\n", steps);
-  printf("%d bytes used\n", mem_used);
+  if (follow_mem) printf("%d bytes\n", mem_used);
+  printf("%.2f s\n", time_spent/1000.0);
 }

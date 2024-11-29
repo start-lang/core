@@ -10,14 +10,17 @@
 State * s;
 char * src;
 uint8_t debug = 0;
-uint8_t print_step_count = 1;
+uint8_t interactive = 0;
+uint8_t exec_info = 0;
+extern uint16_t timeout;
 extern uint32_t max_steps;
 extern uint16_t max_output;
 extern uint64_t steps;
-extern uint64_t keep_vars;
+extern uint8_t follow_vars;
+extern uint8_t follow_mem;
 
 int8_t step_callback(State * s) {
-  return stop || debug_state(s, debug, debug);
+  return stop || debug_state(s, debug, interactive);
 }
 
 char * load_file(const char * fname){
@@ -73,13 +76,23 @@ void arg_parse(int argc, char* argv[]){
       }
     } else if (strcmp("-d", argv[i]) == 0 || strcmp("--debug", argv[i]) == 0) {
       debug = 1;
-      keep_vars = 1;
+      follow_vars = 1;
     } else if (strcmp("-S", argv[i]) == 0 || strcmp("--max-steps", argv[i]) == 0) {
       if (i + 1 >= argc) { help(argv[0]); exit(1); }
       max_steps = atoi(argv[++i]) * 1000;
     } else if (strcmp("-O", argv[i]) == 0 || strcmp("--max-output", argv[i]) == 0) {
       if (i + 1 >= argc) { help(argv[0]); exit(1); }
       max_output = atoi(argv[++i]);
+    } else if (strcmp("-i", argv[i]) == 0 || strcmp("--interactive", argv[i]) == 0) {
+      interactive = 1;
+      debug = 1;
+      follow_vars = 1;
+    } else if (strcmp("-e", argv[i]) == 0 || strcmp("--exec-info", argv[i]) == 0) {
+      follow_mem = 1;
+      exec_info = 1;
+    } else if (strcmp("-t", argv[i]) == 0 || strcmp("--timeout", argv[i]) == 0) {
+      if (i + 1 >= argc) { help(argv[0]); exit(1); }
+      timeout = atoi(argv[++i]) * 1000;
     } else if (argv[i][0] != '-') {
       src = realloc(src, 1);
       src[0] = 0;
@@ -91,6 +104,17 @@ void arg_parse(int argc, char* argv[]){
       }
       break;
     }
+  }
+
+  if (!max_steps) {
+    if (debug && !interactive) {
+      max_steps = 1000;
+    } else {
+      max_steps = 2500000;
+    }
+  }
+  if (!timeout) {
+    timeout = 3000;
   }
 }
 
@@ -128,9 +152,8 @@ int main(int argc, char* argv[]){
   remove_whitespace();
   int8_t r = run(src);
   free_memory(s);
-  if (print_step_count) {
-    printf("%ld op\n", steps);
-    printf("%d bytes used\n", mem_used);
+  if (exec_info) {
+    print_exec_info();
   }
   return r;
 }

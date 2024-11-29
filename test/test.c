@@ -12,7 +12,6 @@ State * s;
 char out[256] = "";
 char input[256] = "";
 char * input_ptr = input;
-double time_spent;
 uint8_t stop = 0;
 uint8_t force_debug = 0;
 uint16_t output_len = 0;

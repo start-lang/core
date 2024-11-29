@@ -3,6 +3,8 @@
 #include <string.h>
 #include <microcuts.h>
 #include <star_t.h>
+#include <debug_utils.h>
+#include <time.h>
 
 Register RM;
 uint8_t * M;
@@ -12,9 +14,10 @@ char input[256] = "";
 char * input_ptr = input;
 double time_spent;
 uint8_t stop = 0;
+uint8_t force_debug = 0;
 
 int8_t step_callback(State * s) {
-  return stop;
+  return debug_state(s, force_debug, 1) ? 1 : stop;
 }
 
 #ifdef ENABLE_FILES
@@ -45,6 +48,7 @@ int8_t run(char * src) {
   input_ptr = input;
   s->src = (uint8_t*) src;
   int8_t result = blockrun(s, 1);
+  force_debug = 0;
   RM.i8[0] = (s->_m - s->_m0 + 0) >= s->_mlen ? 123 : s->_m[0];
   RM.i8[1] = (s->_m - s->_m0 + 1) >= s->_mlen ? 123 : s->_m[1];
   RM.i8[2] = (s->_m - s->_m0 + 2) >= s->_mlen ? 123 : s->_m[2];

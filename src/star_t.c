@@ -115,7 +115,7 @@ int8_t blockrun(State * s){
   }
 
   while (1){
-    if (*(s->src) == 0 && !s->_idlen && !s->_lookahead){
+    if (*(s->src) == 0 && !s->_idlen && s->_prev_token != POP){
       break;
     }
     if (s->_prev_step_result > 0 && s->_prev_step_result < JM_ERR0){

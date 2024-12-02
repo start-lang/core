@@ -506,6 +506,7 @@ void validate(void){
       }
     }
     assert_eq(RM.i32, 1836311903);
+    assert_eq(direction == -1 || direction == 0, 1);
   }
   free(block);
   end_section();
@@ -608,8 +609,7 @@ void validate(void){
     strcat(input, "\n");
     assert_eq((run(src), s->_type), 1);
     char pi[] = "3.141592653";
-    strcat(input, "\n");
-    assert_str_eq(pi, (run(src), out));
+    assert_str_eq(out, pi);
     free(src);
   }
   end_section();
@@ -618,7 +618,7 @@ void validate(void){
     char * src = load_file("test/bf/pi_old.st");
     assert_eq((run(src), s->_type), 1);
     char pi[] = "3.141592653";
-    assert_str_eq(pi, (run(src), out));
+    assert_str_eq(out, pi);
     free(src);
   }
   end_section();

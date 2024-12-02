@@ -76,6 +76,7 @@ uint8_t jump(State * s){
 }
 
 void free_memory(State * s){
+  if (s == NULL) return;
   free(s->_m0);
   for (uint8_t i = 0; i < _varc; i++){
     free(_vars[i].name);

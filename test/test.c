@@ -136,6 +136,7 @@ int clean(void){
   int ts = steps;
   steps = 0;
   free_memory(s);
+  s = NULL;
   return ts;
 }
 

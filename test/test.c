@@ -432,8 +432,10 @@ void validate(void){
   assert_eq((run("b3p4p"), M[0]), 3);
   assert_eq((run("b3p4p"), M[1]), 4);
   assert_eq((run("b3p4ph"), s->reg.i16[0]), 2);
-  assert_eq((run("b3p4po"), s->reg.i8[0]), 4);
-  assert_eq((run("b3p4poo"), s->reg.i8[0]), 3);
+  assert_eq(run("b3p4po"), 8);
+  assert_eq((run("b3p4po "), s->reg.i8[0]), 4);
+  assert_eq(run("b3p4poo"), 8);
+  assert_eq((run("b3p4poo "), s->reg.i8[0]), 3);
   assert_eq((run("b3p4pooh"), s->reg.i16[0]), 0);
   assert_eq((run("b1p2p3p4p5p 0 o+o+o+o+o+"), RM.i8[0]), 15);
   assert_eq((run("b1p2p3p4p5p 0 t[ o+ ?h]"), RM.i8[0]), 15);
@@ -483,8 +485,10 @@ void validate(void){
     block = realloc(block, (max_block_size+1)*sizeof(char));
     while (1) {
       int block_size = max_block_size;
+      s->_ignend = 1;
       if (index*max_block_size + max_block_size >= strlen(code)){
         block_size = strlen(code) - index*max_block_size;
+        s->_ignend = 0;
       }
       if (block_size <= 0){
         break;

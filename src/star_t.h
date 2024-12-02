@@ -10,6 +10,9 @@ extern "C" {
 
 #define MEM_SIZE 64
 
+#define BL_PREV -1
+#define BL_NEXT 0
+#define SUCCESS 0
 #define JM_NONE 0
 #define JM_EIFE 1
 #define JM_ENIF 2
@@ -21,6 +24,7 @@ extern "C" {
 #define JM_ERR0 7
 #define JM_PEXC 8
 #define JM_REOB 9
+#define JM_EXEN 10
 
 typedef union {
   uint8_t i8 [4];

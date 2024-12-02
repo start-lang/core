@@ -117,14 +117,14 @@ int8_t blockrun(State * s){
   while (1){
     if (*(s->src) == 0 && !s->_idlen){
       if (s->_lookahead && !s->_ignend) {
-        return JM_PEXC;
+        return JM_EXEN;
       }
       break;
     }
     if (s->_prev_step_result > 0 && s->_prev_step_result < JM_ERR0){
       if (! s->_forward) {
         s->src += strlen((char*) s->src) - 1;
-        if (jump(s)) return -1;
+        if (jump(s)) return BL_PREV;
       }
     }
 
@@ -142,7 +142,7 @@ int8_t blockrun(State * s){
 
     s->_prev_step_result = step(*(s->src), s);
     if (step_callback(s) != 0){
-      return 0; // TODO change return val?
+      return BL_NEXT; // TODO change return val?
     }
     if (s->sub){
       blockrun(s->sub);
@@ -161,11 +161,11 @@ int8_t blockrun(State * s){
       }
     } else {
       if (s->src - s->_src0 == 0 && ! s->_forward) {
-        return -1;
+        return BL_PREV;
       }
       s->src += s->_forward ? 1 : -1;;
       if (s->_prev_step_result != 0) {
-        if (jump(s)) return -1;
+        if (jump(s)) return BL_PREV;
         if (s->_prev_step_result != JM_WHI0){
           s->src++;
           s->_prev_step_result = 0;
@@ -173,7 +173,7 @@ int8_t blockrun(State * s){
       }
     }
   }
-  return 0;
+  return BL_NEXT;
 }
 
 void new_sub(uint8_t * src, State * s) {
@@ -235,10 +235,10 @@ uint8_t step(uint8_t token, State * s){
       s->_m[0] = token;
       REG.i8[0]++;
     } else {
-      return 0;
+      return SUCCESS;
     }
     s->_m++;
-    return 0;
+    return SUCCESS;
   }
 
   if (s->_srcinput){
@@ -255,7 +255,7 @@ uint8_t step(uint8_t token, State * s){
       s->_fmatching++;
     }
     s->_lensrc++;
-    return 0;
+    return SUCCESS;
   }
 
   if (token == PRINT) {
@@ -275,7 +275,7 @@ uint8_t step(uint8_t token, State * s){
     s->_id = (uint8_t*) realloc(s->_id, s->_idlen + 1);
     s->_id[s->_idlen] = token;
     s->_idlen++;
-    return 0;
+    return SUCCESS;
   } else if (s->_idlen) {
     s->_id = (uint8_t*) realloc(s->_id, s->_idlen + 1);
     s->_id[s->_idlen] = '\0';
@@ -304,7 +304,7 @@ uint8_t step(uint8_t token, State * s){
       s->_id = NULL;
       s->_idlen = 0;
       s->_srcinput = 1;
-      return 0;
+      return SUCCESS;
     } else {
       uint8_t found = 0;
       for (uint8_t i = 0; i < _varc; i++){
@@ -428,7 +428,7 @@ uint8_t step(uint8_t token, State * s){
       default:
         return JM_PEXC;
     }
-    return 0;
+    return SUCCESS;
   }
 
   switch (token) {
@@ -480,7 +480,7 @@ uint8_t step(uint8_t token, State * s){
           s->_m[2] = t.i8[2];
           s->_m[3] = t.i8[3];
         }
-        return 0;
+        return SUCCESS;
       } else {
         uint8_t mod = (prev >= '0' && prev <= '9') ? REG.i8[0] : 1;
         if (s->_type == INT16) mod *= 2;
@@ -508,7 +508,7 @@ uint8_t step(uint8_t token, State * s){
           s->_m[2] = t.i8[2];
           s->_m[3] = t.i8[3];
         }
-        return 0;
+        return SUCCESS;
       } else {
         if (prev == STRING) {
           s->_m += REG.i8[0] + 1;
@@ -861,5 +861,5 @@ uint8_t step(uint8_t token, State * s){
       }
       break;
   }
-  return 0;
+  return SUCCESS;
 }

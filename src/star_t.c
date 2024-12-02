@@ -100,7 +100,7 @@ void free_memory(State * s){
   free(s);
 }
 
-int8_t blockrun(State * s, uint8_t last){
+int8_t blockrun(State * s){
   if (!s->_m) {
     s->_m = (uint8_t*) malloc(sizeof(uint8_t) * MEM_SIZE);
     memset(s->_m, 0, sizeof(uint8_t) * MEM_SIZE);
@@ -114,12 +114,8 @@ int8_t blockrun(State * s, uint8_t last){
   }
 
   while (1){
-    if (*(s->src) == 0){
-      if (last){
-        last = 0;
-      } else {
-        break;
-      }
+    if (*(s->src) == 0 && !s->_idlen && !s->_lookahead){
+      break;
     }
     if (s->_prev_step_result > 0 && s->_prev_step_result < JM_ERR0){
       if (! s->_forward) {
@@ -145,7 +141,7 @@ int8_t blockrun(State * s, uint8_t last){
       return 0; // TODO change return val?
     }
     if (s->sub){
-      blockrun(s->sub, 1);
+      blockrun(s->sub);
       if (s->sub->_freesrc){
         free(s->sub->_src0);
       }

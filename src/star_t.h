@@ -75,7 +75,7 @@ extern int8_t step_callback(State * s);
 
 #define REG s->reg
 
-int8_t blockrun(State * s, uint8_t last);
+int8_t blockrun(State * s);
 uint8_t step(uint8_t token, State * s);
 void free_memory(State * s);
 

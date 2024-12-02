@@ -48,7 +48,7 @@ int8_t run(char * src) {
   memset(out, 0, 256);
   input_ptr = input;
   s->src = (uint8_t*) src;
-  int8_t result = blockrun(s, 1);
+  int8_t result = blockrun(s);
   force_debug = 0;
   RM.i8[0] = (s->_m - s->_m0 + 0) >= s->_mlen ? 123 : s->_m[0];
   RM.i8[1] = (s->_m - s->_m0 + 1) >= s->_mlen ? 123 : s->_m[1];
@@ -491,7 +491,7 @@ void validate(void){
       strncpy(block, code + (index*max_block_size),  block_size);
       block[block_size] = '\0';
       s->src = (uint8_t*) block;
-      direction = blockrun(s, 0);
+      direction = blockrun(s);
       // printf("%s %d %d %d\n", block, block_size, direction, index);
 
       if (direction == -1){

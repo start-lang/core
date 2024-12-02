@@ -49,7 +49,7 @@ int8_t run(char * src) {
   s = (State*) malloc(sizeof(State));
   memset(s, 0, sizeof(State));
   s->src = (uint8_t*) src;
-  int8_t result = blockrun(s, 1);
+  int8_t result = blockrun(s);
   return result;
 }
 

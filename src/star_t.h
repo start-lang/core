@@ -50,8 +50,6 @@ typedef struct _State {
   uint8_t* _id;
   uint8_t _stack_h;
 
-  uint16_t _ic;
-
   uint16_t _ans:1;
   uint16_t _type:2;
   uint16_t _forward:1;

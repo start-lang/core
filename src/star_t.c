@@ -152,7 +152,6 @@ int8_t blockrun(State * s, uint8_t last){
       free(s->sub);
       s->sub = NULL;
     }
-    s->_ic++;
 
     if (s->_prev_step_result >= JM_ERR0){
       return s->_prev_step_result;

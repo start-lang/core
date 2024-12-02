@@ -15,6 +15,7 @@ char * input_ptr = input;
 uint8_t stop = 0;
 uint8_t force_debug = 0;
 uint16_t output_len = 0;
+extern uint64_t steps;
 
 int8_t step_callback(State * s) {
   return debug_state(s, force_debug, 1) ? 1 : stop;
@@ -132,9 +133,10 @@ char * getBuffer(void){
 }
 
 int clean(void){
-  int o = s->_ic;
+  int ts = steps;
+  steps = 0;
   free_memory(s);
-  return o;
+  return ts;
 }
 
 void print_info(void){

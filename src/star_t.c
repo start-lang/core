@@ -117,6 +117,21 @@ int8_t init(State * s) {
 }
 
 int8_t step(State * s) {
+  if (s->sub) {
+    State * p = s;
+    while (p->sub->sub) p = p->sub;
+    int8_t r = step(p->sub);
+    if (r == LOOP_ST){
+      if (p->sub->_freesrc){
+        free(p->sub->_src0);
+      }
+      free(p->sub);
+      p->sub = NULL;
+    } else if (r >= JM_ERR0 || r == BL_PREV){
+      return r;
+    }
+    return SUCCESS;
+  }
   if (*(s->src) == 0 && !s->_idlen){
     if (s->_lookahead && !s->_ignend) {
       return JM_EXEN;
@@ -144,20 +159,15 @@ int8_t step(State * s) {
 
   s->_op_result = op(*(s->src), s);
   if (s->sub){
-    blockrun(s->sub);
-    if (s->sub->_freesrc){
-      free(s->sub->_src0);
-    }
-    free(s->sub);
-    s->sub = NULL;
+    init(s->sub);
+    if (*(s->src) != 0) s->src++;
+    return SUCCESS;
   }
 
   if (s->_op_result >= JM_ERR0){
     return s->_op_result;
   } else if (s->_op_result == 0) {
-    if (*(s->src) != 0){
-      s->src++;
-    }
+    if (*(s->src) != 0) s->src++;
   } else {
     if (s->src - s->_src0 == 0 && ! s->_forward) {
       return BL_PREV;
@@ -177,7 +187,9 @@ int8_t step(State * s) {
 int8_t blockrun(State * s){
   init(s);
   while (1){
-    if (step_callback(s) != 0){
+    State * sub = s;
+    while (sub->sub) sub = sub->sub;
+    if (step_callback(sub) != 0){
       return LOOP_ST; // TODO change return val?
     }
     int8_t r = step(s);

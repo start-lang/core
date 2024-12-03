@@ -59,7 +59,7 @@ typedef struct _State {
   uint16_t _type:2;
   uint16_t _forward:1;
   uint16_t _lookahead:1;
-  uint16_t _prev_step_result:4;
+  uint16_t _op_result:4;
   uint16_t _string:1;
   uint16_t _srcinput:1;
   uint16_t _freesrc:1;

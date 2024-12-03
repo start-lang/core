@@ -45,24 +45,24 @@ uint8_t jump(State * s){
   while (token) {
     if (token == IF){
       s->_matching++;
-    } else if (token == ELSE && s->_prev_step_result == JM_EIFE && s->_matching == 1) {
+    } else if (token == ELSE && s->_op_result == JM_EIFE && s->_matching == 1) {
       break;
     } else if (token == ENDIF) {
       s->_matching--;
-      if (s->_prev_step_result <= JM_ENIF && ! s->_matching){
+      if (s->_op_result <= JM_ENIF && ! s->_matching){
         break;
       }
     } else if (token == WHILE) {
       s->_matching++;
-      if (s->_prev_step_result >= JM_WHI0 && ! s->_matching){
+      if (s->_op_result >= JM_WHI0 && ! s->_matching){
         break;
       }
     } else if (token == ENDWHILE) {
       s->_matching--;
-      if (s->_prev_step_result == JM_EWHI && ! s->_matching){
+      if (s->_op_result == JM_EWHI && ! s->_matching){
         break;
       }
-      if (s->_prev_step_result == JM_NXWH){
+      if (s->_op_result == JM_NXWH){
         break;
       }
     }
@@ -110,7 +110,7 @@ int8_t init(State * s) {
     s->_src0 = s->src;
     s->_matching = 1;
     s->_forward = 1;
-    s->_prev_step_result = JM_ERR0;
+    s->_op_result = JM_ERR0;
     s->reg.i8[0] = 1;
   }
   return SUCCESS;
@@ -123,7 +123,7 @@ int8_t step(State * s) {
     }
     return LOOP_ST;
   }
-  if (s->_prev_step_result > 0 && s->_prev_step_result < JM_ERR0){
+  if (s->_op_result > 0 && s->_op_result < JM_ERR0){
     if (! s->_forward) {
       s->src += strlen((char*) s->src) - 1;
       if (jump(s)) return BL_PREV;
@@ -142,7 +142,7 @@ int8_t step(State * s) {
     }
   #endif
 
-  s->_prev_step_result = op(*(s->src), s);
+  s->_op_result = op(*(s->src), s);
   if (step_callback(s) != 0){
     return LOOP_ST; // TODO change return val?
   }
@@ -155,9 +155,9 @@ int8_t step(State * s) {
     s->sub = NULL;
   }
 
-  if (s->_prev_step_result >= JM_ERR0){
-    return s->_prev_step_result;
-  } else if (s->_prev_step_result == 0) {
+  if (s->_op_result >= JM_ERR0){
+    return s->_op_result;
+  } else if (s->_op_result == 0) {
     if (*(s->src) != 0){
       s->src++;
     }
@@ -166,11 +166,11 @@ int8_t step(State * s) {
       return BL_PREV;
     }
     s->src += s->_forward ? 1 : -1;;
-    if (s->_prev_step_result != 0) {
+    if (s->_op_result != 0) {
       if (jump(s)) return BL_PREV;
-      if (s->_prev_step_result != JM_WHI0){
+      if (s->_op_result != JM_WHI0){
         s->src++;
-        s->_prev_step_result = 0;
+        s->_op_result = 0;
       }
     }
   }
@@ -200,7 +200,7 @@ void new_sub(uint8_t * src, State * s) {
   sub->_src0 = sub->src;
   sub->_matching = 1;
   sub->_forward = 1;
-  sub->_prev_step_result = JM_ERR0;
+  sub->_op_result = JM_ERR0;
   s->sub = sub;
 }
 

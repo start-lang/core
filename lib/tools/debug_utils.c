@@ -280,7 +280,7 @@ uint8_t debug_state(State * s, uint8_t enable, uint8_t interactive){
 
   if (breakpoint) enable = interactive = 1;
 
-  if (follow_vars && s->src[0] == NEW_VAR) {
+  if (follow_vars && s->_prev_token == NEW_VAR) {
     vars = (TypedVariable*) realloc(vars, (varc + 1) * sizeof(TypedVariable));
     Variable * v = _vars + _varc - 1;
     vars[varc] = (TypedVariable){.name = v->name, .pos = v->pos, .type = s->_type};

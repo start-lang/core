@@ -15,7 +15,6 @@ uint8_t exec_info = 0;
 extern uint16_t timeout;
 extern uint32_t max_steps;
 extern uint16_t max_output;
-extern uint64_t steps;
 extern uint8_t follow_vars;
 extern uint8_t follow_mem;
 
@@ -23,6 +22,7 @@ int8_t step_callback(State * s) {
   return stop || debug_state(s, debug, interactive);
 }
 
+#ifdef ENABLE_FILES
 char * load_file(const char * fname){
   char *source = NULL;
   FILE *fp = fopen(fname, "r");
@@ -43,6 +43,7 @@ char * load_file(const char * fname){
   }
   return NULL;
 }
+#endif
 
 int8_t run(char * src) {
   stop = 0;
@@ -67,6 +68,7 @@ void arg_parse(int argc, char* argv[]){
     if (strcmp("-h", argv[i]) == 0 || strcmp("--help", argv[i]) == 0) {
       help(argv[0]);
       exit(0);
+#ifdef ENABLE_FILES
     } else if (strcmp("-f", argv[i]) == 0 || strcmp("--file", argv[i]) == 0) {
       if (i + 1 >= argc) { help(argv[0]); exit(1); }
       src = load_file(argv[++i]);
@@ -74,6 +76,7 @@ void arg_parse(int argc, char* argv[]){
         fprintf(stderr, "Failed loading file\n");
         exit(1);
       }
+#endif
     } else if (strcmp("-d", argv[i]) == 0 || strcmp("--debug", argv[i]) == 0) {
       debug = 1;
       follow_vars = 1;
@@ -119,28 +122,26 @@ void arg_parse(int argc, char* argv[]){
 }
 
 void remove_whitespace() {
-    if (!src) return;
-    char *p = src;
-    char *q = src;
-    int in_space = 0;
-    while (*p) {
-      if (*p == '\n') {
-        p++;
-      } else if (*p == ' ') {
-        if (!in_space) {
-          *q++ = ' ';
-          in_space = 1;
-        }
-        p++;
-      } else {
-        *q++ = *p++;
-        in_space = 0;
+  if (!src) return;
+  char *p = src;
+  char *q = src;
+  int in_space = 0;
+  while (*p) {
+    if (*p == '\n') {
+      p++;
+    } else if (*p == ' ') {
+      if (!in_space) {
+        *q++ = ' ';
+        in_space = 1;
       }
+      p++;
+    } else {
+      *q++ = *p++;
+      in_space = 0;
     }
-    *q = '\0';
+  }
+  *q = '\0';
 }
-
-extern uint16_t mem_used;
 
 int main(int argc, char* argv[]){
   setvbuf(stdout, NULL, _IONBF, 0);

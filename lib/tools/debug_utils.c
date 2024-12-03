@@ -3,10 +3,12 @@
 #include <stdlib.h>
 #include <string.h>
 #include <tokens.h>
-#include <termios.h>
-#include <unistd.h>
 #include <time.h>
 #include <debug_utils.h>
+#ifdef __linux__
+#include <termios.h>
+#include <unistd.h>
+#endif
 
 #define WIDTH 130
 
@@ -40,6 +42,7 @@ extern uint16_t output_len;
 extern Variable * _vars;
 extern uint8_t _varc;
 
+#ifdef __linux__
 uint8_t getch(void) {
   struct termios oldt, newt;
   uint8_t ch;
@@ -61,6 +64,7 @@ uint8_t getch(void) {
   tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
   return ch;
 }
+#endif
 
 uint8_t print_num(uint8_t t, uint8_t *m) {
   Register r = {.i32 = m[0] | (m[1] << 8) | (m[2] << 16) | (m[3] << 24)};

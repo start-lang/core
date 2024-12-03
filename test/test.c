@@ -72,7 +72,9 @@ int8_t f_y(State * s){
 int8_t f_print(State * s){
   char tmp[2] = {(char) s->_m[0], 0};
   strcat(out, tmp);
+#ifndef BENCHMARK
   printf(".");
+#endif
   return 0;
 }
 
@@ -144,13 +146,9 @@ void print_info(void){
   printf("state size: %lu\n", sizeof(State));
 }
 
-#ifndef EXPORT
-#define EXPORT
-#endif
-
 void validate(void);
 
-EXPORT int main(void){
+int main(int argc, char* argv[]){
   print_info();
   set_cleanup(clean);
   set_target(validate);
@@ -606,6 +604,7 @@ void validate(void){
   end_section();
 
   #ifdef ENABLE_FILES
+  #ifndef BENCHMARK
   #ifdef LONG_TEST
   begin_section("Pi");
   {
@@ -655,6 +654,7 @@ void validate(void){
     free(src);
   }
   end_section();
+  #endif
   #endif
 
   begin_section("Malloc");

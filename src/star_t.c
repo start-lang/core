@@ -121,13 +121,14 @@ int8_t step(State * s) {
     State * p = s;
     while (p->sub->sub) p = p->sub;
     int8_t r = step(p->sub);
-    if (r == LOOP_ST){
+    if (r != SUCCESS) {
       if (p->sub->_freesrc){
         free(p->sub->_src0);
       }
       free(p->sub);
       p->sub = NULL;
-    } else if (r >= JM_ERR0 || r == BL_PREV){
+    }
+    if (r >= JM_ERR0 || r == BL_PREV) {
       return r;
     }
     return SUCCESS;

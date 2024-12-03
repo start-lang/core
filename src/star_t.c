@@ -116,7 +116,7 @@ int8_t init(State * s) {
   return SUCCESS;
 }
 
-int8_t blockstep(State * s) {
+int8_t step(State * s) {
   if (*(s->src) == 0 && !s->_idlen){
     if (s->_lookahead && !s->_ignend) {
       return JM_EXEN;
@@ -142,7 +142,7 @@ int8_t blockstep(State * s) {
     }
   #endif
 
-  s->_prev_step_result = step(*(s->src), s);
+  s->_prev_step_result = op(*(s->src), s);
   if (step_callback(s) != 0){
     return LOOP_ST; // TODO change return val?
   }
@@ -180,7 +180,7 @@ int8_t blockstep(State * s) {
 int8_t blockrun(State * s){
   init(s);
   while (1){
-    int8_t r = blockstep(s);
+    int8_t r = step(s);
     if (r == LOOP_ST){
       break;
     } else if (r >= JM_ERR0 || r == BL_PREV){
@@ -218,7 +218,7 @@ Register mload(State * s) {
   return x;
 }
 
-uint8_t step(uint8_t token, State * s){
+uint8_t op(uint8_t token, State * s){
 
   #ifdef DEBUG_INTERPRETER
     for (uint8_t * i = s->_m0; i <= s->_m + 2; i++){
@@ -370,15 +370,15 @@ uint8_t step(uint8_t token, State * s){
           case OR:
           case XOR:
             s->_prev_token = 0;
-            step(LEFT, s);
-            step(token, s);
-            step(LOAD, s);
+            op(LEFT, s);
+            op(token, s);
+            op(LOAD, s);
             break;
           default:
             s->_prev_token = 0;
-            step(LEFT, s);
-            step(LOAD, s);
-            step(token, s);
+            op(LEFT, s);
+            op(LOAD, s);
+            op(token, s);
         }
         break;
       case COND_MODIFIER:
@@ -543,9 +543,9 @@ uint8_t step(uint8_t token, State * s){
       REG.i16[1] = 0;
       break;
     case PUSH:
-      step(STORE, s);
+      op(STORE, s);
       s->_prev_token = 0;
-      step(RIGHT, s);
+      op(RIGHT, s);
       s->_stack_h++;
       break;
     case ROTATE_REG:

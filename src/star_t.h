@@ -83,11 +83,11 @@ extern int8_t step_callback(State * s);
 
 int8_t blockrun(State * s);
 
-uint8_t step(uint8_t token, State * s);
-
 int8_t init(State * s);
 
-int8_t blockstep(State * s);
+int8_t step(State * s);
+
+uint8_t op(uint8_t token, State * s);
 
 void free_memory(State * s);
 

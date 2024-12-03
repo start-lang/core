@@ -143,9 +143,6 @@ int8_t step(State * s) {
   #endif
 
   s->_op_result = op(*(s->src), s);
-  if (step_callback(s) != 0){
-    return LOOP_ST; // TODO change return val?
-  }
   if (s->sub){
     blockrun(s->sub);
     if (s->sub->_freesrc){
@@ -180,6 +177,9 @@ int8_t step(State * s) {
 int8_t blockrun(State * s){
   init(s);
   while (1){
+    if (step_callback(s) != 0){
+      return LOOP_ST; // TODO change return val?
+    }
     int8_t r = step(s);
     if (r == LOOP_ST){
       break;

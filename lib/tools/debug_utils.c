@@ -37,6 +37,9 @@ uint32_t time_spent = 0;
 uint16_t forward_multiply = 1;
 extern uint16_t output_len;
 
+extern Variable * _vars;
+extern uint8_t _varc;
+
 uint8_t getch(void) {
   struct termios oldt, newt;
   uint8_t ch;
@@ -274,7 +277,7 @@ uint8_t debug_state(State * s, uint8_t enable, uint8_t interactive){
 
   if (follow_vars && s->src[0] == NEW_VAR) {
     vars = (TypedVariable*) realloc(vars, (varc + 1) * sizeof(TypedVariable));
-    Variable * v = s->_vars + s->_varc - 1;
+    Variable * v = _vars + _varc - 1;
     vars[varc] = (TypedVariable){.name = v->name, .pos = v->pos, .type = s->_type};
     varc++;
   }

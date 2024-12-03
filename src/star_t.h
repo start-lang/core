@@ -66,12 +66,6 @@ typedef struct _State {
   uint8_t _prev_token;
   int8_t _matching;
 
-  Variable * _vars;
-  uint8_t _varc;
-
-  RTFunction * _funcs;
-  uint8_t _funcc;
-
   uint16_t _lensrc;
   uint16_t _fmatching;
 

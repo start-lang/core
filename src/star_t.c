@@ -34,6 +34,12 @@
 #   endif
 #endif
 
+Variable * _vars = NULL;
+uint8_t _varc = 0;
+
+RTFunction * _funcs = NULL;
+uint8_t _funcc = 0;
+
 uint8_t jump(State * s){
   uint8_t token = *(s->src);
   while (token) {
@@ -71,18 +77,22 @@ uint8_t jump(State * s){
 
 void free_memory(State * s){
   free(s->_m0);
-  for (uint8_t i = 0; i < s->_varc; i++){
-    free(s->_vars[i].name);
+  for (uint8_t i = 0; i < _varc; i++){
+    free(_vars[i].name);
   }
-  for (uint8_t i = 0; i < s->_funcc; i++){
-    free(s->_funcs[i].name);
-    free(s->_funcs[i].src);
+  for (uint8_t i = 0; i < _funcc; i++){
+    free(_funcs[i].name);
+    free(_funcs[i].src);
   }
-  if (s->_vars){
-    free(s->_vars);
+  if (_vars){
+    free(_vars);
+    _vars = NULL;
+    _varc = 0;
   }
-  if (s->_funcs){
-    free(s->_funcs);
+  if (_funcs){
+    free(_funcs);
+    _funcs = NULL;
+    _funcc = 0;
   }
   if (s->_id){
    free(s->_id);
@@ -139,11 +149,6 @@ int8_t blockrun(State * s, uint8_t last){
       if (s->sub->_freesrc){
         free(s->sub->_src0);
       }
-      // restore posible changes
-      s->_funcs = s->sub->_funcs;
-      s->_funcc = s->sub->_funcc;
-      s->_vars = s->sub->_vars;
-      s->_varc = s->sub->_varc;
       free(s->sub);
       s->sub = NULL;
     }
@@ -180,10 +185,6 @@ void new_sub(uint8_t * src, State * s) {
   sub->_m0 = sub->_m;
   sub->_mlen = s->_mlen - (sub->_m - s->_m);
   sub->_src0 = sub->src;
-  sub->_funcs = s->_funcs; // share funcs
-  sub->_funcc = s->_funcc; // share funcs
-  sub->_vars = s->_vars; // share vars
-  sub->_varc = s->_varc; // share vars
   sub->_matching = 1;
   sub->_forward = 1;
   sub->_prev_step_result = JM_ERR0;
@@ -242,7 +243,7 @@ uint8_t step(uint8_t token, State * s){
   }
 
   if (s->_srcinput){
-    RTFunction * f = &(s->_funcs[s->_funcc - 1]);
+    RTFunction * f = &(_funcs[_funcc - 1]);
     f->src = realloc(f->src, s->_lensrc + 1);
     f->src[s->_lensrc] = token;
     if (token == ENDFUNCTION) {
@@ -281,43 +282,43 @@ uint8_t step(uint8_t token, State * s){
     s->_id[s->_idlen] = '\0';
     if (token == NEW_VAR) {
       uint8_t found = 0;
-      for (uint8_t i = 0; i < s->_varc; i++){
-        if (strcmp((char*)s->_vars[i].name, (char*)s->_id) == 0){
+      for (uint8_t i = 0; i < _varc; i++){
+        if (strcmp((char*)_vars[i].name, (char*)s->_id) == 0){
           found = i + 1; //TODO
           break;
         }
       }
       if (!found){
-        s->_vars = (Variable*) realloc(s->_vars, (s->_varc + 1)*sizeof(Variable));
-        s->_vars[s->_varc] = (Variable){.name = s->_id, .pos = s->_m - s->_m0};
-        s->_varc++;
+        _vars = (Variable*) realloc(_vars, (_varc + 1)*sizeof(Variable));
+        _vars[_varc] = (Variable){.name = s->_id, .pos = s->_m - s->_m0};
+        _varc++;
       } else {
-        (s->_vars[found - 1]).pos = s->_m - s->_m0;
+        (_vars[found - 1]).pos = s->_m - s->_m0;
         free(s->_id);
       }
     } else if (token == STARTFUNCTION) {
       s->_lensrc = 0; // length src
       s->_fmatching = 1; // open/close
-      s->_funcs = (RTFunction*) realloc(s->_funcs, (s->_funcc + 1)*sizeof(RTFunction));
-      s->_funcs[s->_funcc] = (RTFunction){.name = s->_id, .src = NULL};
-      s->_funcc++;
+      _funcs = (RTFunction*) realloc(_funcs, (_funcc + 1)*sizeof(RTFunction));
+      _funcs[_funcc] = (RTFunction){.name = s->_id, .src = NULL};
+      _funcc++;
       s->_id = NULL;
       s->_idlen = 0;
       s->_srcinput = 1;
       return 0;
     } else {
       uint8_t found = 0;
-      for (uint8_t i = 0; i < s->_varc; i++){
-        if (strcmp((char*)s->_vars[i].name, (char*)s->_id) == 0){
-          s->_m = s->_m0 + s->_vars[i].pos;
+      for (uint8_t i = 0; i < _varc; i++){
+        if (strcmp((char*)_vars[i].name, (char*)s->_id) == 0){
+          s->_m = s->_m0 + _vars[i].pos;
           found = 1;
           break;
         }
       }
-      for (uint8_t i = 0; i < s->_funcc; i++){
-        if (strcmp((char*)s->_funcs[i].name, (char*)s->_id) == 0){
+      for (uint8_t i = 0; i < _funcc; i++){
+        if (strcmp((char*)_funcs[i].name, (char*)s->_id) == 0){
           found = 1;
-          new_sub((uint8_t*) s->_funcs[i].src, s);
+          new_sub((uint8_t*) _funcs[i].src, s);
 
           // TODO go back 1 token
 

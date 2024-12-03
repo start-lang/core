@@ -101,7 +101,7 @@ void free_memory(State * s){
   free(s);
 }
 
-int8_t blockrun(State * s){
+int8_t init(State * s) {
   if (!s->_m) {
     s->_m = (uint8_t*) malloc(sizeof(uint8_t) * MEM_SIZE);
     memset(s->_m, 0, sizeof(uint8_t) * MEM_SIZE);
@@ -113,64 +113,78 @@ int8_t blockrun(State * s){
     s->_prev_step_result = JM_ERR0;
     s->reg.i8[0] = 1;
   }
+  return SUCCESS;
+}
 
-  while (1){
-    if (*(s->src) == 0 && !s->_idlen){
-      if (s->_lookahead && !s->_ignend) {
-        return JM_EXEN;
-      }
-      break;
+int8_t blockstep(State * s) {
+  if (*(s->src) == 0 && !s->_idlen){
+    if (s->_lookahead && !s->_ignend) {
+      return JM_EXEN;
     }
-    if (s->_prev_step_result > 0 && s->_prev_step_result < JM_ERR0){
-      if (! s->_forward) {
-        s->src += strlen((char*) s->src) - 1;
-        if (jump(s)) return BL_PREV;
-      }
+    return LOOP_ST;
+  }
+  if (s->_prev_step_result > 0 && s->_prev_step_result < JM_ERR0){
+    if (! s->_forward) {
+      s->src += strlen((char*) s->src) - 1;
+      if (jump(s)) return BL_PREV;
     }
+  }
 
-    #ifdef MAX_ITERATION_COUNT
-      if (s->_ic > MAX_ITERATION_COUNT) {
-        return JM_ERR0;
-      }
-    #endif
-
-    #ifdef PRINT_ITERATION_COUNT
-      if (s->_ic % PRINT_ITERATION_COUNT == 0) {
-        msg("%d\n", s->_ic);
-      }
-    #endif
-
-    s->_prev_step_result = step(*(s->src), s);
-    if (step_callback(s) != 0){
-      return BL_NEXT; // TODO change return val?
+  #ifdef MAX_ITERATION_COUNT
+    if (s->_ic > MAX_ITERATION_COUNT) {
+      return JM_ERR0;
     }
-    if (s->sub){
-      blockrun(s->sub);
-      if (s->sub->_freesrc){
-        free(s->sub->_src0);
-      }
-      free(s->sub);
-      s->sub = NULL;
-    }
+  #endif
 
-    if (s->_prev_step_result >= JM_ERR0){
-      return s->_prev_step_result;
-    } else if (s->_prev_step_result == 0) {
-      if (*(s->src) != 0){
+  #ifdef PRINT_ITERATION_COUNT
+    if (s->_ic % PRINT_ITERATION_COUNT == 0) {
+      msg("%d\n", s->_ic);
+    }
+  #endif
+
+  s->_prev_step_result = step(*(s->src), s);
+  if (step_callback(s) != 0){
+    return LOOP_ST; // TODO change return val?
+  }
+  if (s->sub){
+    blockrun(s->sub);
+    if (s->sub->_freesrc){
+      free(s->sub->_src0);
+    }
+    free(s->sub);
+    s->sub = NULL;
+  }
+
+  if (s->_prev_step_result >= JM_ERR0){
+    return s->_prev_step_result;
+  } else if (s->_prev_step_result == 0) {
+    if (*(s->src) != 0){
+      s->src++;
+    }
+  } else {
+    if (s->src - s->_src0 == 0 && ! s->_forward) {
+      return BL_PREV;
+    }
+    s->src += s->_forward ? 1 : -1;;
+    if (s->_prev_step_result != 0) {
+      if (jump(s)) return BL_PREV;
+      if (s->_prev_step_result != JM_WHI0){
         s->src++;
+        s->_prev_step_result = 0;
       }
-    } else {
-      if (s->src - s->_src0 == 0 && ! s->_forward) {
-        return BL_PREV;
-      }
-      s->src += s->_forward ? 1 : -1;;
-      if (s->_prev_step_result != 0) {
-        if (jump(s)) return BL_PREV;
-        if (s->_prev_step_result != JM_WHI0){
-          s->src++;
-          s->_prev_step_result = 0;
-        }
-      }
+    }
+  }
+  return SUCCESS;
+}
+
+int8_t blockrun(State * s){
+  init(s);
+  while (1){
+    int8_t r = blockstep(s);
+    if (r == LOOP_ST){
+      break;
+    } else if (r >= JM_ERR0 || r == BL_PREV){
+      return r;
     }
   }
   return BL_NEXT;

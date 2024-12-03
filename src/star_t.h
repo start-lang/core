@@ -13,6 +13,7 @@ extern "C" {
 #define BL_PREV -1
 #define BL_NEXT 0
 #define SUCCESS 0
+#define LOOP_ST 1
 #define JM_NONE 0
 #define JM_EIFE 1
 #define JM_ENIF 2
@@ -81,7 +82,13 @@ extern int8_t step_callback(State * s);
 #define REG s->reg
 
 int8_t blockrun(State * s);
+
 uint8_t step(uint8_t token, State * s);
+
+int8_t init(State * s);
+
+int8_t blockstep(State * s);
+
 void free_memory(State * s);
 
 typedef struct {

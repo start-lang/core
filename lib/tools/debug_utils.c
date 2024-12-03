@@ -62,6 +62,14 @@ uint8_t getch(void) {
   return ch;
 }
 
+uint8_t print_num(uint8_t t, uint8_t *m) {
+  Register r = {.i32 = m[0] | (m[1] << 8) | (m[2] << 16) | (m[3] << 24)};
+  if (t == INT8) return printf("%d", r.i8[0]);
+  else if (t == INT16) return printf("%d", r.i16[0]);
+  else if (t == INT32) return printf("%d", r.i32);
+  else return printf("%f", r.f32);
+}
+
 void print_state_mem(State * s) {
   printf("\033[K\033[90m");
   if (mem_offset) {
@@ -101,10 +109,7 @@ void print_state_mem(State * s) {
           continue;
         }
 
-        if (type == INT8) vlen = printf("%d", s->_m0[i]);
-        else if (type == INT16) vlen = printf("%d", *(uint16_t*) (s->_m0 + i));
-        else if (type == INT32) vlen = printf("%d", *(uint32_t*) (s->_m0 + i));
-        else if (type == FLOAT) vlen = printf("%f", *(float*) (s->_m0 + i));
+        vlen += print_num(type, s->_m0 + i);
         for (uint8_t j = 0; j < type_len * 4 - vlen; j++) {
           printf(" ");
         }

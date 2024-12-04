@@ -31,7 +31,7 @@ int8_t f_print(State * s){
 #ifndef STDF_IGN_PRINTSTR
 int8_t f_printstr(State * s){
   // string:str(_m) ... '/0'
-  output_len += printf("%s\n", (char*) s->_m);
+  output_len += printf("%s", (char*) s->_m);
   return 0;
 }
 #endif

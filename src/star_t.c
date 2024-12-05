@@ -2,38 +2,6 @@
 #include <string.h>
 #include <star_t.h>
 
-#ifdef DEBUG_INTERPRETER
-#   include <stdio.h>
-#   include <microcuts.h>
-// #   define pe() __parsing_error(__FILE__, __LINE__, (const char*) code_begin); return -1;
-//     void __parsing_error(const char* file, int line, const char* code_begin, const char* pos){
-//       int at = (int)(pos - code_begin);
-//       char token = *(pos);
-//       printf("Parsing error: Unexpected token '%c' at position %d on file '%s', line %d.\n", token, at, file, line);
-//       printf("\t%s\n\t", code_begin);
-//       while(at){
-//         at--;
-//         printf(" ");
-//       }
-//       printf("^\n");
-//
-//     }
-#   define pe() return -1;
-#   define ni() printf("ERROR: Not implemented yet\n"); return -1;
-#   define _printf(...) printf(__VA_ARGS__)
-// #   define printf(...) printf("[%s,%d] ", __FILE__, __LINE__); printf(__VA_ARGS__)
-#   define msg(...) printf(__VA_ARGS__)
-#else
-#   define pe() return -1;
-#   define ni() return -1;
-#   ifdef PRINT_ITERATION_COUNT
-#      include <stdio.h>
-#      define msg(...) printf(__VA_ARGS__)
-#   else
-#      define msg(...) ;
-#   endif
-#endif
-
 Variable * _vars = NULL;
 uint8_t _varc = 0;
 
@@ -146,18 +114,6 @@ int8_t step(State * s) {
     }
   }
 
-  #ifdef MAX_ITERATION_COUNT
-    if (s->_ic > MAX_ITERATION_COUNT) {
-      return JM_ERR0;
-    }
-  #endif
-
-  #ifdef PRINT_ITERATION_COUNT
-    if (s->_ic % PRINT_ITERATION_COUNT == 0) {
-      msg("%d\n", s->_ic);
-    }
-  #endif
-
   s->_op_result = op(*(s->src), s);
   if (s->sub){
     init(s->sub);
@@ -232,17 +188,6 @@ Register mload(State * s) {
 }
 
 uint8_t op(uint8_t token, State * s){
-
-  #ifdef DEBUG_INTERPRETER
-    for (uint8_t * i = s->_m0; i <= s->_m + 2; i++){
-      if (i == s->_m) {
-        _printf("[%d:%d:%d> ", REG.i32, s->_ans, s->_type);
-      }
-      _printf("[%d] ", i[0]);
-    }
-    _printf("\t\t- %c \n", token);
-  #endif
-
   uint8_t prev = s->_prev_token;
   s->_prev_token = token;
   if (s->_string){

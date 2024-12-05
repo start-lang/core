@@ -1,6 +1,6 @@
 (async function() {
-  const { WASM } = require('./wasm_runtime.js');
-  const w = await WASM("test.wasm", (getWasm, getMemory) => {
+  const { WASM } = require(process.argv[2]);
+  const w = await WASM(process.argv[3], (getWasm, getMemory) => {
     return {
       output: console.log,
       errorOutput: console.error,

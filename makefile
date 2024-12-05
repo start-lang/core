@@ -199,6 +199,11 @@ benchmark: init clean ${BMARK_OUTPUT}.gcc ${BMARK_OUTPUT}.clang ${WASM_BMARK_OUT
 	@ time ${BMARK_OUTPUT}.clang
 	@ time node ${WASM_RUNTIME} ${WASM_BMARK_OUTPUT}
 
+.PHONY: test-cli-mandelbrot
+test-cli-mandelbrot: ${CLI_OUTPUT} ${WASM_CLI_OUTPUT}
+	@ time ${CLI_OUTPUT} -e -f test/mandelbrot/m.st
+	@ time node ${WASM_RUNTIME} ${WASM_CLI_OUTPUT} -e "$$(cat test/mandelbrot/m.st)"
+
 ## TEST
 
 .PHONY: test

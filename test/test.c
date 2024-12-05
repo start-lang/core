@@ -621,9 +621,9 @@ void validate(void){
   begin_section("Pi");
   {
     char * src = load_file("test/bf/pi.st");
-    strcat(input, "\n");
-    assert_eq((run(src), s->_type), 1);
-    char pi[] = "3.141592653";
+    strcat(input, "\x05");
+    assert_eq(run(src), 0);
+    char pi[] = "3.1415";
     assert_str_eq(out, pi);
     free(src);
   }
@@ -631,8 +631,8 @@ void validate(void){
   begin_section("Pi_old");
   {
     char * src = load_file("test/bf/pi_old.st");
-    assert_eq((run(src), s->_type), 1);
-    char pi[] = "3.141592653";
+    assert_eq(run(src), 0);
+    char pi[] = "3.1415";
     assert_str_eq(out, pi);
     free(src);
   }

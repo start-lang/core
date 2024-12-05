@@ -12,7 +12,7 @@ char * src;
 uint8_t debug = 0;
 uint8_t interactive = 0;
 uint8_t exec_info = 0;
-extern uint16_t timeout;
+extern uint32_t timeout;
 extern uint32_t max_steps;
 extern uint16_t max_output;
 extern uint8_t follow_vars;
@@ -76,6 +76,10 @@ void arg_parse(int argc, char* argv[]){
         fprintf(stderr, "Failed loading file\n");
         exit(1);
       }
+#else
+    } else if (strcmp("-f", argv[i]) == 0 || strcmp("--file", argv[i]) == 0) {
+      fprintf(stderr, "Files not enabled\n");
+      exit(1);
 #endif
     } else if (strcmp("-d", argv[i]) == 0 || strcmp("--debug", argv[i]) == 0) {
       debug = 1;

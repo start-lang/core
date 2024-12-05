@@ -1,0 +1,17 @@
+
+#interpreter {
+    display: none;
+    justify-content: center;
+    align-items: center;
+}
+
+#border {
+    padding: 10px 15px;
+    border-radius: 10px;
+    background-color: #000;
+    transition:width 1s ease-in-out;
+}
+
+.xterm-underline-1 {
+    text-decoration-thickness: 1px;
+}

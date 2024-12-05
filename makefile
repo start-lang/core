@@ -88,13 +88,6 @@ cli: build
 test-pi: cli
 	@ cli/bin -f test/pi.st
 
-wasm: test
-	@ docker run --rm -v ${shell pwd}:/src -u ${shell id -u}:${shell id -g} \
-		emscripten/emsdk emcc ${DEFFLAGS} -D STOPFAIL ${INCLUDES} ${REPL} \
-		-s EXPORTED_RUNTIME_METHODS='["ccall","cwrap"]' \
-		-s EXPORTED_FUNCTIONS="[${EXPF}]" \
-		-o repl/core.js
-
 .ONESHELL:
 build/.venv:
 	@ python3 -m venv build/.venv
@@ -110,8 +103,5 @@ svg: build/.venv
 	@ python3 update-svg.py mobile
 	@ python3 update-svg.py desktop blog
 	@ python3 update-svg.py mobile blog
-
-repl: wasm svg
-	@ python3 -m http.server
 
 ci-check: mleak cov wasm

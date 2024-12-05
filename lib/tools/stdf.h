@@ -90,7 +90,7 @@ int8_t f_quit(State * s){
 
 #ifndef STDF_IGN_INPUT
 int8_t f_input(State * s){
-  s->reg.i8[0] = getc(stdin);
+  s->_m[0] = getc(stdin);
   return 0;
 }
 #endif

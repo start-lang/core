@@ -247,11 +247,11 @@ uint8_t print_step(State * s, uint8_t color) {
 }
 
 void flush_term(uint8_t lines) {
-  printf("\033[%dF\33[u\033[K", lines);
+  printf("\033[u\033[K");
   for (uint8_t i = 0; i < lines; i++) {
     printf("\n\033[K");
   }
-  printf("\033[%dF\33[u\033[K", lines);
+  printf("\033[u\033[K");
 }
 
 uint8_t debug_state(State * s, uint8_t enable, uint8_t interactive){
@@ -262,7 +262,6 @@ uint8_t debug_state(State * s, uint8_t enable, uint8_t interactive){
     while (*src) {
       if (*src == DEBUG) {
         follow_vars = 1;
-        break;
       }
       src++;
       srclen++;
@@ -359,14 +358,18 @@ uint8_t debug_state(State * s, uint8_t enable, uint8_t interactive){
       default:
         break;
     }
-    printf("\033[%dF\33[u\033[K", lines);
+    if (s->src - s->_src0 == srclen) {
+      flush_term(lines);
+    } else {
+      printf("\033[%dF\033[u\033[K", lines);
+    }
   }
   return stop;
 }
 
 void print_exec_info(void) {
   if (!steps) return;
-  printf("%ld op\n", steps);
+  printf("\n\n%ld op\n", steps);
   if (follow_mem) printf("%d bytes\n", mem_used);
   printf("%.2f s\n", time_spent/1000.0);
 }

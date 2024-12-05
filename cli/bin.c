@@ -158,3 +158,37 @@ int main(int argc, char* argv[]){
   }
   return r;
 }
+
+#ifdef EXPORT
+int main_init(int argc, char* argv[]){
+  setvbuf(stdout, NULL, _IONBF, 0);
+  arg_parse(argc, argv);
+  if (!src) {
+    help(argv[0]);
+    exit(1);
+  }
+  remove_whitespace();
+  stop = 0;
+  s = (State*) malloc(sizeof(State));
+  memset(s, 0, sizeof(State));
+  s->src = (uint8_t*) src;
+  init(s);
+  return 0;
+}
+
+int main_step(void){
+  State * sub = s;
+  while (sub->sub) sub = sub->sub;
+  if (step_callback(sub) != 0){
+    return LOOP_ST; // TODO change return val?
+  }
+  return step(s);
+}
+
+void main_free(void){
+  free_memory(s);
+  if (exec_info) {
+    print_exec_info();
+  }
+}
+#endif

@@ -155,6 +155,18 @@ int main(int argc, char* argv[]){
   return run_target();
 }
 
+#ifdef EXPORT
+int main_init(int argc, char* argv[]) {
+  return main(argc, argv);
+}
+
+int main_step(void) {
+  return 1;
+}
+
+void main_free(void) {}
+#endif
+
 void validate(void){
   begin_section("NOP");
   assert_eq(run(" "), 0);

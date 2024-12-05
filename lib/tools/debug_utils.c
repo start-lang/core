@@ -266,7 +266,7 @@ uint8_t debug_state(State * s, uint8_t enable, uint8_t interactive){
       src++;
       srclen++;
     }
-  } else if (s->src - s->_src0 == srclen) {
+  } else if (steps > 10000 && s->src - s->_src0 == srclen) {
     time_spent = (clock() - start_time) * 1000 / CLOCKS_PER_SEC;
   }
 

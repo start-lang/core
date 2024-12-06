@@ -23,4 +23,8 @@ jobs:
       - name: Tests
         run: |
           make clean test
-          make codecov TOKEN=${{ secrets.CODECOV_TOKEN }} ID=${{ github.run_id }}
+
+      - name: Upload coverage
+        uses: codecov/codecov-action@v5
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}

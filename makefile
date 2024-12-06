@@ -255,12 +255,6 @@ start-server:
 
 ## CI/CD
 
-.PHONY: codecov
-codecov:
-	curl -Os https://cli.codecov.io/latest/alpine/codecov
-	chmod +x codecov
-	./codecov --verbose upload-process --fail-on-error -t ${TOKEN} -n github-actions-${ID} -F service -f star_t.c.gcov
-
 .PHONY: act
 act:
 	nohup time act --container-architecture linux/amd64 >> nohup.out 2>&1 &

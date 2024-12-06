@@ -31,7 +31,8 @@ WASM_TEST_OUTPUT  = build/test.wasm
 WASM_CLI_OUTPUT   = build/start.wasm
 WASM_BMARK_OUTPUT = build/benchmark.wasm
 
-BENCHMARK = -D STOPFAIL -D BENCHMARK=1000 -D PRINT_TIMINGS
+REPEAT    := 1000
+BENCHMARK = -D STOPFAIL -D BENCHMARK=${REPEAT} -D PRINT_TIMINGS
 
 ## INIT
 
@@ -39,10 +40,11 @@ BENCHMARK = -D STOPFAIL -D BENCHMARK=1000 -D PRINT_TIMINGS
 init:
 	@ [ "$$(ls -A lib/microcuts)" ] || git submodule update --init --recursive
 	@ [ "$$(ls -A lib/wunstd)" ] || git submodule update --init --recursive
+	mkdir -p build
 
 ## DOCKER
 
-DOCKER = docker run --rm -it --user $$(id -u):$$(id -g) -v`pwd`:/src -w/src
+DOCKER = docker run --platform linux/amd64 --rm -it --user $$(id -u):$$(id -g) -v`pwd`:/src -w/src
 DOCKER_IMAGE = aantunes/clang-wasm:latest
 
 .PHONY: docker-img-build
@@ -66,6 +68,10 @@ docker-run-test-long:
 docker-run-benchmark:
 	@ ${DOCKER} ${DOCKER_IMAGE} make benchmark
 
+.PHONY: docker-run-memcheck
+docker-run-memcheck:
+	@ ${DOCKER} ${DOCKER_IMAGE} make memcheck
+
 .PHONY: docker-run-build-wasm
 docker-run-build-wasm:
 	@ ${DOCKER} ${DOCKER_IMAGE} make build-wasm
@@ -85,7 +91,7 @@ clean:
 	@ rm -rf build/*
 
 .PHONY: build-test
-build-test: init clean
+build-test: init
 	@ ${CC} ${CFLAGS} -D STOPFAIL -D LONG_TEST -D ENABLE_FILES -D PRINT_TIMINGS ${TEST} -o ${TEST_OUTPUT}
 	@ chmod +x ${TEST_OUTPUT}
 
@@ -97,7 +103,7 @@ test-quick: ${TEST_OUTPUT}
 	@ ${TEST_OUTPUT}
 
 .PHONY: memcheck
-memcheck: init clean
+memcheck: init
 ifeq ($(UNAME), Linux)
 	@ ${CC} ${CFLAGS} -Wstrict-prototypes -Werror -Wcast-align -fsanitize=alignment -fsanitize=undefined -g ${TEST} -o ${TEST_OUTPUT}
 	@ chmod +x ${TEST_OUTPUT}
@@ -109,12 +115,12 @@ else
 endif
 
 .PHONY: coverage
-coverage: init clean
-	@ ${CC} ${CFLAGS} -fprofile-arcs -ftest-coverage ${TEST} -o ${TEST_OUTPUT}
+coverage: init
+	@ ${CC} ${CFLAGS} -D STOPFAIL -D LONG_TEST -D ENABLE_FILES -D PRINT_TIMINGS -fprofile-arcs -ftest-coverage ${TEST} -o ${TEST_OUTPUT}
 	@ chmod +x ${TEST_OUTPUT}
-	@ ${TEST_OUTPUT} > /dev/null
+	@ ${TEST_OUTPUT} > build/test.out || { cat build/test.out; exit 1; }
 	@ ${GCOV} src/star_t.c -o ${TEST_OUTPUT}-star_t.gcda > /dev/null
-	@ python3 lib/microcuts/tools/coverage.py | grep -v string
+	@ python3 lib/microcuts/tools/coverage.py | grep -v string | tee build/coverage.out
 
 .PHONY: build-cli
 build-cli: init
@@ -125,11 +131,11 @@ ${CLI_OUTPUT}: ${SRC_FILES} ${CLI}
 	@ ${MAKE} -s build-cli
 
 .PHONY: build-cli-gcc
-build-cli-gcc: init clean
+build-cli-gcc: init
 	@ ${MAKE} -s CC=gcc build-cli
 
 .PHONY: build-cli-clang
-build-cli-clang: init clean
+build-cli-clang: init
 	@ ${MAKE} -s CC=clang build-cli
 
 .PHONY: test-cli
@@ -142,7 +148,6 @@ test-cli: ${CLI_OUTPUT}
 	@ [ "$$(cat build/pi.out)" = "3.141592653" ] || (echo "Expected 3.141592653, got $$(cat build/pi.out)" && exit 1)
 	@ printf "22+62" | ${CLI_OUTPUT} -f test/bf/calc.st > build/calc.out
 	@ [ "$$(cat build/calc.out)" = "84" ] || (echo "Expected 84, got $$(cat build/calc.out)" && exit 1)
-	@ rm -f build/*.out
 
 ## WASM
 
@@ -171,7 +176,7 @@ test-wasm-cli: ${WASM_CLI_OUTPUT}
 
 .PHONY: test-wasm-example
 test-wasm-example: ${WASM_TEST_OUTPUT}
-	@ node repl/example.js ../${WASM_RUNTIME} ${WASM_TEST_OUTPUT}
+	@ node repl/example.js ../${WASM_RUNTIME} ${WASM_TEST_OUTPUT} > build/example.out || { cat build/example.out; exit 1; }
 
 ## BENCHMARK
 
@@ -194,7 +199,7 @@ ${WASM_BMARK_OUTPUT}: ${WASM_SRC_FILES} ${TEST}
 	@ ${MAKE} -s build-wasm-benchmark
 
 .PHONY: benchmark
-benchmark: init clean ${BMARK_OUTPUT}.gcc ${BMARK_OUTPUT}.clang ${WASM_BMARK_OUTPUT}
+benchmark: init ${BMARK_OUTPUT}.gcc ${BMARK_OUTPUT}.clang ${WASM_BMARK_OUTPUT}
 	@ time ${BMARK_OUTPUT}.gcc
 	@ time ${BMARK_OUTPUT}.clang
 	@ time node ${WASM_RUNTIME} ${WASM_BMARK_OUTPUT}
@@ -208,19 +213,20 @@ test-cli-mandelbrot: ${CLI_OUTPUT} ${WASM_CLI_OUTPUT}
 
 .PHONY: test
 test:
-	@ ${MAKE} -s test-quick
-	@ ${MAKE} -s memcheck
 	@ ${MAKE} -s coverage
-
-.PHONY: test-long
-test-long:
-	@ ${MAKE} -s test-quick
 	@ ${MAKE} -s test-cli
 	@ ${MAKE} -s test-wasm-cli
 	@ ${MAKE} -s test-wasm-example
-	@ ${MAKE} -s memcheck
-	@ ${MAKE} -s coverage
+
+.PHONY: test-long
+test-long:
+	@ ${MAKE} -s test
 	@ ${MAKE} -s benchmark
+
+.PHONY: test-long
+test-full:
+	@ ${MAKE} -s test-long
+	@ ${MAKE} -s memcheck
 
 ## SVG
 
@@ -230,6 +236,7 @@ build/.venv:
 	  python3 -m pip install railroad-diagrams==1.1.0 || \
 	  { echo "Error: Could not setup venv"; rm -rf build/.venv; exit 1; }
 
+.PHONY: svg
 svg: build/.venv
 	@ source build/.venv/bin/activate && \
 	  rm -f grammar/railroad-svg/*.svg && \
@@ -242,5 +249,21 @@ svg: build/.venv
 
 ## WEB
 
+.PHONY: start-server
 start-server:
 	python3 -m http.server 8000
+
+## CI/CD
+
+.PHONY: codecov
+codecov:
+	[ -z ${TOKEN} ] && echo "Error: TOKEN
+	[ -z ${ID} ] && echo "Error: ID
+	[ -z ${TOKEN} ] || [ -z ${ID} ] && exit 1
+	curl -Os https://cli.codecov.io/latest/alpine/codecov
+	chmod +x codecov
+	./codecov --verbose upload-process --fail-on-error -t ${TOKEN} -n 'service'-${ID} -F service -f coverage-service.xm
+
+.PHONY: act
+act:
+	act --container-architecture linux/amd64

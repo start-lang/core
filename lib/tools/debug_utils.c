@@ -1,11 +1,12 @@
 #include <stdint.h>
+#include <inttypes.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <tokens.h>
 #include <time.h>
 #include <debug_utils.h>
-#ifdef __linux__
+#if defined(__linux__) || defined(__APPLE__)
 #include <termios.h>
 #include <unistd.h>
 #endif
@@ -42,7 +43,7 @@ extern uint16_t output_len;
 extern Variable * _vars;
 extern uint8_t _varc;
 
-#ifdef __linux__
+#if defined(__linux__) || defined(__APPLE__)
 uint8_t getch(void) {
   struct termios oldt, newt;
   uint8_t ch;
@@ -369,7 +370,7 @@ uint8_t debug_state(State * s, uint8_t enable, uint8_t interactive){
 
 void print_exec_info(void) {
   if (!steps) return;
-  printf("\n\n%ld op\n", steps);
+  printf("\n\n%"PRIu64" op\n", steps);
   if (follow_mem) printf("%d bytes\n", mem_used);
   printf("%.2f s\n", time_spent/1000.0);
 }

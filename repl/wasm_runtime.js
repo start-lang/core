@@ -182,15 +182,21 @@
     globalThis.fs = require('fs');
     if (typeof require !== 'undefined' && require.main === module) {
       (async function() {
-        process.stdin.setRawMode(true);
+        if (process.stdin.isTTY) {
+          process.stdin.setRawMode(true);
+        }
 
         process.on('SIGINT', () => {
-          process.stdin.setRawMode(false);
+          if (process.stdin.isTTY) {
+            process.stdin.setRawMode(false);
+          }
           process.exit();
         });
 
         process.on('exit', () => {
-          process.stdin.setRawMode(false);
+          if (process.stdin.isTTY) {
+            process.stdin.setRawMode(false);
+          }
         });
 
         const w = await WASM(process.argv[2], (getWasm, getMemory) => {

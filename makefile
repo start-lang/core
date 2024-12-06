@@ -49,7 +49,7 @@ DOCKER_IMAGE = aantunes/clang-wasm:latest
 
 .PHONY: docker-img-build
 docker-img-build:
-	docker build -t clang-wasm .
+	docker build -t clang-wasm . --no-cache=true --platform=linux/amd64
 
 .PHONY: docker-img-push
 docker-img-push:
@@ -257,13 +257,11 @@ start-server:
 
 .PHONY: codecov
 codecov:
-	[ -z ${TOKEN} ] && echo "Error: TOKEN
-	[ -z ${ID} ] && echo "Error: ID
-	[ -z ${TOKEN} ] || [ -z ${ID} ] && exit 1
 	curl -Os https://cli.codecov.io/latest/alpine/codecov
 	chmod +x codecov
-	./codecov --verbose upload-process --fail-on-error -t ${TOKEN} -n 'service'-${ID} -F service -f coverage-service.xm
+	./codecov --verbose upload-process --fail-on-error -t ${TOKEN} -n github-actions-${ID} -F service -f star_t.c.gcov
 
 .PHONY: act
 act:
-	act --container-architecture linux/amd64
+	nohup time act --container-architecture linux/amd64 >> nohup.out 2>&1 &
+	tail -f nohup.out

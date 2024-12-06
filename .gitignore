@@ -3,3 +3,4 @@ cli/bin
 *.gc*
 *.DS_Store
 .vscode/
+nohup.out

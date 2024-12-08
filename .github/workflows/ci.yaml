@@ -19,10 +19,26 @@ jobs:
         uses: actions/checkout@v3
         with:
           submodules: recursive
+          fetch-depth: 0
 
       - name: Tests
         run: |
           make clean test
+          make assets
+
+      - name: Update assets
+        run: |
+          git config --global --add safe.directory $GITHUB_WORKSPACE
+          git fetch origin assets
+          git checkout assets
+          git pull --rebase origin assets
+          cp -rf build/assets/* .
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          ls -la
+          git add .
+          git commit -m "Update assets" || echo "No new changes"
+          git push origin assets
 
       - name: Upload coverage
         uses: codecov/codecov-action@v5

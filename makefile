@@ -84,6 +84,10 @@ docker-run-build-cli:
 docker-run-svg:
 	${DOCKER} ${DOCKER_IMAGE} make svg
 
+.PHONY: docker-run-assets
+docker-run-assets:
+	${DOCKER} ${DOCKER_IMAGE} make assets
+
 ## BUILD
 
 .PHONY: clean
@@ -254,6 +258,16 @@ start-server:
 	python3 -m http.server 8000
 
 ## CI/CD
+
+.PHONY: assets
+assets: init ${WASM_CLI_OUTPUT} svg
+	mkdir -p build/assets/img
+	cp -r grammar/railroad-svg/*.svg build/assets/img
+	cp build/start.wasm build/assets
+	cp repl/wasm_runtime.js build/assets
+	cp repl/wasm_runtime.css build/assets
+	cp repl/wasm_runtime.html build/assets
+	cp docs/start_logo.svg build/assets/img/logo.svg
 
 .PHONY: act
 act:

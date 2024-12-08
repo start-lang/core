@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <title>*T repl</title>
+</head>
+
+<body>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xterm/5.5.0/xterm.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/xterm/5.5.0/xterm.css" />
+  <script src="wasm_runtime.js"></script>
+  <link rel="stylesheet" href="wasm_runtime.css" />
+  <div id="interpreter"></div>
+  <button id="run" onclick='runStarT(["-e", "-i", "\"Hello, World!\" PS"])'>Run</button>
+  <!--
+  <button id="run" onclick='runStarT(["\"Hello, World!\" PS"])'>Run</button>
+  -->
+</body>
+
+</html>

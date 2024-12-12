@@ -2,7 +2,13 @@ UNAME := $(shell uname)
 SHELL := /bin/bash
 
 CC   := clang
-GCOV := $(if $(filter clang,${CC}),llvm-cov) gcov
+ifeq (${CC}, gcc)
+  GCOV := gcov
+else ifeq ($(shell command -v llvm-cov-19 2> /dev/null),)
+  GCOV := llvm-cov gcov
+else
+  GCOV := llvm-cov-19 gcov
+endif
 
 LIBS = src lib/microcuts/src lib/tools
 TEST = test/test.c

@@ -1,5 +1,5 @@
-#ifndef TOKENS_H
-#define TOKENS_H
+#ifndef START_TOKENS_H
+#define START_TOKENS_H
 
 #define IF              '('
 #define ELSE            ':'

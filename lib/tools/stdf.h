@@ -7,7 +7,7 @@ extern "C" {
 
 #include <stdint.h>
 #include <stdio.h>
-#include <star_t.h>
+#include <start_lang.h>
 
 uint8_t stop = 0;
 uint16_t output_len = 0;

@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <microcuts.h>
-#include <star_t.h>
+#include <start_lang.h>
 #include <time.h>
 #include <stdf.h>
 #include <debug_utils.h>

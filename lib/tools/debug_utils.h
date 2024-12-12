@@ -1,4 +1,4 @@
-#include <star_t.h>
+#include <start_lang.h>
 
 #ifndef LANG_TOOLS_H
 #define LANG_TOOLS_H

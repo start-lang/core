@@ -1,8 +1,8 @@
 #include <stdint.h>
-#include <tokens.h>
+#include <start_tokens.h>
 
-#ifndef STAR_T_H
-#define STAR_T_H
+#ifndef START_LANG_H
+#define START_LANG_H
 
 #ifdef __cplusplus
 extern "C" {

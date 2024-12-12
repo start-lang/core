@@ -11,6 +11,7 @@ else
 endif
 
 LIBS = src lib/microcuts/src lib/tools
+MAIN_SRC = start_lang
 TEST = test/test.c
 CLI  = cli/bin.c
 
@@ -129,7 +130,8 @@ coverage: init
 	${CC} ${CFLAGS} -D STOPFAIL -D LONG_TEST -D ENABLE_FILES -D PRINT_TIMINGS -fprofile-arcs -ftest-coverage ${TEST} -o ${TEST_OUTPUT}
 	chmod +x ${TEST_OUTPUT}
 	${TEST_OUTPUT} > build/test.out || { cat build/test.out; exit 1; }
-	${GCOV} src/star_t.c -o ${TEST_OUTPUT}-star_t.gcda > /dev/null
+	[ -e src/${MAIN_SRC}.c ] || { echo "No main source file found"; exit 1; }
+	${GCOV} src/${MAIN_SRC}.c -o ${TEST_OUTPUT}-${MAIN_SRC}.gcda > /dev/null
 	python3 lib/microcuts/tools/coverage.py | grep -v string | tee build/coverage.out
 
 .PHONY: build-cli

@@ -1,6 +1,6 @@
 #include <stdlib.h>
 #include <string.h>
-#include <star_t.h>
+#include <start_lang.h>
 
 Variable * _vars = NULL;
 uint8_t _varc = 0;

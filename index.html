@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Linguagem Esotérica</title>
+<style>
+  :root {
+    --bg-light: #f4f4f4;
+    --bg-dark: #1c1c1c;
+    --text-light: #333;
+    --text-dark: #ddd;
+    --accent: #c2f3e0;
+    --terminal-bg: #000;
+    --transition: 0.4s ease;
+    --light-pattern-color: rgba(0,0,0,0.1);
+    --dark-pattern-color: rgba(255,255,255,0.1);
+    --terminal-default-height: 300px;
+    font-size: 16px;
+    font-family: "Courier New", Courier, monospace;
+  }
+
+  body {
+    margin: 0;
+    padding: 0;
+    background: var(--bg-light);
+    color: var(--text-light);
+    transition: background var(--transition), color var(--transition);
+    overflow-x: hidden;
+    position: relative;
+  }
+
+  body.dark {
+    background: var(--bg-dark);
+    color: var(--text-dark);
+  }
+
+  /* Botão tema */
+  .theme-toggle {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    cursor: pointer;
+    z-index: 1000;
+    user-select: none;
+    font-size: 1.5rem;
+    line-height: 1;
+    touch-action: manipulation;
+  }
+
+  /* Padrão geométrico no ::before */
+  body::before {
+    content: "";
+    position: fixed;
+    top:0; left:0; right:0; bottom:0;
+    z-index:-2;
+    background: repeating-linear-gradient(
+      45deg,
+      var(--light-pattern-color),
+      var(--light-pattern-color) 20px,
+      transparent 20px,
+      transparent 40px
+    );
+    pointer-events: none;
+  }
+
+  body.dark::before {
+    background: repeating-linear-gradient(
+      45deg,
+      var(--dark-pattern-color),
+      var(--dark-pattern-color) 20px,
+      transparent 20px,
+      transparent 40px
+    );
+  }
+
+  /* Gradiente radial no ::after */
+  body::after {
+    content:"";
+    position: fixed;
+    z-index: -1;
+    top:0;left:0;right:0;bottom:0;
+    background: radial-gradient(circle at 50% 50%, #b3e6fa 0%, #a9a4f7 40%, #80ffce 100%);
+    background-size: cover;
+    animation: gradient-move 30s linear infinite alternate;
+    opacity:0.4;
+  }
+
+  @keyframes gradient-move {
+    0% { background-position: 0% 0%; }
+    100% { background-position: 100% 100%; }
+  }
+
+  section {
+    padding: 100px 20px;
+    max-width: 800px;
+    margin: auto;
+  }
+
+  h1, h2, h3 {
+    font-family: monospace;
+    margin-bottom: 20px;
+  }
+
+  p {
+    line-height: 1.6;
+    margin-bottom: 20px;
+  }
+
+  /* Terminal Container:
+     - Inicialmente alinhado próximo ao topo, centralizado horizontalmente.
+     - Ao rolar: 100% largura no topo, sem bordas arredondadas.
+     - Usamos position:fixed e transform para animar suavemente.
+  */
+  #terminal-container {
+    position: fixed;
+    top: 100px; /* Ajustado para alinhar próximo ao topo */
+    left: 50%;
+    transform: translateX(-50%);
+    width: 60%;
+    height: var(--terminal-default-height);
+    background: var(--terminal-bg);
+    border-radius: 8px;
+    box-sizing: border-box;
+    overflow: hidden; /* contém o terminal e a barra */
+    transition: all var(--transition);
+    z-index: 999;
+  }
+
+  body.scrolled #terminal-container {
+    top: 0;
+    left: 0;
+    transform: none;
+    width: 100%;
+    border-radius: 0;
+  }
+
+  /* Terminal dentro do container */
+  #terminal {
+    background: var(--terminal-bg);
+    color: #0f0;
+    padding: 20px;
+    padding-bottom: 40px; /* espaço para a barra */
+    box-sizing: border-box;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    transition: all var(--transition);
+    position: relative; /* Adicionado para z-index funcionar corretamente */
+    z-index: 1; /* Garantir que o conteúdo fique abaixo do resizer */
+  }
+
+  body.dark #terminal {
+    background: #111;
+    color: #0f0;
+  }
+
+  /* Resizer */
+  #terminal-resizer {
+    position: absolute;
+    bottom: 0; left:0; right:0;
+    height: 10px;
+    background: rgba(255,255,255,0.2);
+    cursor: ns-resize;
+    z-index: 10; /* Aumentado para garantir que esteja acima do conteúdo */
+    transition: background var(--transition), border-radius var(--transition);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  #terminal-resizer::before {
+    content: "";
+    width: 40px;
+    height: 4px;
+    background: rgba(255,255,255,0.5);
+    border-radius: 2px;
+  }
+
+  #terminal-resizer:hover {
+    background: rgba(255,255,255,0.4);
+  }
+
+  /* Quando não scrolled (inicial), manter o arredondamento na parte inferior via resizer */
+  body:not(.scrolled) #terminal-resizer {
+    border-radius: 0 0 8px 8px;
+  }
+
+  /* Em scrolled, sem bordas */
+  body.scrolled #terminal-resizer {
+    border-radius: 0;
+  }
+
+  .examples {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+  }
+
+  .examples button {
+    background: var(--accent);
+    border: none;
+    padding: 10px;
+    cursor: pointer;
+    transition: background var(--transition);
+    font-family: monospace;
+    border-radius: 4px;
+    font-size: 1rem;
+  }
+
+  .examples button:hover {
+    background: #9ae9cf;
+  }
+
+  @media (max-width: 600px) {
+    h1 {
+      font-size: 1.5rem;
+    }
+    #terminal {
+      font-size: 0.9rem;
+    }
+    .examples button {
+      font-size: 0.9rem;
+      padding: 8px;
+    }
+
+    /* No mobile, com handle mais proeminente */
+    #terminal-resizer {
+      height: 20px; /* Aumentado para mais proeminente */
+      background: rgba(255,255,255,0.3);
+    }
+
+    #terminal-resizer::before {
+      width: 30px;
+      height: 6px;
+      background: rgba(255,255,255,0.7);
+    }
+
+    /* Remover display: none para permitir redimensionamento no mobile */
+    /* Ajustar largura do terminal para 98% no mobile quando não scrolled */
+    #terminal-container {
+      width: 98%;
+      left: 50%;
+      transform: translateX(-50%);
+    }
+
+    /* Ajustar top padding para evitar sobreposição */
+    body {
+      padding-top: 0; /* Inicialmente sem padding */
+    }
+
+    body.scrolled #terminal-container {
+      padding-top: var(--terminal-default-height);
+    }
+  }
+
+  footer {
+    text-align: center;
+    padding: 50px 20px;
+    font-size: 0.9em;
+  }
+
+  footer a {
+    color: inherit;
+    text-decoration: none;
+    border-bottom: 1px dotted currentColor;
+  }
+</style>
+</head>
+<body>
+<div class="theme-toggle" id="themeToggle" title="Trocar tema">☀️/🌙</div>
+
+<div id="terminal-container">
+  <div id="terminal">
+    <p>Bem-vindo(a) ao Terminal Interativo da Linguagem Esotérica.</p>
+    <p>Aqui você pode testar comandos (exemplo fictício):</p>
+    <pre>
+> print "Hello, World!"
+Hello, World!
+    </pre>
+  </div>
+  <div id="terminal-resizer" title="Arraste para redimensionar"></div>
+</div>
+
+<section id="intro">
+  <h1>Linguagem Esotérica X</h1>
+  <p>Bem-vindo(a) à nossa linguagem de programação experimental. Ela foi criada para explorar conceitos bizarros, sintaxes estranhas e efeitos colaterais inusitados. Esta página demonstra a proposta visual e algumas funcionalidades interativas.</p>
+</section>
+
+<section id="playground">
+  <h2>Playground Interativo</h2>
+  <p>Experimente o terminal acima. Ao rolar a página (mesmo um pouquinho), o terminal se fixa no topo e ocupa 100% da largura com uma animação suave. Ao voltar ao topo (scroll = 0), o terminal retorna ao estado original (centralizado, 60% largura, bordas arredondadas). O tamanho do terminal é fixo, mas pode ser redimensionado no desktop e no mobile arrastando a barra inferior.</p>
+  <p>Use os botões abaixo para adicionar exemplos ao terminal (o conteúdo é anexado ao final):</p>
+  <div class="examples">
+    <button data-example="hello">Hello, World!</button>
+    <button data-example="quine">Quine</button>
+    <button data-example="mandelbrot">Mandelbrot</button>
+  </div>
+</section>
+
+<section id="examples">
+  <h2>Exemplos de Código</h2>
+  <p>Aqui você encontra fragmentos de código clássicos, ilustrando o poder (ou a falta dele) desta linguagem esotérica:</p>
+  <pre>
+// Hello, World!
+print "Hello, World!"
+
+// Quine
+SOURCE = read_self()
+print SOURCE
+
+// Mandelbrot (conceito)
+// ... código complexo aqui ...
+  </pre>
+</section>
+
+<section id="syntax">
+  <h2>Diagrama de Sintaxe</h2>
+  <p>[Inserir diagrama da gramática da linguagem]</p>
+</section>
+
+<section id="faq">
+  <h2>FAQ</h2>
+  <p><strong>P: Esta linguagem é séria?</strong><br>A: Não necessariamente, é mais um experimento estético/conceitual.</p>
+  <p><strong>P: Posso contribuir?</strong><br>A: Sim! O código-fonte está no GitHub.</p>
+</section>
+
+<footer>
+  <p><a href="https://github.com/exemplo/linguagem-esoterica">GitHub do Projeto</a></p>
+</footer>
+
+<script>
+  const themeToggle = document.getElementById('themeToggle');
+  const body = document.body;
+  const terminalContainer = document.getElementById('terminal-container');
+  const terminal = document.getElementById('terminal');
+  const resizer = document.getElementById('terminal-resizer');
+
+  themeToggle.addEventListener('click', () => {
+    body.classList.toggle('dark');
+    themeToggle.textContent = body.classList.contains('dark') ? '🌙/☀️' : '☀️/🌙';
+  });
+
+  let lastScrolledState = false;
+
+  // Função para atualizar o padding-top do body para evitar sobreposição
+  function updateBodyPadding() {
+    const terminalHeight = terminalContainer.offsetHeight;
+    if (window.innerWidth <= 600) {
+      // Mobile
+      if (body.classList.contains('scrolled')) {
+        body.style.paddingTop = '0px'; // Terminal fixo no topo
+      } else {
+        body.style.paddingTop = `${terminalHeight + 20}px`; // 20px de offset
+      }
+    } else {
+      // Desktop
+      if (body.classList.contains('scrolled')) {
+        body.style.paddingTop = '0px'; // Terminal fixo no topo
+      } else {
+        body.style.paddingTop = `${terminalHeight + 100}px`; // 100px de offset
+      }
+    }
+  }
+
+  window.addEventListener('scroll', () => {
+    const shouldBeScrolled = window.scrollY > 0;
+    if (shouldBeScrolled !== lastScrolledState) {
+      // Estado mudou
+      if (shouldBeScrolled) {
+        body.classList.add('scrolled');
+      } else {
+        body.classList.remove('scrolled');
+      }
+      // Ao mudar estado, resetar o tamanho do terminal ao padrão
+      terminal.style.height = ''; // remove inline style, voltando ao CSS default
+      terminalContainer.style.height = ''; // reseta também o container caso tenha mudado
+      updateBodyPadding(); // Atualizar padding do body
+      lastScrolledState = shouldBeScrolled;
+    }
+  });
+
+  // Adicionar conteúdo dos exemplos ao terminal
+  document.querySelectorAll('.examples button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const example = btn.getAttribute('data-example');
+      let code = "";
+      if (example === 'hello') {
+        code = "> print \"Hello, World!\"\nHello, World!";
+      } else if (example === 'quine') {
+        code = "> SOURCE = read_self()\n> print SOURCE\n... Quine output ...";
+      } else if (example === 'mandelbrot') {
+        code = "> run mandelbrot_render()\n... desenhando fractal ...";
+      }
+      terminal.insertAdjacentHTML('beforeend', `<p>Carregando exemplo: ${example}</p><pre>${code}</pre>`);
+      terminal.scrollTop = terminal.scrollHeight; // rola para o final do terminal
+    });
+  });
+
+  // Redimensionar a altura do terminal (desktop e mobile)
+  let isResizing = false;
+  let startY = 0;
+  let startHeight = 0;
+
+  if (resizer) {
+    resizer.addEventListener('mousedown', (e) => {
+      e.preventDefault(); // Evita problemas com seleção de texto
+      isResizing = true;
+      startY = e.clientY;
+      startHeight = terminal.offsetHeight;
+      document.body.style.userSelect = 'none';
+    });
+
+    resizer.addEventListener('touchstart', (e) => {
+      e.preventDefault(); // Evita problemas com seleção de texto
+      isResizing = true;
+      startY = e.touches[0].clientY;
+      startHeight = terminal.offsetHeight;
+      document.body.style.userSelect = 'none';
+    });
+
+    document.addEventListener('mousemove', (e) => {
+      if (!isResizing) return;
+      const dy = e.clientY - startY;
+      const newHeight = startHeight + dy;
+      if (newHeight > 100) {
+        terminal.style.height = `${newHeight}px`;
+        terminalContainer.style.height = `${newHeight}px`; // Ajustar também o container
+        updateBodyPadding(); // Atualizar padding do body
+      }
+    });
+
+    document.addEventListener('touchmove', (e) => {
+      if (!isResizing) return;
+      const dy = e.touches[0].clientY - startY;
+      const newHeight = startHeight + dy;
+      if (newHeight > 100) {
+        terminal.style.height = `${newHeight}px`;
+        terminalContainer.style.height = `${newHeight}px`; // Ajustar também o container
+        updateBodyPadding(); // Atualizar padding do body
+      }
+    });
+
+    document.addEventListener('mouseup', () => {
+      if (isResizing) {
+        isResizing = false;
+        document.body.style.userSelect = '';
+      }
+    });
+
+    document.addEventListener('touchend', () => {
+      if (isResizing) {
+        isResizing = false;
+        document.body.style.userSelect = '';
+      }
+    });
+  }
+
+  // Atualizar o padding inicial após o carregamento
+  window.addEventListener('load', updateBodyPadding);
+  // Atualizar o padding ao redimensionar a janela
+  window.addEventListener('resize', updateBodyPadding);
+</script>
+</body>
+</html>

@@ -43,7 +43,7 @@ uint8_t jump(State * s){
   return 0;
 }
 
-void free_memory(State * s){
+void st_state_free(State * s){
   if (s == NULL) return;
   free(s->_m0);
   for (uint8_t i = 0; i < _varc; i++){
@@ -69,7 +69,7 @@ void free_memory(State * s){
   free(s);
 }
 
-int8_t init(State * s) {
+int8_t st_state_init(State * s) {
   if (!s->_m) {
     s->_m = (uint8_t*) malloc(sizeof(uint8_t) * MEM_SIZE);
     memset(s->_m, 0, sizeof(uint8_t) * MEM_SIZE);
@@ -84,11 +84,11 @@ int8_t init(State * s) {
   return SUCCESS;
 }
 
-int8_t step(State * s) {
+int8_t st_step(State * s) {
   if (s->sub) {
     State * p = s;
     while (p->sub->sub) p = p->sub;
-    int8_t r = step(p->sub);
+    int8_t r = st_step(p->sub);
     if (r != SUCCESS) {
       if (p->sub->_freesrc){
         free(p->sub->_src0);
@@ -114,9 +114,9 @@ int8_t step(State * s) {
     }
   }
 
-  s->_op_result = op(*(s->src), s);
+  s->_op_result = st_op(*(s->src), s);
   if (s->sub){
-    init(s->sub);
+    st_state_init(s->sub);
     if (*(s->src) != 0) s->src++;
     return SUCCESS;
   }
@@ -141,15 +141,15 @@ int8_t step(State * s) {
   return SUCCESS;
 }
 
-int8_t blockrun(State * s){
-  init(s);
+int8_t st_run(State * s){
+  st_state_init(s);
   while (1){
     State * sub = s;
     while (sub->sub) sub = sub->sub;
     if (step_callback(sub) != 0){
       return LOOP_ST; // TODO change return val?
     }
-    int8_t r = step(s);
+    int8_t r = st_step(s);
     if (r == LOOP_ST){
       break;
     } else if (r >= JM_ERR0 || r == BL_PREV){
@@ -187,7 +187,7 @@ Register mload(State * s) {
   return x;
 }
 
-uint8_t op(uint8_t token, State * s){
+uint8_t st_op(uint8_t token, State * s){
   uint8_t prev = s->_prev_token;
   s->_prev_token = token;
   if (s->_string){
@@ -328,15 +328,15 @@ uint8_t op(uint8_t token, State * s){
           case OR:
           case XOR:
             s->_prev_token = 0;
-            op(LEFT, s);
-            op(token, s);
-            op(LOAD, s);
+            st_op(LEFT, s);
+            st_op(token, s);
+            st_op(LOAD, s);
             break;
           default:
             s->_prev_token = 0;
-            op(LEFT, s);
-            op(LOAD, s);
-            op(token, s);
+            st_op(LEFT, s);
+            st_op(LOAD, s);
+            st_op(token, s);
         }
         break;
       case COND_MODIFIER:
@@ -501,9 +501,9 @@ uint8_t op(uint8_t token, State * s){
       REG.i16[1] = 0;
       break;
     case PUSH:
-      op(STORE, s);
+      st_op(STORE, s);
       s->_prev_token = 0;
-      op(RIGHT, s);
+      st_op(RIGHT, s);
       s->_stack_h++;
       break;
     case ROTATE_REG:

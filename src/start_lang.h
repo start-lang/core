@@ -81,15 +81,15 @@ extern int8_t step_callback(State * s);
 
 #define REG s->reg
 
-int8_t blockrun(State * s);
+int8_t st_run(State * s);
 
-int8_t init(State * s);
+int8_t st_state_init(State * s);
 
-int8_t step(State * s);
+int8_t st_step(State * s);
 
-uint8_t op(uint8_t token, State * s);
+uint8_t st_op(uint8_t token, State * s);
 
-void free_memory(State * s);
+void st_state_free(State * s);
 
 typedef struct {
   uint8_t* name;

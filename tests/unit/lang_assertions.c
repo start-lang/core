@@ -49,7 +49,7 @@ int8_t run(char * src) {
   memset(out, 0, 256);
   input_ptr = input;
   s->src = (uint8_t*) src;
-  int8_t result = blockrun(s);
+  int8_t result = st_run(s);
   force_debug = 0;
   RM.i8[0] = (s->_m - s->_m0 + 0) >= s->_mlen ? 123 : s->_m[0];
   RM.i8[1] = (s->_m - s->_m0 + 1) >= s->_mlen ? 123 : s->_m[1];
@@ -138,7 +138,7 @@ char * getBuffer(void){
 int clean(void){
   int ts = steps;
   steps = 0;
-  free_memory(s);
+  st_state_free(s);
   s = NULL;
   return ts;
 }
@@ -486,7 +486,7 @@ void validate(void){
       strncpy(block, code + (index*max_block_size),  block_size);
       block[block_size] = '\0';
       s->src = (uint8_t*) block;
-      direction = blockrun(s);
+      direction = st_run(s);
       // printf("%s %d %d %d\n", block, block_size, direction, index);
 
       if (direction == -1){

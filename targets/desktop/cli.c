@@ -50,7 +50,7 @@ int8_t run(char * src) {
   s = (State*) malloc(sizeof(State));
   memset(s, 0, sizeof(State));
   s->src = (uint8_t*) src;
-  int8_t result = blockrun(s);
+  int8_t result = st_run(s);
   return result;
 }
 
@@ -156,7 +156,7 @@ int main(int argc, char* argv[]){
   }
   remove_whitespace();
   int8_t r = run(src);
-  free_memory(s);
+  st_state_free(s);
   if (exec_info) {
     print_exec_info();
   }
@@ -176,7 +176,7 @@ int main_init(int argc, char* argv[]){
   s = (State*) malloc(sizeof(State));
   memset(s, 0, sizeof(State));
   s->src = (uint8_t*) src;
-  init(s);
+  st_state_init(s);
   return 0;
 }
 
@@ -186,11 +186,11 @@ int main_step(void){
   if (step_callback(sub) != 0){
     return LOOP_ST; // TODO change return val?
   }
-  return step(s);
+  return st_step(s);
 }
 
 void main_free(void){
-  free_memory(s);
+  st_state_free(s);
   if (exec_info) {
     print_exec_info();
   }

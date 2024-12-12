@@ -13,7 +13,8 @@ endif
 LIBS = src lib/microcuts/src lib/tools
 MAIN_SRC = start_lang
 TEST = tests/test.c
-CLI  = cli/bin.c
+CLI  = targets/desktop/cli.c
+BUILD = build
 
 ## DESKTOP
 
@@ -21,9 +22,9 @@ INCLUDES     = $(addprefix -I, $(LIBS))
 SOURCES      = $(foreach dir, $(LIBS), $(wildcard $(dir)/*.c))
 SRC_FILES    = $(foreach dir, $(LIBS), $(wildcard $(dir)/*.c)) $(foreach dir, $(LIBS), $(wildcard $(dir)/*.h))
 CFLAGS       = -std=c99 -Wall -g -Os -flto ${INCLUDES} ${SOURCES}
-TEST_OUTPUT  = build/test
-CLI_OUTPUT   = build/start
-BMARK_OUTPUT = build/benchmark
+TEST_OUTPUT  = ${BUILD}/test
+CLI_OUTPUT   = ${BUILD}/start
+BMARK_OUTPUT = ${BUILD}/benchmark
 
 ## WASM
 
@@ -33,10 +34,10 @@ WASM_SOURCES      = $(foreach dir, $(WASM_LIBS), $(wildcard $(dir)/*.c))
 WASM_SRC_FILES    = $(foreach dir, $(WASM_LIBS), $(wildcard $(dir)/*.c)) $(foreach dir, $(LIBS), $(wildcard $(dir)/*.h))
 WASM_LFLAGS       = -Wl,--export-dynamic -Wl,--no-entry -Wl,--error-limit=0
 WASM_CFLAGS       = --target=wasm32 -std=c99 -Wall -g -Os -flto -nostdlib ${WASM_LFLAGS} ${WASM_INCLUDES} ${WASM_SOURCES}
-WASM_RUNTIME      = repl/wasm_runtime.js
-WASM_TEST_OUTPUT  = build/test.wasm
-WASM_CLI_OUTPUT   = build/start.wasm
-WASM_BMARK_OUTPUT = build/benchmark.wasm
+WASM_RUNTIME      = targets/web/wasm_runtime.js
+WASM_TEST_OUTPUT  = ${BUILD}/test.wasm
+WASM_CLI_OUTPUT   = ${BUILD}/start.wasm
+WASM_BMARK_OUTPUT = ${BUILD}/benchmark.wasm
 
 REPEAT    := 1000
 BENCHMARK = -D STOPFAIL -D BENCHMARK=${REPEAT} -D PRINT_TIMINGS
@@ -47,7 +48,7 @@ BENCHMARK = -D STOPFAIL -D BENCHMARK=${REPEAT} -D PRINT_TIMINGS
 init:
 	[ "$$(ls -A lib/microcuts)" ] || git submodule update --init --recursive
 	[ "$$(ls -A lib/wunstd)" ] || git submodule update --init --recursive
-	mkdir -p build
+	mkdir -p ${BUILD}
 
 ## DOCKER
 
@@ -99,7 +100,8 @@ docker-run-assets:
 
 .PHONY: clean
 clean:
-	rm -rf build/*
+	rm -rf ${BUILD}
+	mkdir -p ${BUILD}
 
 .PHONY: build-test
 build-test: init
@@ -129,10 +131,10 @@ endif
 coverage: init
 	${CC} ${CFLAGS} -D STOPFAIL -D LONG_TEST -D ENABLE_FILES -D PRINT_TIMINGS -fprofile-arcs -ftest-coverage ${TEST} -o ${TEST_OUTPUT}
 	chmod +x ${TEST_OUTPUT}
-	${TEST_OUTPUT} > build/test.out || { cat build/test.out; exit 1; }
+	${TEST_OUTPUT} > ${BUILD}/test.out || { cat ${BUILD}/test.out; exit 1; }
 	[ -e src/${MAIN_SRC}.c ] || { echo "No main source file found"; exit 1; }
 	${GCOV} src/${MAIN_SRC}.c -o ${TEST_OUTPUT}-${MAIN_SRC}.gcda > /dev/null
-	python3 lib/microcuts/tools/coverage.py | grep -v string | tee build/coverage.out
+	python3 lib/microcuts/tools/coverage.py | grep -v string | tee ${BUILD}/coverage.out
 
 .PHONY: build-cli
 build-cli: init
@@ -152,14 +154,14 @@ build-cli-clang: init
 
 .PHONY: test-cli
 test-cli: ${CLI_OUTPUT}
-	${CLI_OUTPUT} "\"Hello, World!\" PRINTSTR" > build/hello.out
-	[ "$$(cat build/hello.out)" = "Hello, World!" ] || (echo "Expected 'Hello, World!', got $$(cat build/hello.out)" && exit 1)
-	${CLI_OUTPUT} -f tests/quine.st > build/quine.out
-	diff tests/quine.st build/quine.out || (echo "Quine test failed" && exit 1)
-	printf "\n" | ${CLI_OUTPUT} -S 3700 -f tests/bf/pi.st > build/pi.out
-	[ "$$(cat build/pi.out)" = "3.141592653" ] || (echo "Expected 3.141592653, got $$(cat build/pi.out)" && exit 1)
-	printf "22+62" | ${CLI_OUTPUT} -f tests/bf/calc.st > build/calc.out
-	[ "$$(cat build/calc.out)" = "84" ] || (echo "Expected 84, got $$(cat build/calc.out)" && exit 1)
+	${CLI_OUTPUT} "\"Hello, World!\" PRINTSTR" > ${BUILD}/hello.out
+	[ "$$(cat ${BUILD}/hello.out)" = "Hello, World!" ] || (echo "Expected 'Hello, World!', got $$(cat ${BUILD}/hello.out)" && exit 1)
+	${CLI_OUTPUT} -f tests/quine.st > ${BUILD}/quine.out
+	diff tests/quine.st ${BUILD}/quine.out || (echo "Quine test failed" && exit 1)
+	printf "\n" | ${CLI_OUTPUT} -S 3700 -f tests/bf/pi.st > ${BUILD}/pi.out
+	[ "$$(cat ${BUILD}/pi.out)" = "3.141592653" ] || (echo "Expected 3.141592653, got $$(cat ${BUILD}/pi.out)" && exit 1)
+	printf "22+62" | ${CLI_OUTPUT} -f tests/bf/calc.st > ${BUILD}/calc.out
+	[ "$$(cat ${BUILD}/calc.out)" = "84" ] || (echo "Expected 84, got $$(cat ${BUILD}/calc.out)" && exit 1)
 
 ## WASM
 
@@ -183,12 +185,12 @@ test-wasm: ${WASM_TEST_OUTPUT}
 
 .PHONY: test-wasm-cli
 test-wasm-cli: ${WASM_CLI_OUTPUT}
-	node ${WASM_RUNTIME} ${WASM_CLI_OUTPUT} "\"Hello, World!\" PRINTSTR" > build/hello.out
-	[ "$$(cat build/hello.out)" = "Hello, World!" ] || (echo "Expected 'Hello, World!', got $$(cat build/hello.out)" && exit 1)
+	node ${WASM_RUNTIME} ${WASM_CLI_OUTPUT} "\"Hello, World!\" PRINTSTR" > ${BUILD}/hello.out
+	[ "$$(cat ${BUILD}/hello.out)" = "Hello, World!" ] || (echo "Expected 'Hello, World!', got $$(cat ${BUILD}/hello.out)" && exit 1)
 
 .PHONY: test-wasm-example
 test-wasm-example: ${WASM_TEST_OUTPUT}
-	node repl/example.js ../${WASM_RUNTIME} ${WASM_TEST_OUTPUT} > build/example.out || { cat build/example.out; exit 1; }
+	node targets/web/example.js ../../${WASM_RUNTIME} ${WASM_TEST_OUTPUT} > ${BUILD}/example.out || { cat ${BUILD}/example.out; exit 1; }
 
 ## BENCHMARK
 
@@ -233,8 +235,8 @@ test: clean init
 .PHONY: test-long
 test-long:
 	${MAKE} test
-	${MAKE} benchmark > build/benchmark.out 2>&1
-	cat build/benchmark.out
+	${MAKE} benchmark > ${BUILD}/benchmark.out 2>&1
+	cat ${BUILD}/benchmark.out
 
 .PHONY: test-long
 test-full:
@@ -243,21 +245,22 @@ test-full:
 
 ## SVG
 
-build/.venv:
-	python3 -m venv build/.venv && \
-	  source build/.venv/bin/activate && \
+DIAGRAMS := targets/web/grammar/start_diagram.py
+
+${BUILD}/.venv: init
+	python3 -m venv ${BUILD}/.venv && \
+	  source ${BUILD}/.venv/bin/activate && \
 	  python3 -m pip install railroad-diagrams==1.1.0 || \
-	  { echo "Error: Could not setup venv"; rm -rf build/.venv; exit 1; }
+	  { echo "Error: Could not setup venv"; rm -rf ${BUILD}/.venv; exit 1; }
 
 .PHONY: svg
-svg: build/.venv
-	source build/.venv/bin/activate && \
-	  rm -f grammar/railroad-svg/*.svg && \
-	  cd grammar/railroad-svg && \
-	  python3 update-svg.py desktop && \
-	  python3 update-svg.py mobile && \
-	  python3 update-svg.py desktop blog && \
-	  python3 update-svg.py mobile blog || \
+svg: ${BUILD}/.venv
+	source ${BUILD}/.venv/bin/activate && \
+	  rm -f ${BUILD}/*.svg && \
+	  python3 ${DIAGRAMS} desktop > ${BUILD}/desktop.svg && \
+	  python3 ${DIAGRAMS} mobile > ${BUILD}/mobile.svg && \
+	  python3 ${DIAGRAMS} desktop blog > ${BUILD}/desktop_blog.svg && \
+	  python3 ${DIAGRAMS} mobile blog > ${BUILD}/mobile_blog.svg || \
 	  { echo "Error: Could not generate SVGs"; exit 1; }
 
 ## WEB
@@ -270,13 +273,13 @@ start-server:
 
 .PHONY: assets
 assets: init ${WASM_CLI_OUTPUT} svg
-	mkdir -p build/assets/img
-	cp -r grammar/railroad-svg/*.svg build/assets/img
-	cp build/start.wasm build/assets
-	cp repl/wasm_runtime.js build/assets
-	cp repl/wasm_runtime.css build/assets
-	cp repl/wasm_runtime.html build/assets
-	cp docs/start_logo.svg build/assets/img/logo.svg
+	mkdir -p ${BUILD}/assets/img
+	cp ${BUILD}/*.svg ${BUILD}/assets/img
+	cp assets/logo.svg ${BUILD}/assets/img/logo.svg
+	cp ${BUILD}/start.wasm ${BUILD}/assets
+	cp targets/web/wasm_runtime.js ${BUILD}/assets
+	cp targets/web/wasm_runtime.css ${BUILD}/assets
+	cp targets/web/wasm_runtime.html ${BUILD}/assets
 
 .PHONY: act
 act:

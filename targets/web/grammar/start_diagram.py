@@ -107,25 +107,25 @@ blog = '''
 
 col1 = [
     HorizontalChoice(
-        Group("\" \"", "nop"), 
-        Group("0-9+", "number"), 
+        Group("\" \"", "nop"),
+        Group("0-9+", "number"),
         Sequence(Group(Sequence("A-Z+_"), "id"), Optional(Group("^", "var"))),
     ),
     Group(Sequence("\"", ZeroOrMore(HorizontalChoice("\\\\", "\\\"", "any")), "\""), "string"),
     Group(ZeroOrMore(NonTerminal("statement")), "block"),
     Group(
         Sequence(
-            "(", NonTerminal("block"), 
+            "(", NonTerminal("block"),
             Optional(Sequence(":", NonTerminal("block"))), ")"
         ), "if"
-    ), 
-    Group(Sequence("[", NonTerminal("block"), "]"), "while"), 
+    ),
+    Group(Sequence("[", NonTerminal("block"), "]"), "while"),
     Group(
         Sequence(
             NonTerminal("id"), "{", NonTerminal("block"), "}"
         ), "function"
-    ), 
-    HorizontalChoice( 
+    ),
+    HorizontalChoice(
         Group("r", "return"),
         Group(HorizontalChoice("c", "x"), "loop_op"),
     ),
@@ -167,24 +167,22 @@ mobile = Diagram(
     )
 )
 
-def gen(name, d, css=None):
+def gen(d, css=None):
     svg_buffer = StringIO()
     d.writeSvg(svg_buffer.write)
     svg_str = svg_buffer.getvalue()
     if css:
         svg_str = re.sub(
-            r'<style>.*<\/style>', 
-            f'<style>{css}</style>', 
-            svg_str, 
+            r'<style>.*<\/style>',
+            f'<style>{css}</style>',
+            svg_str,
             flags=re.DOTALL
         )
-    with open(f'{name}.svg', 'w') as f:
-        f.write(svg_str)
-app = ""
+    print(svg_str)
+
 if len(sys.argv) > 2 and sys.argv[2] == 'blog':
     style = blog
-    app = f'_{sys.argv[2]}'
 if len(sys.argv) == 1 or sys.argv[1] == 'desktop':
-    gen('desktop' + app, desktop, style)
+    gen(desktop, style)
 else:
-    gen('mobile' + app, mobile, style)
+    gen(mobile, style)

@@ -30,7 +30,7 @@ jobs:
         run: |
           git config --global --add safe.directory $GITHUB_WORKSPACE
           git fetch origin assets
-          git checkout assets
+          git switch assets
           git pull --rebase origin assets
           cp -rf build/assets/* .
           git config user.name "github-actions"

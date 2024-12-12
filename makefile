@@ -222,7 +222,7 @@ test-cli-mandelbrot: ${CLI_OUTPUT} ${WASM_CLI_OUTPUT}
 ## TEST
 
 .PHONY: test
-test:
+test: clean init
 	${MAKE} coverage
 	${MAKE} test-cli
 	${MAKE} test-wasm-cli
@@ -231,7 +231,8 @@ test:
 .PHONY: test-long
 test-long:
 	${MAKE} test
-	${MAKE} benchmark
+	${MAKE} benchmark > build/benchmark.out 2>&1
+	cat build/benchmark.out
 
 .PHONY: test-long
 test-full:

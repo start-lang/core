@@ -23,7 +23,7 @@ jobs:
 
       - name: Tests
         run: |
-          make clean test
+          make test
           make assets
 
       - name: Update assets

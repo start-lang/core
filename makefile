@@ -12,7 +12,7 @@ endif
 
 LIBS = src lib/microcuts/src lib/tools
 MAIN_SRC = start_lang
-TEST = test/test.c
+TEST = tests/test.c
 CLI  = cli/bin.c
 
 ## DESKTOP
@@ -154,11 +154,11 @@ build-cli-clang: init
 test-cli: ${CLI_OUTPUT}
 	${CLI_OUTPUT} "\"Hello, World!\" PRINTSTR" > build/hello.out
 	[ "$$(cat build/hello.out)" = "Hello, World!" ] || (echo "Expected 'Hello, World!', got $$(cat build/hello.out)" && exit 1)
-	${CLI_OUTPUT} -f test/quine.st > build/quine.out
-	diff test/quine.st build/quine.out || (echo "Quine test failed" && exit 1)
-	printf "\n" | ${CLI_OUTPUT} -S 3700 -f test/bf/pi.st > build/pi.out
+	${CLI_OUTPUT} -f tests/quine.st > build/quine.out
+	diff tests/quine.st build/quine.out || (echo "Quine test failed" && exit 1)
+	printf "\n" | ${CLI_OUTPUT} -S 3700 -f tests/bf/pi.st > build/pi.out
 	[ "$$(cat build/pi.out)" = "3.141592653" ] || (echo "Expected 3.141592653, got $$(cat build/pi.out)" && exit 1)
-	printf "22+62" | ${CLI_OUTPUT} -f test/bf/calc.st > build/calc.out
+	printf "22+62" | ${CLI_OUTPUT} -f tests/bf/calc.st > build/calc.out
 	[ "$$(cat build/calc.out)" = "84" ] || (echo "Expected 84, got $$(cat build/calc.out)" && exit 1)
 
 ## WASM
@@ -218,8 +218,8 @@ benchmark: init ${BMARK_OUTPUT}.gcc ${BMARK_OUTPUT}.clang ${WASM_BMARK_OUTPUT}
 
 .PHONY: test-cli-mandelbrot
 test-cli-mandelbrot: ${CLI_OUTPUT} ${WASM_CLI_OUTPUT}
-	time ${CLI_OUTPUT} -e -f test/mandelbrot/m.st
-	time node ${WASM_RUNTIME} ${WASM_CLI_OUTPUT} -e "$$(cat test/mandelbrot/m.st)"
+	time ${CLI_OUTPUT} -e -f tests/mandelbrot/m.st
+	time node ${WASM_RUNTIME} ${WASM_CLI_OUTPUT} -e "$$(cat tests/mandelbrot/m.st)"
 
 ## TEST
 
@@ -239,7 +239,7 @@ test-long:
 .PHONY: test-long
 test-full:
 	${MAKE} test-long
-	${MAKE} memcheck
+	${MAKE} memcheckc
 
 ## SVG
 

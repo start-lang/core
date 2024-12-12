@@ -620,7 +620,7 @@ void validate(void){
   #ifdef LONG_TEST
   begin_section("Pi");
   {
-    char * src = load_file("test/bf/pi.st");
+    char * src = load_file("tests/bf/pi.st");
     strcat(input, "\x05");
     assert_eq(run(src), 0);
     char pi[] = "3.1415";
@@ -630,7 +630,7 @@ void validate(void){
   end_section();
   begin_section("Pi_old");
   {
-    char * src = load_file("test/bf/pi_old.st");
+    char * src = load_file("tests/bf/pi_old.st");
     assert_eq(run(src), 0);
     char pi[] = "3.1415";
     assert_str_eq(out, pi);
@@ -642,7 +642,7 @@ void validate(void){
   begin_section("e");
   {
     memset(out, 0, 256);
-    char * src = load_file("test/e.st");
+    char * src = load_file("tests/e.st");
     assert_eq(run(src), 0);
     free(src);
   }
@@ -652,7 +652,7 @@ void validate(void){
 
   begin_section("Quine");
   {
-    char * src = load_file("test/quine.st");
+    char * src = load_file("tests/quine.st");
     assert_str_eq(src, (run(src), out));
     free(src);
   }
@@ -661,7 +661,7 @@ void validate(void){
   begin_section("Calc");
   {
     strcat(input, "22+62");
-    char * src = load_file("test/bf/calc.st");
+    char * src = load_file("tests/bf/calc.st");
     assert_str_eq((run(src), out), "84");
     free(src);
   }

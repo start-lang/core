@@ -12,7 +12,7 @@ endif
 
 LIBS = src lib/microcuts/src lib/tools
 MAIN_SRC = start_lang
-TEST = tests/test.c
+TEST = tests/main.c
 CLI  = targets/desktop/cli.c
 BUILD = build
 
@@ -21,6 +21,7 @@ BUILD = build
 INCLUDES     = $(addprefix -I, $(LIBS))
 SOURCES      = $(foreach dir, $(LIBS), $(wildcard $(dir)/*.c))
 SRC_FILES    = $(foreach dir, $(LIBS), $(wildcard $(dir)/*.c)) $(foreach dir, $(LIBS), $(wildcard $(dir)/*.h))
+ASSERTS      = tests/unit/lang_assertions.c -Itests/unit
 CFLAGS       = -std=c99 -Wall -g -Os -flto ${INCLUDES} ${SOURCES}
 TEST_OUTPUT  = ${BUILD}/test
 CLI_OUTPUT   = ${BUILD}/start
@@ -105,7 +106,7 @@ clean:
 
 .PHONY: build-test
 build-test: init
-	${CC} ${CFLAGS} -D STOPFAIL -D LONG_TEST -D ENABLE_FILES -D PRINT_TIMINGS ${TEST} -o ${TEST_OUTPUT}
+	${CC} ${CFLAGS} ${ASSERTS} -D STOPFAIL -D LONG_TEST -D ENABLE_FILES -D PRINT_TIMINGS ${TEST} -o ${TEST_OUTPUT}
 	chmod +x ${TEST_OUTPUT}
 
 ${TEST_OUTPUT}: ${SRC_FILES} ${TEST}
@@ -118,7 +119,7 @@ test-quick: ${TEST_OUTPUT}
 .PHONY: memcheck
 memcheck: init
 ifeq ($(UNAME), Linux)
-	${CC} ${CFLAGS} -Wstrict-prototypes -Werror -Wcast-align -fsanitize=alignment -fsanitize=undefined -g ${TEST} -o ${TEST_OUTPUT}
+	${CC} ${CFLAGS} ${ASSERTS} -Wstrict-prototypes -Werror -Wcast-align -fsanitize=alignment -fsanitize=undefined -g ${TEST} -o ${TEST_OUTPUT}
 	chmod +x ${TEST_OUTPUT}
 	ulimit -n 65536 && valgrind --leak-check=full --show-error-list=yes --track-origins=yes ${TEST_OUTPUT}
 else
@@ -129,7 +130,7 @@ endif
 
 .PHONY: coverage
 coverage: init
-	${CC} ${CFLAGS} -D STOPFAIL -D LONG_TEST -D ENABLE_FILES -D PRINT_TIMINGS -fprofile-arcs -ftest-coverage ${TEST} -o ${TEST_OUTPUT}
+	${CC} ${CFLAGS} ${ASSERTS} -D STOPFAIL -D LONG_TEST -D ENABLE_FILES -D PRINT_TIMINGS -fprofile-arcs -ftest-coverage ${TEST} -o ${TEST_OUTPUT}
 	chmod +x ${TEST_OUTPUT}
 	${TEST_OUTPUT} > ${BUILD}/test.out || { cat ${BUILD}/test.out; exit 1; }
 	[ -e src/${MAIN_SRC}.c ] || { echo "No main source file found"; exit 1; }
@@ -174,7 +175,7 @@ ${WASM_CLI_OUTPUT}: ${WASM_SRC_FILES} ${CLI}
 
 .PHONY: build-wasm-test
 build-wasm-test: init
-	clang ${WASM_CFLAGS} -D PRINT_TIMINGS ${TEST} -o ${WASM_TEST_OUTPUT}
+	clang ${WASM_CFLAGS} ${ASSERTS} -D PRINT_TIMINGS ${TEST} -o ${WASM_TEST_OUTPUT}
 
 ${WASM_TEST_OUTPUT}: ${WASM_SRC_FILES} ${TEST}
 	${MAKE} build-wasm-test
@@ -207,7 +208,7 @@ ${BMARK_OUTPUT}.clang: ${SRC_FILES} ${TEST}
 
 .PHONY: build-wasm-benchmark
 build-wasm-benchmark: init
-	clang ${WASM_CFLAGS} ${BENCHMARK} ${TEST} -o ${WASM_BMARK_OUTPUT}
+	clang ${WASM_CFLAGS} ${ASSERTS} ${BENCHMARK} ${TEST} -o ${WASM_BMARK_OUTPUT}
 
 ${WASM_BMARK_OUTPUT}: ${WASM_SRC_FILES} ${TEST}
 	${MAKE} build-wasm-benchmark

@@ -1,10 +1,11 @@
+#include <time.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <microcuts.h>
 #include <start_lang.h>
 #include <debug_utils.h>
-#include <time.h>
+#include <lang_assertions.h>
 
 Register RM;
 uint8_t * M;
@@ -145,27 +146,6 @@ int clean(void){
 void print_info(void){
   printf("state size: %lu\n", sizeof(State));
 }
-
-void validate(void);
-
-int main(int argc, char* argv[]){
-  print_info();
-  set_cleanup(clean);
-  set_target(validate);
-  return run_target();
-}
-
-#ifdef EXPORT
-int main_init(int argc, char* argv[]) {
-  return main(argc, argv);
-}
-
-int main_step(void) {
-  return 1;
-}
-
-void main_free(void) {}
-#endif
 
 void validate(void){
   begin_section("NOP");

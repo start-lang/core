@@ -286,3 +286,97 @@ assets: init ${WASM_CLI_OUTPUT} svg
 act:
 	nohup time act --container-architecture linux/amd64 >> nohup.out 2>&1 &
 	tail -f nohup.out
+
+## GFX
+
+GFX_LIBS = ${LIBS} lib/simplegfx/src
+GFX_SRC = targets/desktop/gfx.c
+
+ifeq ($(CROSS_COMPILE),)
+ifeq ($(shell uname),Darwin)
+GFX_SYS_CFLAGS = -I/opt/homebrew/include -L/opt/homebrew/lib
+else
+GFX_SYS_CFLAGS = -I/usr/include -L/usr/lib
+endif
+else
+GFX_SYS_CFLAGS = -I${SYSROOT}/usr/include -L${SYSROOT}/usr/lib
+endif
+
+GFX_INCLUDES     = $(addprefix -I, $(GFX_LIBS))
+GFX_SOURCES      = $(foreach dir, $(GFX_LIBS), $(wildcard $(dir)/*.c))
+GFX_SRC_FILES    = $(foreach dir, $(GFX_LIBS), $(wildcard $(dir)/*.c)) $(foreach dir, $(GFX_LIBS), $(wildcard $(dir)/*.h))
+GFX_CFLAGS       = -std=c99 -Wall -g -Os -flto ${GFX_INCLUDES} ${GFX_SOURCES} ${GFX_SYS_CFLAGS}
+GFX_OUTPUT       = -o ${BUILD}/gfx
+
+.PHONY: gfx
+gfx:
+	mkdir -p ${BUILD}
+	${CC} ${GFX_SRC} ${GFX_CFLAGS} -lSDL2 -DUSE_SDL2 ${GFX_OUTPUT}
+	chmod +x ${BUILD}/gfx
+
+.PHONY: gfx1.2
+gfx1.2:
+	mkdir -p ${BUILD}
+	${CC} ${GFX_SRC} ${GFX_CFLAGS} -lSDL ${GFX_OUTPUT}
+	chmod +x ${BUILD}/gfx
+
+## RG35xx
+
+APP := start_lang
+ADB := adb
+APPS := /mnt/mmc/Roms/APPS
+J2K := lib/simplegfx/build/j2k.so
+
+.PHONY: .RG35xx
+.RG35xx:
+	mkdir -p ${BUILD}
+	${CROSS_COMPILE}${CC} ${GFX_SRC} ${GFX_CFLAGS} -lSDL -lasound ${GFX_OUTPUT}.rg35xx
+	chmod +x ${BUILD}/gfx.rg35xx
+
+.PHONY: RG35xx
+RG35xx:
+	${DOCKER} nfriedly/miyoo-toolchain:steward make .RG35xx CC=gcc
+
+.PHONY: .RG35xx-sh
+.RG35xx-sh:
+	echo "#!/bin/sh" > ${BUILD}/launcher.sh
+	echo "HOME=\$$(dirname \"\$$0\")/${APP}" >> ${BUILD}/launcher.sh
+	echo "cd \$$HOME" >> ${BUILD}/launcher.sh
+	echo "LD_PRELOAD=./j2k.so ./gfx.rg35xx" >> ${BUILD}/launcher.sh
+	chmod +x ${BUILD}/launcher.sh
+
+.PHONY: RG35xx-deploy
+RG35xx-deploy: RG35xx .RG35xx-sh
+	mkdir -p ${BUILD}/deploy/${APP}
+	cp ${BUILD}/gfx.rg35xx ${BUILD}/deploy/${APP}
+	cp ${BUILD}/launcher.sh ${BUILD}/deploy/${APP}.sh
+	cp ${J2K} ${BUILD}/deploy/${APP}
+	cd ${BUILD}/deploy && zip -r ${APP}.zip ${APP} ${APP}.sh
+	mv ${BUILD}/deploy/${APP}.zip ${BUILD}/${APP}.zip
+	rm -rf ${BUILD}/deploy
+
+.PHONY: .check-adb
+.check-adb:
+	@which ${ADB} > /dev/null || (echo "adb not found, please install Android SDK" && exit 1)
+
+.PHONY: RG35xx-adb-install
+RG35xx-adb-install: .check-adb RG35xx .RG35xx-sh
+	${ADB} shell mkdir -p ${APPS}/${APP}
+	${ADB} push ${BUILD}/gfx.rg35xx ${APPS}/${APP}
+	${ADB} push ${BUILD}/launcher.sh ${APPS}/${APP}.sh
+	${ADB} push ${J2K} ${APPS}/${APP}
+	${ADB} shell chmod 755 ${APPS}/${APP}/gfx.rg35xx
+	${ADB} shell chmod 755 ${APPS}/${APP}.sh
+
+.PHONY: RG35xx-adb-uninstall
+RG35xx-adb-uninstall: .check-adb
+	${ADB} shell rm -rf ${APPS}/${APP}
+	${ADB} shell rm -f ${APPS}/${APP}.sh
+
+.PHONY: RG35xx-adb-kill
+RG35xx-adb-kill: .check-adb
+	${ADB} shell kill $$(${ADB} shell ps | grep gfx.rg35xx | awk '{print $$2}')
+
+.PHONY: RG35xx-adb-logcat
+RG35xx-adb-logcat: .check-adb
+	${ADB} logcat

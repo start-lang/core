@@ -5,3 +5,6 @@
 	path = lib/wunstd
 	url = https://github.com/start-lang/wunstd.git
 	branch = main
+[submodule "lib/simplegfx"]
+	path = lib/simplegfx
+	url = git@github.com:anderson-/simplegfx.git

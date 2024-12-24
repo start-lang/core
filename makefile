@@ -155,6 +155,7 @@ build-cli-clang: init
 
 .PHONY: test-cli
 test-cli: ${CLI_OUTPUT}
+	${MAKE} -C tests bf
 	${CLI_OUTPUT} "\"Hello, World!\" PRINTSTR" > ${BUILD}/hello.out
 	[ "$$(cat ${BUILD}/hello.out)" = "Hello, World!" ] || (echo "Expected 'Hello, World!', got $$(cat ${BUILD}/hello.out)" && exit 1)
 	${CLI_OUTPUT} -f tests/quine.st > ${BUILD}/quine.out
@@ -163,6 +164,13 @@ test-cli: ${CLI_OUTPUT}
 	[ "$$(cat ${BUILD}/pi.out)" = "3.141592653" ] || (echo "Expected 3.141592653, got $$(cat ${BUILD}/pi.out)" && exit 1)
 	printf "22+62" | ${CLI_OUTPUT} -f tests/bf/calc.st > ${BUILD}/calc.out
 	[ "$$(cat ${BUILD}/calc.out)" = "84" ] || (echo "Expected 84, got $$(cat ${BUILD}/calc.out)" && exit 1)
+
+## TRANSPILER
+
+.PHONY: test-transpiler
+test-transpiler: ${CLI_OUTPUT}
+	@ ${MAKE} -C tests c cst
+	cd tests/io && python3 testio.py
 
 ## WASM
 

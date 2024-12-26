@@ -205,6 +205,29 @@ def parseUnaryOperator(node, depth):
         result.extend(parse_ast(child, depth))
     return result
 
+def parseBinaryOperator(node, depth):
+    opcode = node.get('opcode', red('Unknown'))
+    if opcode == '=':
+        inner = node.get('inner', [])
+        if len(inner) == 2:
+            lhs = inner[0]
+            rhs = inner[1]
+            if lhs.get('kind', '') == 'DeclRefExpr':
+                name = lhs.get('referencedDecl', {}).get('name', red('Unknown'))
+                result = icst(
+                    'var',
+                    depth,
+                    f'',
+                    f'{name.upper()} '
+                )
+                result.extend(parse_ast(rhs, depth))
+                return result
+            else:
+                unknownNodeDebug(node, 'BinaryOperator = with non-DeclRefExpr LHS')
+        else:
+            unknownNodeDebug(node, 'BinaryOperator = with more than two children')
+    unknownNodeDebug(node, f'BinaryOperator {opcode}')
+
 def parseFunctionDecl(node, depth):
     name = node.get('name', red('Unknown'))
     if name == 'main':
@@ -301,8 +324,7 @@ def parseCallExpr(node, depth):
         else:
             result.extend(icst('printf', depth, '', f'{string_prefix}{nstrings} PS'))
     elif name == 'getchar':
-        pass
-        unknownNodeDebug(node, 'CallExpr')
+        result.extend(icst('getchar', depth, '', ','))
     else:
         result = icst(
             'call',
@@ -324,6 +346,7 @@ parse = {
     'DeclRefExpr': parseDeclRefExpr,
     'ImplicitCastExpr': parseImplicitCastExpr,
     'UnaryOperator': parseUnaryOperator,
+    'BinaryOperator': parseBinaryOperator,
     'FunctionDecl': parseFunctionDecl,
     'DeclStmt': parseDeclStmt,
     'VarDecl': parseVarDecl,

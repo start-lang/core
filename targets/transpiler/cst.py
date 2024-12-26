@@ -45,6 +45,7 @@ def ign(node):
 
 hide = ['TranslationUnitDecl']
 vars = []
+string_prefix = 'STR__'
 strings = []
 
 def _debug_node(node, depth=0, prefix='', is_last=True, kind=None):
@@ -140,13 +141,10 @@ def parseStringLiteral(node, depth):
     value = node.get('value')
     if value == '"%c"':
         # ignore %c from printf
-        return []
-    return icst(
-        'string',
-        depth,
-        f'{node.get('value', red('?'))}\n',
-        f'{node.get('value', red('?'))}_st\n'
-    )
+        pass
+    else:
+        strings.append(value)
+    return []
 
 def parseBreakStmt(node, depth):
     return icst(
@@ -301,7 +299,7 @@ def parseCallExpr(node, depth):
         if nstrings == len(strings):
             result.extend(icst('printf', depth, '', '.'))
         else:
-            result.extend(icst('printf', depth, '', 'PS'))
+            result.extend(icst('printf', depth, '', f'{string_prefix}{nstrings} PS'))
     elif name == 'getchar':
         pass
         unknownNodeDebug(node, 'CallExpr')
@@ -367,7 +365,10 @@ def generate_c_code(dict_list):
 def generate_st_code(dict_list):
     lines = []
     ctype = 'b'
+    strings_decl = []
     vars_decl = []
+    for si, string in enumerate(strings):
+        strings_decl.extend(icst('strinit', 0, '', f'{string_prefix}{si}^{string}>'))
     for var in vars:
         typest = var['type']
         if typest == ctype:
@@ -377,7 +378,7 @@ def generate_st_code(dict_list):
             vars_decl.extend(icst('type', 0, '', f'{typest}'))
         vars_decl.extend(var['decl'])
         vars_decl.extend(icst('next', 0, '', '>'))
-    dict_list = vars_decl + dict_list
+    dict_list = strings_decl + vars_decl + dict_list
     for item in dict_list:
         code_lines = item['st'].split('\n')
         for line in code_lines:

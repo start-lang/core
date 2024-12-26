@@ -44,6 +44,8 @@ def ign(node):
     return False
 
 hide = ['TranslationUnitDecl']
+vars = []
+strings = []
 
 def _debug_node(node, depth=0, prefix='', is_last=True, kind=None):
     kind = kind or cyan(node.get('kind', 'Unknown'))
@@ -125,7 +127,20 @@ def parseFloatingLiteral(node, depth):
         f'{value}'
     )
 
+def parseCharacterLiteral(node, depth):
+    value = node.get('value')
+    return icst(
+        'char',
+        depth,
+        f'{value}\n',
+        f'{value}'
+    )
+
 def parseStringLiteral(node, depth):
+    value = node.get('value')
+    if value == '"%c"':
+        # ignore %c from printf
+        return []
     return icst(
         'string',
         depth,
@@ -148,14 +163,17 @@ def parseCompoundStmt(node, depth):
     result.extend(icst('block', depth, '}', '}'))
     return result
 
-def parseDeclStmt(node, depth):
-    name = node.get('referencedDecl', {}).get('name', red('Unknown'))
-    return icst(
-        'decl',
-        depth,
-        f'{name}\n',
-        f'{name}_st\n'
-    )
+def parseDeclRefExpr(node, depth):
+    if node.get('referencedDecl', ''):
+        name = node['referencedDecl'].get('name', red('Unknown'))
+        return icst(
+            'deref',
+            depth,
+            f'{name}\n',
+            f'{name.upper()} '
+        )
+    unknownNodeDebug(node, 'DeclRefExpr without referencedDecl')
+    return []
 
 def parseImplicitCastExpr(node, depth):
     cast_kind = node.get('castKind', red('Unknown'))
@@ -163,10 +181,18 @@ def parseImplicitCastExpr(node, depth):
     if len(inner) != 1:
         unknownNodeDebug(node, 'ImplicitCastExpr with more than one child')
     inner = inner[0]
-    if cast_kind == 'IntegralCast':
-        if inner.get('kind', '') == 'IntegerLiteral':
-            return parseIntegerLiteral(inner, depth)
-    unknownNodeDebug(node, f'ImplicitCastExpr {cast_kind} with {inner.get("kind", "Unknown")}')
+    ignore_casts = [
+        'IntegralCast',
+        'NoOp',
+        'ArrayToPointerDecay',
+        'LValueToRValue',
+    ]
+    if cast_kind in ignore_casts:
+        return parse_ast(inner, depth)
+    ckind = inner.get('kind', '')
+    if ckind == 'ImplicitCastExpr':
+        ckind = inner.get('castKind', '')
+    unknownNodeDebug(node, f'ImplicitCastExpr {cast_kind} with {ckind}')
     return []
 
 def parseUnaryOperator(node, depth):
@@ -221,8 +247,6 @@ def parseDeclStmt(node, depth):
         unknownNodeDebug(node, 'DeclStmt with more than one child')
     return []
 
-vars = []
-
 def parseVarDecl(node, depth):
     name = node.get('name', red('Unknown'))
     typeName = node.get('type', {}).get('qualType', red('Unknown'))
@@ -261,19 +285,51 @@ def parseVarDecl(node, depth):
     })
     return []
 
+def parseCallExpr(node, depth):
+    inner = node.get('inner', [])
+    name = red('Unknown')
+    result = []
+    if len(inner) > 0:
+        if inner[0].get('castKind', '') == 'FunctionToPointerDecay':
+            ref = inner[0].get('inner', [{}])[0]
+            if ref.get('kind', '') == 'DeclRefExpr':
+                name = ref.get('referencedDecl', {}).get('name', red('Unknown'))
+    nstrings = len(strings)
+    for child in inner[1:]:
+        result.extend(parse_ast(child, depth))
+    if name == 'printf':
+        if nstrings == len(strings):
+            result.extend(icst('printf', depth, '', '.'))
+        else:
+            result.extend(icst('printf', depth, '', 'PS'))
+    elif name == 'getchar':
+        pass
+        unknownNodeDebug(node, 'CallExpr')
+    else:
+        result = icst(
+            'call',
+            depth,
+            f'{name}()\n',
+            f'{name.upper()}'
+        )
+        unknownNodeDebug(node, 'CallExpr')
+    return result
+
 parse = {
     'IntegerLiteral': parseIntegerLiteral,
     'FloatingLiteral': parseFloatingLiteral,
+    'CharacterLiteral': parseCharacterLiteral,
     'StringLiteral': parseStringLiteral,
     'ReturnStmt': parseReturnStmt,
     'BreakStmt': parseBreakStmt,
     'CompoundStmt': parseCompoundStmt,
-    'DeclRefExpr': parseDeclStmt,
+    'DeclRefExpr': parseDeclRefExpr,
     'ImplicitCastExpr': parseImplicitCastExpr,
     'UnaryOperator': parseUnaryOperator,
     'FunctionDecl': parseFunctionDecl,
     'DeclStmt': parseDeclStmt,
     'VarDecl': parseVarDecl,
+    'CallExpr': parseCallExpr,
 }
 
 miss = {}
@@ -311,15 +367,17 @@ def generate_c_code(dict_list):
 def generate_st_code(dict_list):
     lines = []
     ctype = 'b'
+    vars_decl = []
     for var in vars:
         typest = var['type']
         if typest == ctype:
             typest = ''
         else:
             ctype = typest
-            dict_list.extend(icst('type', 0, '', f'{typest}'))
-        dict_list.extend(var['decl'])
-        dict_list.extend(icst('next', 0, '', '>'))
+            vars_decl.extend(icst('type', 0, '', f'{typest}'))
+        vars_decl.extend(var['decl'])
+        vars_decl.extend(icst('next', 0, '', '>'))
+    dict_list = vars_decl + dict_list
     for item in dict_list:
         code_lines = item['st'].split('\n')
         for line in code_lines:

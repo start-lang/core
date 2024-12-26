@@ -43,7 +43,7 @@ def main():
                 print(green(f'[PASS c io] {n} => {test}'))
             else:
                 f += 1
-                print(red(f'[FAIL c io] {n} => {test}'))
+                print(red(f'[FAIL c io] {n} => {test} "{r}" != "{exp}"'))
         if d.get('expect') != st:
             if d.get('expect') != st.replace('\n', ''):
                 print(red(f'[FAIL expect] "{d.get("expect")}" != "{st}"'))
@@ -64,7 +64,7 @@ def main():
                 print(green(f'[PASS st io] {n} => {test}'))
             else:
                 f += 1
-                print(red(f'[FAIL st io] {n} => {test}'))
+                print(red(f'[FAIL st io] {n} => {test} "{r}" != "{exp}"'))
     print(cyan('[IO]'), end=' ')
     if p == 0:
         print(red(f'{f}/{f+p} tests failed ({w} warnings)'))

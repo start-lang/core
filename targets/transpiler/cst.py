@@ -27,6 +27,10 @@ def debug(text):
     if verbose:
         print(text, file=sys.stderr)
 
+def error(text):
+    print(f'{red("Error:")} {text}', file=sys.stderr)
+    sys.exit(1)
+
 def ign(node):
     if not isinstance(node, dict):
         return True
@@ -68,6 +72,12 @@ def _debug_node(node, depth, color=magenta):
             tree_str += ' ' * (depth * 2) + f'{key}: {value}\n'
     return color(tree_str)
 
+def unknownNodeDebug(node, msg):
+    debug(f'Node parsing not implemented:\n{msg}\n{_debug_node(node, 0)}')
+    if os.environ.get('STOPFAIL'):
+        debug(red('STOPFAIL is set, stopping execution'))
+        sys.exit(2)
+
 def icst(t, i, c, st):
     return [{
         'type': t,
@@ -77,19 +87,23 @@ def icst(t, i, c, st):
     }]
 
 def parseIntegerLiteral(node, depth):
+    value = node.get('value')
     return icst(
         'int',
         depth,
-        f'{node.get('value', red('0'))}\n',
-        f'{node.get('value', red('0'))}st\n'
+        f'{value}\n',
+        f'{value}'
     )
 
 def parseFloatingLiteral(node, depth):
+    value = node.get('value')
+    if not value.isnumeric():
+        unknownNodeDebug(node, 'FloatingLiteral with non-integer value')
     return icst(
         'float',
         depth,
-        f'{node.get('value', red('0.0'))}f\n',
-        f'{node.get('value', red('0.0'))}f_st\n'
+        f'{value}f\n',
+        f'{value}'
     )
 
 def parseStringLiteral(node, depth):
@@ -126,15 +140,15 @@ def parseDeclStmt(node, depth):
 
 def parseImplicitCastExpr(node, depth):
     cast_kind = node.get('castKind', red('Unknown'))
-    result = icst(
-        'cast',
-        depth,
-        f'~{cast_kind}\n',
-        f'~{cast_kind}_st\n'
-    )
-    for child in node.get('inner', []):
-        result.extend(parse_ast(child, depth))
-    return result
+    inner = node.get('inner', [])
+    if len(inner) != 1:
+        unknownNodeDebug(node, 'ImplicitCastExpr with more than one child')
+    inner = inner[0]
+    if cast_kind == 'IntegralCast':
+        if inner.get('kind', '') == 'IntegerLiteral':
+            return parseIntegerLiteral(inner, depth)
+    unknownNodeDebug(node, f'ImplicitCastExpr {cast_kind} with {inner.get("kind", "Unknown")}')
+    return []
 
 def parseUnaryOperator(node, depth):
     opcode = node.get('opcode', red('Unknown'))
@@ -180,6 +194,54 @@ def parseReturnStmt(node, depth):
         ''
     )
 
+def parseDeclStmt(node, depth):
+    inner = node.get('inner', [])
+    if len(inner) == 1:
+        return parse_ast(inner[0], depth)
+    else:
+        unknownNodeDebug(node, 'DeclStmt with more than one child')
+    return []
+
+vars = []
+
+def parseVarDecl(node, depth):
+    name = node.get('name', red('Unknown'))
+    typeName = node.get('type', {}).get('qualType', red('Unknown'))
+    if typeName == 'uint8_t':
+        typest = 'b'
+    elif typeName == 'uint16_t':
+        typest = 's'
+    elif typeName == 'uint32_t':
+        typest = 'i'
+    elif typeName == 'float':
+        typest = 'f'
+    else:
+        error(f'Unknown type: {typeName} for {name} use only uint8_t, uint16_t, uint32_t or float')
+    inner = node.get('inner', [])
+    value = []
+    if len(inner) == 1:
+        value = parse_ast(inner[0], depth)
+        value += icst(
+            'store',
+            depth,
+            f'',
+            f'!'
+        )
+    elif len(inner) > 1:
+        unknownNodeDebug(node, 'VarDecl with more than one child')
+    decl = icst(
+        'var',
+        depth,
+        f'int {name}\n',
+        f'{name.upper()}^'
+    ) + value
+    vars.append({
+        'name': name,
+        'type': typest,
+        'decl': decl
+    })
+    return []
+
 parse = {
     'IntegerLiteral': parseIntegerLiteral,
     'FloatingLiteral': parseFloatingLiteral,
@@ -191,6 +253,8 @@ parse = {
     'ImplicitCastExpr': parseImplicitCastExpr,
     'UnaryOperator': parseUnaryOperator,
     'FunctionDecl': parseFunctionDecl,
+    'DeclStmt': parseDeclStmt,
+    'VarDecl': parseVarDecl,
 }
 
 miss = {}
@@ -209,7 +273,8 @@ def parse_ast(node, depth=0):
             name = f': {name}'
         fallback_c = f'{red(kind)}{name} {gray(node.get('id',''))}\n'
         fallback_st = f'{red(kind)}{name}_st {gray(node.get('id',''))}\n'
-        parsed_dict = icst(depth, fallback_c, fallback_st)
+        parsed_dict = icst('unknown', depth, fallback_c, fallback_st)
+        debug(_debug_node(node, depth))
         result.extend(parsed_dict)
     for child in node.get('inner', []):
         result.extend(parse_ast(child, depth))
@@ -226,6 +291,16 @@ def generate_c_code(dict_list):
 
 def generate_st_code(dict_list):
     lines = []
+    ctype = 'b'
+    for var in vars:
+        typest = var['type']
+        if typest == ctype:
+            typest = ''
+        else:
+            ctype = typest
+            dict_list.extend(icst('type', 0, '', f'{typest}'))
+        dict_list.extend(var['decl'])
+        dict_list.extend(icst('next', 0, '', '>'))
     for item in dict_list:
         code_lines = item['st'].split('\n')
         for line in code_lines:

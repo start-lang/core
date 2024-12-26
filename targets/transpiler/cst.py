@@ -15,6 +15,9 @@ def yellow(text):
 def red(text):
     return f'\033[31m{text}\033[0m'
 
+def green(text):
+    return f'\033[32m{text}\033[0m'
+
 def cyan(text):
     return f'\033[36m{text}\033[0m'
 
@@ -28,7 +31,7 @@ def debug(text):
         print(text, file=sys.stderr)
 
 def error(text):
-    print(f'{red("Error:")} {text}', file=sys.stderr)
+    print(f'{red('Error:')} {text}', file=sys.stderr)
     sys.exit(1)
 
 def ign(node):
@@ -42,35 +45,51 @@ def ign(node):
 
 hide = ['TranslationUnitDecl']
 
-def _debug_node(node, depth, color=magenta):
-    tree_str = ' ' * (depth * 2) + f'{node.get('kind', 'Unknown')} {node.get('id', '')}\n'
-    def dict_to_str(d, depth):
-        tree_str = '\n'
-        depth += 1
-        for key, value in d.items():
-            if value and isinstance(value, dict):
-                tree_str += ' ' * (depth * 2) + f'{key}: {dict_to_str(value, depth)}\n'
-            elif value and isinstance(value, list):
-                for v in value:
-                    if v and isinstance(v, dict):
-                        tree_str += ' ' * (depth * 2) + f'{key}: {dict_to_str(v, depth)}\n'
-                    else:
-                        tree_str += ' ' * (depth * 2) + f'{key}: {v}\n'
-            else:
-                tree_str += ' ' * (depth * 2) + f'{key}: {value}\n'
-        return tree_str[:-1]
-    for key, value in node.items():
-        if value and isinstance(value, dict):
-            tree_str += ' ' * (depth * 2) + f'{key}: {dict_to_str(value, depth)}\n'
-        elif value and isinstance(value, list):
-            for v in value:
-                if v and isinstance(v, dict):
-                    tree_str += ' ' * (depth * 2) + f'{key}: {dict_to_str(v, depth)}\n'
+def _debug_node(node, depth=0, prefix='', is_last=True, kind=None):
+    kind = kind or cyan(node.get('kind', 'Unknown'))
+    connector = '└─ ' if is_last else '├─ '
+    if depth == 0:
+        connector = ''
+    tree_str = f'{prefix}{connector}{kind} {gray(node.get('id', ''))}\n'
+
+    if depth == 0:
+        new_prefix = '   '
+    else:
+        new_prefix = prefix + ('    ' if is_last else '│   ')
+
+    items = [(k, v) for k, v in node.items() if k not in ['kind', 'id']]
+    total = len(items)
+
+    for idx, (key, value) in enumerate(items):
+        is_last_item = idx == total - 1
+        connector_child = '└─ ' if is_last_item else '├─ '
+
+        if isinstance(value, dict):
+            tree_str += _debug_node(
+                value,
+                depth + 1,
+                prefix=new_prefix,
+                is_last=is_last_item,
+                kind=f'{key}: {cyan(value.get('kind', ''))}'
+            )
+        elif isinstance(value, list):
+            for i, item in enumerate(value):
+                item_is_last = i == len(value) - 1
+                if isinstance(item, dict):
+                    tree_str += _debug_node(
+                        item,
+                        depth + 1,
+                        prefix=new_prefix,
+                        is_last=item_is_last,
+                        kind=f'{key}[{yellow(i)}]: {cyan(item.get('kind', ''))}'
+                    )
                 else:
-                    tree_str += ' ' * (depth * 2) + f'{key}: {v}\n'
+                    item_connector = '└─ ' if item_is_last else '├─ '
+                    tree_str += f'{new_prefix}{item_connector}{key}[{yellow(i)}]: {item}\n'
         else:
-            tree_str += ' ' * (depth * 2) + f'{key}: {value}\n'
-    return color(tree_str)
+            tree_str += f'{new_prefix}{connector_child}{key}: {green(value)}\n'
+
+    return tree_str
 
 def unknownNodeDebug(node, msg):
     debug(f'Node parsing not implemented:\n{msg}\n{_debug_node(node, 0)}')

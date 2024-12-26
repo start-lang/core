@@ -155,10 +155,9 @@ def parseBreakStmt(node, depth):
     )
 
 def parseCompoundStmt(node, depth):
-    result = icst('block', depth, '{', '{')
+    result = []
     for child in node.get('inner', []):
         result.extend(parse_ast(child, depth))
-    result.extend(icst('block', depth, '}', '}'))
     return result
 
 def parseDeclRefExpr(node, depth):
@@ -207,25 +206,35 @@ def parseUnaryOperator(node, depth):
 
 def parseBinaryOperator(node, depth):
     opcode = node.get('opcode', red('Unknown'))
+    inner = node.get('inner', [])
+    if len(inner) != 2:
+        unknownNodeDebug(node, 'BinaryOperator with children != 2')
+    lhs = inner[0]
+    rhs = inner[1]
     if opcode == '=':
-        inner = node.get('inner', [])
-        if len(inner) == 2:
-            lhs = inner[0]
-            rhs = inner[1]
-            if lhs.get('kind', '') == 'DeclRefExpr':
-                name = lhs.get('referencedDecl', {}).get('name', red('Unknown'))
-                result = icst(
-                    'var',
-                    depth,
-                    f'',
-                    f'{name.upper()} '
-                )
-                result.extend(parse_ast(rhs, depth))
-                return result
-            else:
-                unknownNodeDebug(node, 'BinaryOperator = with non-DeclRefExpr LHS')
+        if lhs.get('kind', '') == 'DeclRefExpr':
+            name = lhs.get('referencedDecl', {}).get('name', red('Unknown'))
+            result = icst(
+                'var',
+                depth,
+                f'',
+                f'{name.upper()} '
+            )
+            result.extend(parse_ast(rhs, depth))
+            return result
         else:
-            unknownNodeDebug(node, 'BinaryOperator = with more than two children')
+            unknownNodeDebug(node, 'BinaryOperator = with non-DeclRefExpr LHS')
+    elif opcode == '==':
+        result = []
+        result.extend(parse_ast(rhs, depth))
+        result.extend(parse_ast(lhs, depth))
+        result += icst(
+            'eq',
+            depth,
+            '==\n',
+            '?='
+        )
+        return result
     unknownNodeDebug(node, f'BinaryOperator {opcode}')
 
 def parseFunctionDecl(node, depth):
@@ -247,9 +256,10 @@ def parseFunctionDecl(node, depth):
             depth,
             f'void {name}()\n',
             f'{name.upper()}'
-        )
+        ) + icst('fblock', depth, '{', '{')
     for child in node.get('inner', []):
         result.extend(parse_ast(child, depth))
+    result += icst('fend', depth, '}', '}')
     return result
 
 def parseReturnStmt(node, depth):
@@ -335,6 +345,21 @@ def parseCallExpr(node, depth):
         unknownNodeDebug(node, 'CallExpr')
     return result
 
+def parseIfStmt(node, depth):
+    has_else = node.get('hasElse', False)
+    result = []
+    inner = node.get('inner', [])
+    cond = inner[0]
+    body = inner[1]
+    result.extend(parse_ast(cond, depth))
+    result.extend(icst('if', depth, 'if (', '('))
+    result.extend(parse_ast(body, depth))
+    if has_else:
+        result.extend(icst('else', depth, 'else', ':'))
+        result.extend(parse_ast(inner[2], depth))
+    result.extend(icst('endif', depth, '', ')'))
+    return result
+
 parse = {
     'IntegerLiteral': parseIntegerLiteral,
     'FloatingLiteral': parseFloatingLiteral,
@@ -351,6 +376,7 @@ parse = {
     'DeclStmt': parseDeclStmt,
     'VarDecl': parseVarDecl,
     'CallExpr': parseCallExpr,
+    'IfStmt': parseIfStmt,
 }
 
 miss = {}

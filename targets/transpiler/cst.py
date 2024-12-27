@@ -101,42 +101,26 @@ def unknownNodeDebug(node, msg):
         debug(red('STOPFAIL is set, stopping execution'))
         sys.exit(2)
 
-def icst(t, i, c, st):
+def icst(t, i, st):
     return [{
         'type': t,
         'indent': i,
-        'c': c,
         'st': st
     }]
 
 def parseIntegerLiteral(node, depth):
     value = node.get('value')
-    return icst(
-        'int',
-        depth,
-        f'{value}\n',
-        f'{value}'
-    )
+    return icst('int', depth, f'{value}')
 
 def parseFloatingLiteral(node, depth):
     value = node.get('value')
     if not value.isnumeric():
         unknownNodeDebug(node, 'FloatingLiteral with non-integer value')
-    return icst(
-        'float',
-        depth,
-        f'{value}f\n',
-        f'{value}'
-    )
+    return icst('float', depth, f'{value}')
 
 def parseCharacterLiteral(node, depth):
     value = node.get('value')
-    return icst(
-        'char',
-        depth,
-        f'{value}\n',
-        f'{value}'
-    )
+    return icst('char', depth, f'{value}')
 
 def parseStringLiteral(node, depth):
     value = node.get('value')
@@ -148,12 +132,7 @@ def parseStringLiteral(node, depth):
     return []
 
 def parseBreakStmt(node, depth):
-    return icst(
-        'break',
-        depth,
-        f'break\n',
-        f'break_st\n'
-    )
+    return icst('break', depth, 'x')
 
 def parseCompoundStmt(node, depth):
     result = []
@@ -164,12 +143,7 @@ def parseCompoundStmt(node, depth):
 def parseDeclRefExpr(node, depth):
     if node.get('referencedDecl', ''):
         name = node['referencedDecl'].get('name', red('Unknown'))
-        return icst(
-            'deref',
-            depth,
-            f'{name}\n',
-            f'{name.upper()} '
-        )
+        return icst('deref', depth, f'{name.upper()} ')
     unknownNodeDebug(node, 'DeclRefExpr without referencedDecl')
     return []
 
@@ -199,9 +173,9 @@ def parseUnaryOperator(node, depth):
     for child in node.get('inner', []):
         result.extend(parse_ast(child, depth))
     if opcode == '++':
-        result += icst('inc', depth, f'{opcode}\n', '1+')
+        result += icst('inc', depth, '1+')
     elif opcode == '--':
-        result += icst('dec', depth, f'{opcode}\n', '1-')
+        result += icst('dec', depth, '1-')
     else:
         unknownNodeDebug(node, f'UnaryOperator {opcode}')
     return result
@@ -216,12 +190,7 @@ def parseBinaryOperator(node, depth):
     if opcode == '=':
         if lhs.get('kind', '') == 'DeclRefExpr':
             name = lhs.get('referencedDecl', {}).get('name', red('Unknown'))
-            result = icst(
-                'var',
-                depth,
-                f'',
-                f'{name.upper()} '
-            )
+            result = icst('var', depth, f'{name.upper()} ')
             store = True
             if rhs.get('kind', '') == 'ImplicitCastExpr':
                 if rhs.get('inner', [{}])[0].get('kind', '') == 'CallExpr':
@@ -229,12 +198,7 @@ def parseBinaryOperator(node, depth):
             result.extend(parse_ast(rhs, depth))
             if store:
                 debug(_debug_node(node, depth))
-                result += icst(
-                    'store',
-                    depth,
-                    f'',
-                    f'!'
-                )
+                result += icst('store', depth, '!')
             return result
         else:
             unknownNodeDebug(node, 'BinaryOperator = with non-DeclRefExpr LHS')
@@ -242,47 +206,28 @@ def parseBinaryOperator(node, depth):
         result = []
         result.extend(parse_ast(rhs, depth))
         result.extend(parse_ast(lhs, depth))
-        result += icst(
-            'eq',
-            depth,
-            '==\n',
-            '?='
-        )
+        result += icst('eq', depth, '?=')
         return result
     unknownNodeDebug(node, f'BinaryOperator {opcode}')
 
 def parseFunctionDecl(node, depth):
     name = node.get('name', red('Unknown'))
     if name == 'main':
-        result = icst(
-            'main',
-            depth,
-            '',
-            ''
-        )
+        result = icst('main', depth, '')
         if len(node.get('inner', [])) == 1 and node['inner'][0].get('kind', '') == 'CompoundStmt':
             for child in node['inner'][0].get('inner', []):
                 result.extend(parse_ast(child, depth))
         return result
     else:
-        result = icst(
-            'function',
-            depth,
-            f'void {name}()\n',
-            f'{name.upper()}'
-        ) + icst('fblock', depth, '{', '{')
+        result = icst('function', depth, f'{name.upper()}'
+        ) + icst('fblock', depth, '{')
     for child in node.get('inner', []):
         result.extend(parse_ast(child, depth))
-    result += icst('fend', depth, '}', '}')
+    result += icst('fend', depth, '}')
     return result
 
 def parseReturnStmt(node, depth):
-    return icst(
-        'return',
-        depth,
-        f'return\n',
-        ''
-    )
+    return icst('return', depth, '')
 
 def parseDeclStmt(node, depth):
     inner = node.get('inner', [])
@@ -309,20 +254,10 @@ def parseVarDecl(node, depth):
     value = []
     if len(inner) == 1:
         value = parse_ast(inner[0], depth)
-        value += icst(
-            'store',
-            depth,
-            f'',
-            f'!'
-        )
+        value += icst('store', depth, '!')
     elif len(inner) > 1:
         unknownNodeDebug(node, 'VarDecl with more than one child')
-    decl = icst(
-        'newvar',
-        depth,
-        f'int {name}\n',
-        f'{name.upper()}^'
-    ) + value
+    decl = icst('newvar', depth, f'{name.upper()}^') + value
     vars.append({
         'name': name,
         'type': typest,
@@ -345,20 +280,15 @@ def parseCallExpr(node, depth):
     if name == 'printf':
         format = inner[1].get('inner', [{}])[0].get('inner', [{}])[0].get('value', '')
         if format == '"%c"':
-            result.extend(icst('printf', depth, '', '.'))
+            result.extend(icst('printf', depth, '.'))
         elif format == '"%d"':
-            result.extend(icst('printf', depth, '', 'PN '))
+            result.extend(icst('printf', depth, 'PN '))
         else:
-            result.extend(icst('printf', depth, '', f'{string_prefix}{nstrings} PS '))
+            result.extend(icst('printf', depth, f'{string_prefix}{nstrings} PS '))
     elif name == 'getchar':
-        result.extend(icst('getchar', depth, '', ','))
+        result.extend(icst('getchar', depth, ','))
     else:
-        result = icst(
-            'call',
-            depth,
-            f'{name}()\n',
-            f'{name.upper()} '
-        )
+        result = icst('call', depth, f'{name.upper()} ')
         unknownNodeDebug(node, 'CallExpr')
     return result
 
@@ -369,12 +299,12 @@ def parseIfStmt(node, depth):
     cond = inner[0]
     body = inner[1]
     result.extend(parse_ast(cond, depth))
-    result.extend(icst('if', depth, 'if (', '('))
+    result.extend(icst('if', depth, '('))
     result.extend(parse_ast(body, depth))
     if has_else:
-        result.extend(icst('else', depth, 'else', ':'))
+        result.extend(icst('else', depth, ':'))
         result.extend(parse_ast(inner[2], depth))
-    result.extend(icst('endif', depth, '', ')'))
+    result.extend(icst('endif', depth, ')'))
     return result
 
 def parseCompoundAssignOperator(node, depth):
@@ -388,13 +318,13 @@ def parseCompoundAssignOperator(node, depth):
     result.extend(parse_ast(lhs, depth))
     result.extend(parse_ast(rhs, depth))
     if opcode == '+=':
-        result += icst('add', depth, '', '+')
+        result += icst('add', depth, '+')
     elif opcode == '-=':
-        result += icst('sub', depth, '', '-')
+        result += icst('sub', depth, '-')
     elif opcode == '*=':
-        result += icst('mul', depth, '', '*')
+        result += icst('mul', depth, '*')
     elif opcode == '/=':
-        result += icst('div', depth, '', '/')
+        result += icst('div', depth, '/')
     else:
         unknownNodeDebug(node, f'CompoundAssignOperator {opcode}')
     return result
@@ -433,23 +363,13 @@ def parse_ast(node, depth=0):
         name = node.get('name', '')
         if name:
             name = f': {name}'
-        fallback_c = f'{red(kind)}{name} {gray(node.get('id',''))}\n'
         fallback_st = f'{red(kind)}{name}_st {gray(node.get('id',''))}\n'
-        parsed_dict = icst('unknown', depth, fallback_c, fallback_st)
+        parsed_dict = icst('unknown', depth, fallback_st)
         debug(_debug_node(node, depth))
         result.extend(parsed_dict)
     for child in node.get('inner', []):
         result.extend(parse_ast(child, depth))
     return result
-
-def generate_c_code(dict_list):
-    lines = []
-    for item in dict_list:
-        code_lines = item['c'].split('\n')
-        for line in code_lines:
-            if line.strip():
-                lines.append(' ' * (item['indent'] * 2) + line)
-    return '\n'.join(lines) + '\n'
 
 def generate_st_code(dict_list):
     lines = []
@@ -457,16 +377,16 @@ def generate_st_code(dict_list):
     strings_decl = []
     vars_decl = []
     for si, string in enumerate(strings):
-        strings_decl.extend(icst('strinit', 0, '', f'{string_prefix}{si}^{string}>'))
+        strings_decl.extend(icst('strinit', 0, f'{string_prefix}{si}^{string}>'))
     for var in vars:
         typest = var['type']
         if typest == ctype:
             typest = ''
         else:
             ctype = typest
-            vars_decl.extend(icst('type', 0, '', f'{typest}'))
+            vars_decl.extend(icst('type', 0, f'{typest}'))
         vars_decl.extend(var['decl'])
-        vars_decl.extend(icst('next', 0, '', '>'))
+        vars_decl.extend(icst('next', 0, '>'))
     dict_list = strings_decl + vars_decl + dict_list
     if print_debug:
         for item in dict_list:
@@ -550,7 +470,6 @@ def load_source(file):
                         info['io'][-1]['input'] += '\n' + line
                     elif t == 'o':
                         info['io'][-1]['output'] += '\n' + line
-            debug(info)
             with open('io/%s.json' % name, 'w') as f:
                 f.write(json.dumps(info))
 
@@ -581,12 +500,9 @@ def main():
 
     ast = parse_ast(json_input)
 
-    outputC = generate_c_code(ast)
-
     outputST = generate_st_code(ast)
 
-    output = f'{outputC}\n{outputST}'
-    debug(output)
+    debug(gray(outputST))
     print(outputST)
     if miss:
         print(red('Unknown nodes:'), file=sys.stderr)

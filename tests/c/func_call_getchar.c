@@ -2,7 +2,7 @@
 #include <stdint.h>
 
 /*
-test: Simple output
+test: Simple input and output
 expect: C^>C ,C .
 input: I
 output: I

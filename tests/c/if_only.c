@@ -2,7 +2,7 @@
 #include <stdint.h>
 
 /*
-test: Simple output
+test: Simple if statement
 expect: STR__0^"Success">C^>C ,65C ?=(STR__0 PS)
 input: A
 output: Success

@@ -139,8 +139,8 @@ def parseCharacterLiteral(node, depth):
 
 def parseStringLiteral(node, depth):
     value = node.get('value')
-    if value == '"%c"':
-        # ignore %c from printf
+    if value in ['"%c"', '"%d"']:
+        # ignore printf format strings
         pass
     else:
         strings.append(value)
@@ -329,8 +329,11 @@ def parseCallExpr(node, depth):
     for child in inner[1:]:
         result.extend(parse_ast(child, depth))
     if name == 'printf':
-        if nstrings == len(strings):
+        format = inner[1].get('inner', [{}])[0].get('inner', [{}])[0].get('value', '')
+        if format == '"%c"':
             result.extend(icst('printf', depth, '', '.'))
+        elif format == '"%d"':
+            result.extend(icst('printf', depth, '', 'PN'))
         else:
             result.extend(icst('printf', depth, '', f'{string_prefix}{nstrings} PS'))
     elif name == 'getchar':

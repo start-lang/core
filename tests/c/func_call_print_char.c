@@ -2,7 +2,7 @@
 #include <stdint.h>
 
 /*
-test: Simple output
+test: Simple output with char
 expect: C^72!>C .
 input:
 output: H

@@ -356,11 +356,23 @@ def parseForStmt(node, depth):
     body = inner[4]
     result.extend(parse_ast(init, depth))
     result.extend(parse_ast(cond, depth))
-    result.extend(icst('for loop', depth, '['))
+    result.extend(icst('for', depth, '['))
     result.extend(parse_ast(body, depth))
     result.extend(parse_ast(inc, depth))
     result.extend(parse_ast(cond, depth))
-    result.extend(icst('for loop', depth, ']'))
+    result.extend(icst('for', depth, ']'))
+    return result
+
+def parseWhileStmt(node, depth):
+    result = []
+    inner = node.get('inner', [])
+    cond = inner[0]
+    body = inner[1]
+    result.extend(parse_ast(cond, depth))
+    result.extend(icst('while', depth, '['))
+    result.extend(parse_ast(body, depth))
+    result.extend(parse_ast(cond, depth))
+    result.extend(icst('while', depth, ']'))
     return result
 
 def parseCompoundAssignOperator(node, depth):
@@ -403,6 +415,7 @@ parse = {
     'CallExpr': parseCallExpr,
     'IfStmt': parseIfStmt,
     'ForStmt': parseForStmt,
+    'WhileStmt': parseWhileStmt,
     'CompoundAssignOperator': parseCompoundAssignOperator,
 }
 

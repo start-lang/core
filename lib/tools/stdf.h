@@ -38,10 +38,11 @@ int8_t f_printstr(State * s){
 #ifndef STDF_IGN_PRINTNUM
 int8_t f_printnum(State * s){
   // num:8/16/32/f(r0)
-  if (s->_type == INT8) output_len += s->reg.i8[0] = printf("%d", s->reg.i8[0]);
-  else if (s->_type == INT16) output_len += s->reg.i16[0] = printf("%d", s->reg.i16[0]);
-  else if (s->_type == INT32) output_len += s->reg.i32 = printf("%d", s->reg.i32);
-  else if (s->_type == FLOAT) output_len += s->reg.f32 = printf("%f", s->reg.f32);
+  Register r = {.i32 = s->_m[0] | (s->_m[1] << 8) | (s->_m[2] << 16) | (s->_m[3] << 24)};
+  if (s->_type == INT8) output_len += s->reg.i8[0] = printf("%d", r.i8[0]);
+  else if (s->_type == INT16) output_len += s->reg.i16[0] = printf("%d", r.i16[0]);
+  else if (s->_type == INT32) output_len += s->reg.i32 = printf("%d", r.i32);
+  else if (s->_type == FLOAT) output_len += s->reg.f32 = printf("%f", r.f32);
   return 0;
 }
 #endif

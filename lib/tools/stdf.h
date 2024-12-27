@@ -15,7 +15,6 @@ uint16_t output_len = 0;
 int8_t f_print(State * s);
 int8_t f_printstr(State * s);
 int8_t f_printnum(State * s);
-int8_t f_debug_num(State * s);
 int8_t exception_handler(State * s);
 int8_t undef(State * s);
 int8_t f_error(State * s);
@@ -38,23 +37,11 @@ int8_t f_printstr(State * s){
 
 #ifndef STDF_IGN_PRINTNUM
 int8_t f_printnum(State * s){
-  // num:8/16/32/f(r0) -> _m:str
-  char * m = (char *) s->_m;
-  if (s->_type == INT8) s->reg.i8[0] = sprintf(m, "%d", s->reg.i8[0]);
-  else if (s->_type == INT16) s->reg.i16[0] = sprintf(m, "%d", s->reg.i16[0]);
-  else if (s->_type == INT32) s->reg.i32 = sprintf(m, "%d", s->reg.i32);
-  else if (s->_type == FLOAT) s->reg.f32 = sprintf(m, "%f", s->reg.f32);
-  return 0;
-}
-#endif
-
-#ifndef STDF_IGN_DEBUG_NUM
-int8_t f_debug_num(State * s){
   // num:8/16/32/f(r0)
-  if (s->_type == INT8) output_len += s->reg.i8[0] = printf("%d\n", s->reg.i8[0]);
-  else if (s->_type == INT16) output_len += s->reg.i16[0] = printf("%d\n", s->reg.i16[0]);
-  else if (s->_type == INT32) output_len += s->reg.i32 = printf("%d\n", s->reg.i32);
-  else if (s->_type == FLOAT) output_len += s->reg.f32 = printf("%f\n", s->reg.f32);
+  if (s->_type == INT8) output_len += s->reg.i8[0] = printf("%d", s->reg.i8[0]);
+  else if (s->_type == INT16) output_len += s->reg.i16[0] = printf("%d", s->reg.i16[0]);
+  else if (s->_type == INT32) output_len += s->reg.i32 = printf("%d", s->reg.i32);
+  else if (s->_type == FLOAT) output_len += s->reg.f32 = printf("%f", s->reg.f32);
   return 0;
 }
 #endif

@@ -193,15 +193,16 @@ def parseImplicitCastExpr(node, depth):
     return []
 
 def parseUnaryOperator(node, depth):
+    result = []
     opcode = node.get('opcode', red('Unknown'))
-    result = icst(
-        'unary',
-        depth,
-        f'{opcode}\n',
-        f'{opcode}_st\n'
-    )
     for child in node.get('inner', []):
         result.extend(parse_ast(child, depth))
+    if opcode == '++':
+        result += icst('inc', depth, f'{opcode}\n', '1+')
+    elif opcode == '--':
+        result += icst('dec', depth, f'{opcode}\n', '1-')
+    else:
+        unknownNodeDebug(node, f'UnaryOperator {opcode}')
     return result
 
 def parseBinaryOperator(node, depth):
@@ -333,9 +334,9 @@ def parseCallExpr(node, depth):
         if format == '"%c"':
             result.extend(icst('printf', depth, '', '.'))
         elif format == '"%d"':
-            result.extend(icst('printf', depth, '', 'PN'))
+            result.extend(icst('printf', depth, '', 'PN '))
         else:
-            result.extend(icst('printf', depth, '', f'{string_prefix}{nstrings} PS'))
+            result.extend(icst('printf', depth, '', f'{string_prefix}{nstrings} PS '))
     elif name == 'getchar':
         result.extend(icst('getchar', depth, '', ','))
     else:
@@ -343,7 +344,7 @@ def parseCallExpr(node, depth):
             'call',
             depth,
             f'{name}()\n',
-            f'{name.upper()}'
+            f'{name.upper()} '
         )
         unknownNodeDebug(node, 'CallExpr')
     return result

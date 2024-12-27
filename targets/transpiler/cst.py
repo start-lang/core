@@ -44,6 +44,7 @@ def ign(node):
     return False
 
 hide = ['TranslationUnitDecl']
+print_debug = False
 vars = []
 string_prefix = 'STR__'
 strings = []
@@ -221,7 +222,19 @@ def parseBinaryOperator(node, depth):
                 f'',
                 f'{name.upper()} '
             )
+            store = True
+            if rhs.get('kind', '') == 'ImplicitCastExpr':
+                if rhs.get('inner', [{}])[0].get('kind', '') == 'CallExpr':
+                    store = False
             result.extend(parse_ast(rhs, depth))
+            if store:
+                debug(_debug_node(node, depth))
+                result += icst(
+                    'store',
+                    depth,
+                    f'',
+                    f'!'
+                )
             return result
         else:
             unknownNodeDebug(node, 'BinaryOperator = with non-DeclRefExpr LHS')
@@ -305,7 +318,7 @@ def parseVarDecl(node, depth):
     elif len(inner) > 1:
         unknownNodeDebug(node, 'VarDecl with more than one child')
     decl = icst(
-        'var',
+        'newvar',
         depth,
         f'int {name}\n',
         f'{name.upper()}^'
@@ -364,6 +377,28 @@ def parseIfStmt(node, depth):
     result.extend(icst('endif', depth, '', ')'))
     return result
 
+def parseCompoundAssignOperator(node, depth):
+    opcode = node.get('opcode', red('Unknown'))
+    inner = node.get('inner', [])
+    if len(inner) != 2:
+        unknownNodeDebug(node, 'CompoundAssignOperator with children != 2')
+    lhs = inner[0]
+    rhs = inner[1]
+    result = []
+    result.extend(parse_ast(lhs, depth))
+    result.extend(parse_ast(rhs, depth))
+    if opcode == '+=':
+        result += icst('add', depth, '', '+')
+    elif opcode == '-=':
+        result += icst('sub', depth, '', '-')
+    elif opcode == '*=':
+        result += icst('mul', depth, '', '*')
+    elif opcode == '/=':
+        result += icst('div', depth, '', '/')
+    else:
+        unknownNodeDebug(node, f'CompoundAssignOperator {opcode}')
+    return result
+
 parse = {
     'IntegerLiteral': parseIntegerLiteral,
     'FloatingLiteral': parseFloatingLiteral,
@@ -381,6 +416,7 @@ parse = {
     'VarDecl': parseVarDecl,
     'CallExpr': parseCallExpr,
     'IfStmt': parseIfStmt,
+    'CompoundAssignOperator': parseCompoundAssignOperator,
 }
 
 miss = {}
@@ -432,6 +468,9 @@ def generate_st_code(dict_list):
         vars_decl.extend(var['decl'])
         vars_decl.extend(icst('next', 0, '', '>'))
     dict_list = strings_decl + vars_decl + dict_list
+    if print_debug:
+        for item in dict_list:
+            debug(cyan(f'{item["type"]}\t- {item["st"]}'))
     for item in dict_list:
         code_lines = item['st'].split('\n')
         for line in code_lines:
@@ -464,6 +503,10 @@ def load_source(file):
 
         with open(file, 'r') as f:
             content = f.read()
+
+        if 'debug' in content:
+            global print_debug
+            print_debug = True
 
         test = re.search(r'/\*\n(.*?)\n\*/', content, re.DOTALL)
         if test:

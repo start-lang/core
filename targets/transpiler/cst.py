@@ -181,6 +181,7 @@ def parseUnaryOperator(node, depth):
     return result
 
 def parseBinaryOperator(node, depth):
+    result = []
     opcode = node.get('opcode', red('Unknown'))
     inner = node.get('inner', [])
     if len(inner) != 2:
@@ -190,25 +191,43 @@ def parseBinaryOperator(node, depth):
     if opcode == '=':
         if lhs.get('kind', '') == 'DeclRefExpr':
             name = lhs.get('referencedDecl', {}).get('name', red('Unknown'))
-            result = icst('var', depth, f'{name.upper()} ')
+            result += icst('var', depth, f'{name.upper()} ')
             store = True
             if rhs.get('kind', '') == 'ImplicitCastExpr':
-                if rhs.get('inner', [{}])[0].get('kind', '') == 'CallExpr':
+                subk = rhs.get('inner', [{}])[0].get('kind', '')
+                if subk == 'CallExpr':
+                    store = False
+                elif subk == 'BinaryOperator':
                     store = False
             result.extend(parse_ast(rhs, depth))
             if store:
-                debug(_debug_node(node, depth))
-                result += icst('store', depth, '!')
+                result += icst('setvar', depth, '!')
             return result
         else:
             unknownNodeDebug(node, 'BinaryOperator = with non-DeclRefExpr LHS')
+    elif opcode == '+':
+        result.extend(parse_ast(lhs, depth))
+        result.extend(parse_ast(rhs, depth))
+        result += icst('add', depth, '+')
+    elif opcode == '-':
+        result.extend(parse_ast(lhs, depth))
+        result.extend(parse_ast(rhs, depth))
+        result += icst('sub', depth, '-')
+    elif opcode == '*':
+        result.extend(parse_ast(lhs, depth))
+        result.extend(parse_ast(rhs, depth))
+        result += icst('mul', depth, '*')
+    elif opcode == '/':
+        result.extend(parse_ast(lhs, depth))
+        result.extend(parse_ast(rhs, depth))
+        result += icst('div', depth, '/')
     elif opcode == '==':
-        result = []
         result.extend(parse_ast(rhs, depth))
         result.extend(parse_ast(lhs, depth))
         result += icst('eq', depth, '?=')
-        return result
-    unknownNodeDebug(node, f'BinaryOperator {opcode}')
+    else:
+        unknownNodeDebug(node, f'BinaryOperator {opcode}')
+    return result
 
 def parseFunctionDecl(node, depth):
     name = node.get('name', red('Unknown'))
@@ -254,7 +273,7 @@ def parseVarDecl(node, depth):
     value = []
     if len(inner) == 1:
         value = parse_ast(inner[0], depth)
-        value += icst('store', depth, '!')
+        value += icst('initvar', depth, '!')
     elif len(inner) > 1:
         unknownNodeDebug(node, 'VarDecl with more than one child')
     decl = icst('newvar', depth, f'{name.upper()}^') + value
@@ -318,13 +337,13 @@ def parseCompoundAssignOperator(node, depth):
     result.extend(parse_ast(lhs, depth))
     result.extend(parse_ast(rhs, depth))
     if opcode == '+=':
-        result += icst('add', depth, '+')
+        result += icst('assign add', depth, '+')
     elif opcode == '-=':
-        result += icst('sub', depth, '-')
+        result += icst('assign sub', depth, '-')
     elif opcode == '*=':
-        result += icst('mul', depth, '*')
+        result += icst('assign mul', depth, '*')
     elif opcode == '/=':
-        result += icst('div', depth, '/')
+        result += icst('assign div', depth, '/')
     else:
         unknownNodeDebug(node, f'CompoundAssignOperator {opcode}')
     return result

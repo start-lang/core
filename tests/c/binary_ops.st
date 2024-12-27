@@ -1,0 +1,1 @@
+C^1!>C PN C C 1+C PN C C 1-C PN C C 6*C PN C C 2/C PN 

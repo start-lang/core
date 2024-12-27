@@ -224,7 +224,27 @@ def parseBinaryOperator(node, depth):
     elif opcode == '==':
         result.extend(parse_ast(rhs, depth))
         result.extend(parse_ast(lhs, depth))
-        result += icst('eq', depth, '?=')
+        result += icst('c eq', depth, '?=')
+    elif opcode == '!=':
+        result.extend(parse_ast(rhs, depth))
+        result.extend(parse_ast(lhs, depth))
+        result += icst('c neq', depth, '?!')
+    elif opcode == '<':
+        result.extend(parse_ast(rhs, depth))
+        result.extend(parse_ast(lhs, depth))
+        result += icst('c lt', depth, '?>')
+    elif opcode == '<=':
+        result.extend(parse_ast(rhs, depth))
+        result.extend(parse_ast(lhs, depth))
+        result += icst('c le', depth, '?g')
+    elif opcode == '>':
+        result.extend(parse_ast(rhs, depth))
+        result.extend(parse_ast(lhs, depth))
+        result += icst('c gt', depth, '?<')
+    elif opcode == '>=':
+        result.extend(parse_ast(rhs, depth))
+        result.extend(parse_ast(lhs, depth))
+        result += icst('c ge', depth, '?l')
     else:
         unknownNodeDebug(node, f'BinaryOperator {opcode}')
     return result
@@ -326,6 +346,23 @@ def parseIfStmt(node, depth):
     result.extend(icst('endif', depth, ')'))
     return result
 
+def parseForStmt(node, depth):
+    result = []
+    inner = node.get('inner', [])
+    init = inner[0]
+    unk = inner[1]
+    cond = inner[2]
+    inc = inner[3]
+    body = inner[4]
+    result.extend(parse_ast(init, depth))
+    result.extend(parse_ast(cond, depth))
+    result.extend(icst('for loop', depth, '['))
+    result.extend(parse_ast(body, depth))
+    result.extend(parse_ast(inc, depth))
+    result.extend(parse_ast(cond, depth))
+    result.extend(icst('for loop', depth, ']'))
+    return result
+
 def parseCompoundAssignOperator(node, depth):
     opcode = node.get('opcode', red('Unknown'))
     inner = node.get('inner', [])
@@ -365,6 +402,7 @@ parse = {
     'VarDecl': parseVarDecl,
     'CallExpr': parseCallExpr,
     'IfStmt': parseIfStmt,
+    'ForStmt': parseForStmt,
     'CompoundAssignOperator': parseCompoundAssignOperator,
 }
 

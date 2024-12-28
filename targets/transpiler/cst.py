@@ -190,6 +190,14 @@ def parseBinaryOperator(node, depth):
     rhs = inner[1]
     if opcode == '=':
         if lhs.get('kind', '') == 'DeclRefExpr':
+            load = False
+            rhskind = rhs.get('kind', '')
+            if rhskind == 'ImplicitCastExpr':
+                rhskind = rhs.get('inner', [{}])[0].get('kind', '')
+                if rhskind == 'DeclRefExpr':
+                    result.extend(parse_ast(rhs, depth))
+                    result += icst('load', depth, ';')
+                    load = True
             name = lhs.get('referencedDecl', {}).get('name', red('Unknown'))
             result += icst('var', depth, f'{name.upper()} ')
             store = True
@@ -199,7 +207,8 @@ def parseBinaryOperator(node, depth):
                     store = False
                 elif subk == 'BinaryOperator':
                     store = False
-            result.extend(parse_ast(rhs, depth))
+            if not load:
+                result.extend(parse_ast(rhs, depth))
             if store:
                 result += icst('setvar', depth, '!')
             return result

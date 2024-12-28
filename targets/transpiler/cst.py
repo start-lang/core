@@ -214,45 +214,35 @@ def parseBinaryOperator(node, depth):
             return result
         else:
             unknownNodeDebug(node, 'BinaryOperator = with non-DeclRefExpr LHS')
-    elif opcode == '+':
-        result.extend(parse_ast(lhs, depth))
+    else:
         result.extend(parse_ast(rhs, depth))
+        rhskind = rhs.get('kind', '')
+        while rhskind == 'ImplicitCastExpr':
+            rhs = rhs.get('inner', [{}])[0]
+            rhskind = rhs.get('kind', '')
+        if rhskind == 'DeclRefExpr':
+            result += icst('load', depth, ';')
+        result.extend(parse_ast(lhs, depth))
+
+    if opcode == '+':
         result += icst('add', depth, '+')
     elif opcode == '-':
-        result.extend(parse_ast(lhs, depth))
-        result.extend(parse_ast(rhs, depth))
         result += icst('sub', depth, '-')
     elif opcode == '*':
-        result.extend(parse_ast(lhs, depth))
-        result.extend(parse_ast(rhs, depth))
         result += icst('mul', depth, '*')
     elif opcode == '/':
-        result.extend(parse_ast(lhs, depth))
-        result.extend(parse_ast(rhs, depth))
         result += icst('div', depth, '/')
     elif opcode == '==':
-        result.extend(parse_ast(rhs, depth))
-        result.extend(parse_ast(lhs, depth))
         result += icst('c eq', depth, '?=')
     elif opcode == '!=':
-        result.extend(parse_ast(rhs, depth))
-        result.extend(parse_ast(lhs, depth))
         result += icst('c neq', depth, '?!')
     elif opcode == '<':
-        result.extend(parse_ast(rhs, depth))
-        result.extend(parse_ast(lhs, depth))
         result += icst('c lt', depth, '?>')
     elif opcode == '<=':
-        result.extend(parse_ast(rhs, depth))
-        result.extend(parse_ast(lhs, depth))
         result += icst('c le', depth, '?g')
     elif opcode == '>':
-        result.extend(parse_ast(rhs, depth))
-        result.extend(parse_ast(lhs, depth))
         result += icst('c gt', depth, '?<')
     elif opcode == '>=':
-        result.extend(parse_ast(rhs, depth))
-        result.extend(parse_ast(lhs, depth))
         result += icst('c ge', depth, '?l')
     else:
         unknownNodeDebug(node, f'BinaryOperator {opcode}')
@@ -392,8 +382,19 @@ def parseCompoundAssignOperator(node, depth):
     lhs = inner[0]
     rhs = inner[1]
     result = []
+    load = False
+    if lhs.get('kind', '') == 'DeclRefExpr':
+        rhskind = rhs.get('kind', '')
+        while rhskind == 'ImplicitCastExpr':
+            rhs = rhs.get('inner', [{}])[0]
+            rhskind = rhs.get('kind', '')
+        if rhskind == 'DeclRefExpr':
+            result.extend(parse_ast(rhs, depth))
+            result += icst('load', depth, ';')
+            load = True
     result.extend(parse_ast(lhs, depth))
-    result.extend(parse_ast(rhs, depth))
+    if not load:
+        result.extend(parse_ast(rhs, depth))
     if opcode == '+=':
         result += icst('assign add', depth, '+')
     elif opcode == '-=':

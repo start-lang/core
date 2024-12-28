@@ -48,7 +48,6 @@ def main():
             if d.get('expect') != st.replace('\n', ''):
                 print(red(f'[FAIL expect] "{d.get("expect")}" != "{st}"'))
                 f += 1
-                continue
             else:
                 print(yellow(f'[WARN expect] "{d.get("expect")}" != "{st}"'))
                 w += 1

@@ -3,9 +3,9 @@
 
 /*
 test: Test variable assignment
-expect: A^1!>B^2!>T^>A PN B PN A ;T !T PN B ;A !T ;B !A PN B PN
+expect: A^1!>B^2!>T^>A PN B PN A ;T !T PN B ;A !T ;B !A PN B PN A ;B +B PN B ;A +A PN
 input:
-output: 12121
+output: 1212135
 */
 
 int main() {
@@ -20,5 +20,9 @@ int main() {
   b = t;
   printf("%d", a);
   printf("%d", b);
+  b += a;
+  printf("%d", b);
+  a += b;
+  printf("%d", a);
   return 0;
 }

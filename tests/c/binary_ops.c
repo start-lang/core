@@ -3,7 +3,7 @@
 
 /*
 test: Test binary operators
-expect: C^1!>C PN C C 1+C PN C C 1-C PN C C 6*C PN C C 2/C PN
+expect: C^1!>C PN C 1C +C PN C 1C -C PN C 6C *C PN C 2C /C PN
 input:
 output: 12163
 */

@@ -279,7 +279,7 @@
           console.error(e);
         }
 
-        const w = await WASM("bin.wasm", (getWasm, getMemory) => {
+        const w = await WASM("start.wasm", (getWasm, getMemory) => {
           return {
             outputc: (c) => {
               if (c == "\n") {
@@ -324,7 +324,7 @@
         function removeAnsi(str) {
           return str.replace(/\x1b\[[0-9;]*[a-zA-Z]/g, '');
         }
-        const w = await WASM("bin.wasm", (getWasm, getMemory) => {
+        const w = await WASM("start.wasm", (getWasm, getMemory) => {
           return {
             output: (str) => console.log(removeAnsi(str)),
             errorOutput: (str) => console.log(removeAnsi(str)),

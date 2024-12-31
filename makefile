@@ -264,12 +264,6 @@ svg: ${BUILD}/.venv
 	  python3 ${DIAGRAMS} mobile blog > ${BUILD}/mobile_blog.svg || \
 	  { echo "Error: Could not generate SVGs"; exit 1; }
 
-## WEB
-
-.PHONY: start-server
-start-server:
-	python3 -m http.server 8000
-
 ## CI/CD
 
 .PHONY: assets
@@ -286,3 +280,10 @@ assets: init ${WASM_CLI_OUTPUT} svg
 act:
 	nohup time act --container-architecture linux/amd64 >> nohup.out 2>&1 &
 	tail -f nohup.out
+
+## WEB
+
+.PHONY: start-server
+start-server: assets
+	cd ${BUILD}/assets && \
+	python3 -m http.server 8000

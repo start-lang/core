@@ -63,9 +63,6 @@ void st_state_free(State * s){
     _funcs = NULL;
     _funcc = 0;
   }
-  if (s->_id){
-   free(s->_id);
-  }
   free(s);
 }
 
@@ -231,25 +228,26 @@ uint8_t st_op(uint8_t token, State * s){
   }
 
   if (token == PRINT) {
-    s->_id = (uint8_t*) malloc(2);
     s->_id[0] = 'P';
     s->_id[1] = 'C';
+    s->_id[2] = 0;
     s->_idlen = 2;
   } else if (token == INPUT) {
-    s->_id = (uint8_t*) malloc(2);
     s->_id[0] = 'I';
     s->_id[1] = 'N';
+    s->_id[2] = 0;
     s->_idlen = 2;
   }
 
   if ((token >= 'A' && token <= 'Z') || token == '_'
       || (s->_idlen && (token >= '0' && token <= '9'))){
-    s->_id = (uint8_t*) realloc(s->_id, s->_idlen + 1);
     s->_id[s->_idlen] = token;
     s->_idlen++;
+    if (s->_idlen + 1 >= MAX_IDLEN) {
+      return JM_ERR0;
+    }
     return SUCCESS;
   } else if (s->_idlen) {
-    s->_id = (uint8_t*) realloc(s->_id, s->_idlen + 1);
     s->_id[s->_idlen] = '\0';
     if (token == NEW_VAR) {
       uint8_t found = 0;
@@ -261,19 +259,21 @@ uint8_t st_op(uint8_t token, State * s){
       }
       if (!found){
         _vars = (Variable*) realloc(_vars, (_varc + 1)*sizeof(Variable));
-        _vars[_varc] = (Variable){.name = s->_id, .pos = s->_m - s->_m0};
+        uint8_t* id = (uint8_t*) malloc(s->_idlen + 1);
+        strcpy((char*)id, (char*)s->_id);
+        _vars[_varc] = (Variable){.name = id, .pos = s->_m - s->_m0};
         _varc++;
       } else {
         (_vars[found - 1]).pos = s->_m - s->_m0;
-        free(s->_id);
       }
     } else if (token == STARTFUNCTION) {
       s->_lensrc = 0; // length src
       s->_fmatching = 1; // open/close
       _funcs = (RTFunction*) realloc(_funcs, (_funcc + 1)*sizeof(RTFunction));
-      _funcs[_funcc] = (RTFunction){.name = s->_id, .src = NULL};
+      uint8_t* id = (uint8_t*) malloc(s->_idlen + 1);
+      strcpy((char*)id, (char*)s->_id);
+      _funcs[_funcc] = (RTFunction){.name = id, .src = NULL};
       _funcc++;
-      s->_id = NULL;
       s->_idlen = 0;
       s->_srcinput = 1;
       return SUCCESS;
@@ -307,9 +307,7 @@ uint8_t st_op(uint8_t token, State * s){
         }
         fid++;
       }
-      free(s->_id);
     }
-    s->_id = NULL;
     s->_idlen = 0;
   }
 

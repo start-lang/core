@@ -109,7 +109,7 @@ build-test: init
 	${CC} ${CFLAGS} ${ASSERTS} -D STOPFAIL -D LONG_TEST -D ENABLE_FILES -D PRINT_TIMINGS ${TEST} -o ${TEST_OUTPUT}
 	chmod +x ${TEST_OUTPUT}
 
-${TEST_OUTPUT}: ${SRC_FILES} ${TEST}
+${TEST_OUTPUT}: ${SRC_FILES} ${TEST} tests/unit/lang_assertions.c
 	${MAKE} build-test
 
 .PHONY: test-quick
@@ -123,7 +123,7 @@ ifeq ($(UNAME), Linux)
 	chmod +x ${TEST_OUTPUT}
 	ulimit -n 65536 && valgrind --leak-check=full --show-error-list=yes --track-origins=yes ${TEST_OUTPUT}
 else
-	${CC} ${CFLAGS} --coverage ${TEST} -o ${TEST_OUTPUT}
+	${CC} ${CFLAGS} ${ASSERTS} --coverage ${TEST} -o ${TEST_OUTPUT}
 	chmod +x ${TEST_OUTPUT}
 	leaks -atExit -- ${TEST_OUTPUT}
 endif
@@ -197,13 +197,13 @@ test-wasm-example: ${WASM_TEST_OUTPUT}
 
 .PHONY: build-benchmark
 build-benchmark: init
-	${CC} ${CFLAGS} ${BENCHMARK} ${TEST} -o ${BMARK_OUTPUT}.${CC}
+	${CC} ${CFLAGS} ${BENCHMARK} ${TEST} ${ASSERTS} -o ${BMARK_OUTPUT}.${CC}
 	chmod +x ${BMARK_OUTPUT}.${CC}
 
-${BMARK_OUTPUT}.gcc: ${SRC_FILES} ${TEST}
+${BMARK_OUTPUT}.gcc: ${SRC_FILES} ${TEST} tests/unit/lang_assertions.c
 	${MAKE} build-benchmark CC=gcc
 
-${BMARK_OUTPUT}.clang: ${SRC_FILES} ${TEST}
+${BMARK_OUTPUT}.clang: ${SRC_FILES} ${TEST} tests/unit/lang_assertions.c
 	${MAKE} build-benchmark CC=clang
 
 .PHONY: build-wasm-benchmark

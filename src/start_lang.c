@@ -10,6 +10,7 @@ uint8_t _funcc = 0;
 
 uint8_t jump(State * s){
   uint8_t token = *(s->src);
+  uint8_t prev = 0;
   while (token) {
     if (token == IF){
       s->_matching++;
@@ -33,11 +34,16 @@ uint8_t jump(State * s){
       if (s->_op_result == JM_NXWH){
         break;
       }
+    } else if (token == COMMENT_OUT) {
+      if (prev == COMMENT_IN && s->_op_result == JM_ECMT){
+        break;
+      }
     }
     if (s->src - s->_src0 == 0 && ! s->_forward) {
       return 1;
     }
     s->src += s->_forward ? 1 : -1;
+    prev = token;
     token = *(s->src);
   }
   return 0;
@@ -313,6 +319,7 @@ uint8_t st_op(uint8_t token, State * s){
     s->_idlen = 0;
   }
 
+  uint8_t cont = 0;
   if (s->_lookahead){
     s->_lookahead = 0;
     switch (prev) {
@@ -397,14 +404,44 @@ uint8_t st_op(uint8_t token, State * s){
             return JM_PEXC;
         }
         break;
+      case COMMENT_OUT:
+        if (token == COMMENT_IN) {
+          s->_forward = 1;
+          return JM_ECMT;
+        } else {
+          if (s->_type == INT8) s->_m[0] /= REG.i8[0];
+          else if (s->_type == INT16) {
+            Register t = mload(s);
+            t.i16[0] /= REG.i16[0];
+            s->_m[0] = t.i8[0];
+            s->_m[1] = t.i8[1];
+          } else if (s->_type == INT32) {
+            Register t = mload(s);
+            t.i32 /= REG.i32;
+            s->_m[0] = t.i8[0];
+            s->_m[1] = t.i8[1];
+            s->_m[2] = t.i8[2];
+            s->_m[3] = t.i8[3];
+          } else if (s->_type == FLOAT) {
+            Register t = mload(s);
+            t.f32 /= REG.f32;
+            s->_m[0] = t.i8[0];
+            s->_m[1] = t.i8[1];
+            s->_m[2] = t.i8[2];
+            s->_m[3] = t.i8[3];
+          }
+          cont = 1;
+          break;
+        }
       default:
         return JM_PEXC;
     }
-    return SUCCESS;
+    if (!cont) return SUCCESS;
   }
 
   switch (token) {
     case POP:
+    case COMMENT_OUT:
     case COND_MODIFIER:
       s->_lookahead = 1;
       break;
@@ -624,29 +661,6 @@ uint8_t st_op(uint8_t token, State * s){
       } else if (s->_type == FLOAT) {
         Register t = mload(s);
         t.f32 *= REG.f32;
-        s->_m[0] = t.i8[0];
-        s->_m[1] = t.i8[1];
-        s->_m[2] = t.i8[2];
-        s->_m[3] = t.i8[3];
-      }
-      break;
-    case DIV:
-      if (s->_type == INT8) s->_m[0] /= REG.i8[0];
-      else if (s->_type == INT16) {
-        Register t = mload(s);
-        t.i16[0] /= REG.i16[0];
-        s->_m[0] = t.i8[0];
-        s->_m[1] = t.i8[1];
-      } else if (s->_type == INT32) {
-        Register t = mload(s);
-        t.i32 /= REG.i32;
-        s->_m[0] = t.i8[0];
-        s->_m[1] = t.i8[1];
-        s->_m[2] = t.i8[2];
-        s->_m[3] = t.i8[3];
-      } else if (s->_type == FLOAT) {
-        Register t = mload(s);
-        t.f32 /= REG.f32;
         s->_m[0] = t.i8[0];
         s->_m[1] = t.i8[1];
         s->_m[2] = t.i8[2];

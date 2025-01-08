@@ -205,7 +205,7 @@ void validate(void){
   begin_section("STORE");
   assert_eq((run("3!"), M[0]), 3);
   // store 3/2
-  assert_eq((run("f3!2/"), RM.f32), 3.0f/2.0f);
+  assert_eq((run("f3!2/ "), RM.f32), 3.0f/2.0f);
   end_section();
 
   // tape-register notation
@@ -367,16 +367,16 @@ void validate(void){
   assert_eq((run("s2@3*"), RM.i16[0]), 6);
   assert_eq((run("i2@3*"), RM.i32), 6);
   assert_eq((run("f2@3*"), RM.f32), 6);
-  assert_eq((run("8@2/"), RM.i8[0]), 4);
-  assert_eq((run("s8@2/"), RM.i16[0]), 4);
-  assert_eq((run("i8@2/"), RM.i32), 4);
+  assert_eq((run("8@2/ "), RM.i8[0]), 4);
+  assert_eq((run("s8@2/ "), RM.i16[0]), 4);
+  assert_eq((run("i8@2/ "), RM.i32), 4);
   assert_eq((run("s9@6%"), RM.i16[0]), 3);
   assert_eq((run("i9@6%"), RM.i32), 3);
   assert_eq((run("12!1+"), RM.i8[0]), 13);
   assert_eq((run("12!1-"), RM.i8[0]), 11);
   assert_eq((run("12!1--"), RM.i8[0]), 10);
   assert_eq((run("2!3*"), RM.i8[0]), 6);
-  assert_eq((run("8!2/"), RM.i8[0]), 4);
+  assert_eq((run("8!2/ "), RM.i8[0]), 4);
   assert_eq((run("s2!1&;"), RM.i16[0]), 0);
   assert_eq((run("i2!1&;"), RM.i32), 0);
   assert_eq((run("s2!1|;"), RM.i16[0]), 3);
@@ -752,4 +752,11 @@ void validate(void){
   strcat(input, "Hello");
   assert_str_eq((run(">,[>,]<[.<]"), out), "olleH");
   end_section();
+
+  begin_section("COMMENTS");
+  assert_eq((run("+++[>+++/*Hello*/++<-]"), M[1]), 15);
+  assert_eq((run("1k/* rotate */kk1"), REG.i32), 16777217);
+  assert_eq((run("N^8!>B^0!>A^1!?=[N /* Hello!? */1-?!A;B@A+]"), RM.i8[0]), 21);
+  end_section();
+
 }

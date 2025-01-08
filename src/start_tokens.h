@@ -10,6 +10,8 @@
 #define ENDWHILE        ']'
 #define ARRAY           '{' // unused
 #define ENDARRAY        '}' // unused
+#define COMMENT_OUT     '/'
+#define COMMENT_IN      '*'
 
 #define NOP             ' '
 #define DEBUG           '`'

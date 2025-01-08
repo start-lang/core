@@ -21,11 +21,12 @@ extern "C" {
 #define JM_WHI0 4
 #define JM_WHI1 5
 #define JM_NXWH 6
+#define JM_ECMT 7
 
-#define JM_ERR0 7
-#define JM_PEXC 8
-#define JM_REOB 9
-#define JM_EXEN 10
+#define JM_ERR0 8
+#define JM_PEXC 9
+#define JM_REOB 10
+#define JM_EXEN 11
 
 typedef union {
   uint8_t i8 [4];

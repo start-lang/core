@@ -196,16 +196,17 @@ void validate(void){
   assert_eq((run(">i65537!0"), RM.i32), 65537);
   assert_eq((run("2>i65537!0"), RM.i32), 65537);
   assert_eq((run("3>i65537!0"), RM.i32), 65537);
-  assert_eq((run("f3!2/0"), RM.f32), 3.0f/2.0f);
-  assert_eq((run(">f3!2/0"), RM.f32), 3.0f/2.0f);
-  assert_eq((run("2>f3!2/0"), RM.f32), 3.0f/2.0f);
-  assert_eq((run("3>f3!2/0"), RM.f32), 3.0f/2.0f);
+  assert_float_eq((run("f3!2/0"), RM.f32), 1.5f);
+  assert_float_eq((run(">f3!2/0"), RM.f32), 1.5f);
+  assert_float_eq((run("2>f3!2/0"), RM.f32), 1.5f);
+  assert_float_eq((run("3>f3!2/0"), RM.f32), 1.5f);
   end_section();
 
   begin_section("STORE");
   assert_eq((run("3!"), M[0]), 3);
   // store 3/2
-  assert_eq((run("f3!2/ "), RM.f32), 3.0f/2.0f);
+  assert_float_eq((run("f3!2/ "), RM.f32), 1.5f);
+  assert_float_eq((run("f5!2/ "), RM.f32), 2.5f);
   end_section();
 
   // tape-register notation

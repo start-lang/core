@@ -38,6 +38,8 @@ uint8_t jump(State * s){
       if (prev == COMMENT_IN && s->_op_result == JM_ECMT){
         break;
       }
+    } else if (token == '\n' && s->_op_result == JM_ELIN) {
+      break;
     }
     if (s->src - s->_src0 == 0 && ! s->_forward) {
       return 1;
@@ -408,6 +410,9 @@ uint8_t st_op(uint8_t token, State * s){
         if (token == COMMENT_IN) {
           s->_forward = 1;
           return JM_ECMT;
+        } else if (token == COMMENT_OUT) {
+          s->_forward = 1;
+          return JM_ELIN;
         } else {
           if (s->_type == INT8) s->_m[0] /= REG.i8[0];
           else if (s->_type == INT16) {

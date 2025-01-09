@@ -755,8 +755,11 @@ void validate(void){
 
   begin_section("COMMENTS");
   assert_eq((run("+++[>+++/*Hello*/++<-]"), M[1]), 15);
+  assert_eq((run("+++[>+++//Hello\n++<-]"), M[1]), 15);
+  assert_eq((run("+++[>+++++<-]//Hello"), M[1]), 15);
   assert_eq((run("1k/* rotate */kk1"), REG.i32), 16777217);
   assert_eq((run("N^8!>B^0!>A^1!?=[N /* Hello!? */1-?!A;B@A+]"), RM.i8[0]), 21);
+  assert_eq((run("N^8!>B^0!>A^1!?=[N // Hello!?\n1-?!A;B@A+]"), RM.i8[0]), 21);
   end_section();
 
 }

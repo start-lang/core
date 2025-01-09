@@ -238,7 +238,7 @@ uint8_t st_op(uint8_t token, State * s){
     return SUCCESS;
   }
 
-  if (token == PRINT) {
+  if (token == PRINT && (prev < '0' || prev > '9')) {
     s->_id = (uint8_t*) malloc(2);
     s->_id[0] = 'P';
     s->_id[1] = 'C';
@@ -830,24 +830,48 @@ uint8_t st_op(uint8_t token, State * s){
     case 0:
     case '\n':
     case '\t':
-    case PRINT:
     case INPUT:
     case BITWISE_OP:
       break;
     default:
-      if (token >= '0' && token <= '9'){
+      if (s->_type == FLOAT) {
+        if ((token >= '0' && token <= '9') || token == FLOAT_POINT) {
+          if ((prev < '0' || prev > '9') && prev != FLOAT_POINT) {
+            s->reg.f32 = (token - '0');
+            s->_matching = 0;
+          } else {
+            if (token == FLOAT_POINT) {
+              s->_matching = 1;
+              break;
+            }
+            if (s->_matching == 0) {
+              s->reg.f32 = s->reg.f32*10 + (token - '0');
+            } else {
+              float f = (token - '0');
+              for (uint8_t i = 0; i < s->_matching; i++) {
+                f /= 10;
+              }
+              s->reg.f32 += f;
+              s->_matching++;
+            }
+          }
+        } else {
+          return JM_PEXC;
+        }
+      } else if (token >= '0' && token <= '9'){
         if (prev < '0' || prev > '9'){
           if (s->_type == INT8) s->reg.i8[0] = (token - '0');
           else if (s->_type == INT16) s->reg.i16[0] = (token - '0');
           else if (s->_type == INT32) s->reg.i32 = (token - '0');
-          else if (s->_type == FLOAT) s->reg.f32 = (token - '0');
         } else {
           if (s->_type == INT8) s->reg.i8[0] = s->reg.i8[0]*10 + (token - '0');
           else if (s->_type == INT16) s->reg.i16[0] = s->reg.i16[0]*10 + (token - '0');
           else if (s->_type == INT32) s->reg.i32 = s->reg.i32*10 + (token - '0');
-          else if (s->_type == FLOAT) s->reg.f32 = s->reg.f32*10 + (token - '0');
         }
       } else {
+        if (token == PRINT) {
+          break;
+        }
         return JM_PEXC;
       }
       break;

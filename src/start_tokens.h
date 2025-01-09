@@ -71,6 +71,7 @@
 #define STRING          '\"'
 #define CHAR            '\'' // unused
 #define SCAPE           '\\'
+#define FLOAT_POINT     '.'
 
 
 #define INT8    0

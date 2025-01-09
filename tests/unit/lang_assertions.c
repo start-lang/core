@@ -763,4 +763,10 @@ void validate(void){
   assert_eq((run("N^8!>B^0!>A^1!?=[N // Hello!?\n1-?!A;B@A+]"), RM.i8[0]), 21);
   end_section();
 
+  begin_section("FLOAT");
+  assert_float_eq((run("f2.12"), REG.f32), 2.12f);
+  assert_float_eq((run("f3.1415"), REG.f32), 3.1415f);
+  assert_str_eq((run("f3.1415! ."), out), "U");
+  assert_float_eq((run("f5.2!2.6/ "), RM.f32), 2.0f);
+  end_section();
 }

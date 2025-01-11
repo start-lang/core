@@ -17,6 +17,8 @@ extern uint32_t max_steps;
 extern uint16_t max_output;
 extern uint8_t follow_vars;
 extern uint8_t follow_mem;
+extern uint8_t first_callback;
+extern uint16_t forward_multiply;
 
 int8_t step_callback(State * s) {
   return stop || debug_state(s, debug, interactive);
@@ -63,7 +65,24 @@ void help(char* cmd){
   exit(0);
 }
 
+void reset_env() {
+  debug = 0;
+  interactive = 0;
+  exec_info = 0;
+  follow_vars = 0;
+  follow_mem = 0;
+  timeout = 0;
+  max_steps = 0;
+  max_output = 0;
+  first_callback = 1;
+  forward_multiply = 1;
+  src = realloc(src, 1);
+  src[0] = 0;
+}
+
 void arg_parse(int argc, char* argv[]){
+  reset_env();
+  uint8_t print_src = 0;
   for (int i = 1; i < argc; i++) {
     if (strcmp("-h", argv[i]) == 0 || strcmp("--help", argv[i]) == 0) {
       help(argv[0]);
@@ -100,17 +119,18 @@ void arg_parse(int argc, char* argv[]){
     } else if (strcmp("-t", argv[i]) == 0 || strcmp("--timeout", argv[i]) == 0) {
       if (i + 1 >= argc) { help(argv[0]); exit(1); }
       timeout = atoi(argv[++i]) * 1000;
-    } else if (argv[i][0] != '-') {
-      src = realloc(src, 1);
-      src[0] = 0;
-      for (int j = i; j < argc; j++) {
-        int size = strlen(src) + strlen(argv[j]) + 1;
-        src = realloc(src, size);
-        strcat(src, argv[j]);
-        strcat(src, " ");
-      }
-      break;
+    } else if (strcmp("-s", argv[i]) == 0 || strcmp("--src", argv[i]) == 0) {
+      print_src = 1;
+    } else {
+      int size = strlen(src) + strlen(argv[i]) + 1;
+      src = realloc(src, size);
+      strcat(src, argv[i]);
+      strcat(src, " ");
     }
+  }
+
+  if (print_src) {
+    printf("%s\n", src);
   }
 
   if (!max_steps) {

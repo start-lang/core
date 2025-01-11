@@ -163,6 +163,8 @@ test-cli: ${CLI_OUTPUT}
 	[ "$$(cat ${BUILD}/pi.out)" = "3.141592653" ] || (echo "Expected 3.141592653, got $$(cat ${BUILD}/pi.out)" && exit 1)
 	printf "22+62" | ${CLI_OUTPUT} -f tests/bf/calc.st > ${BUILD}/calc.out
 	[ "$$(cat ${BUILD}/calc.out)" = "84" ] || (echo "Expected 84, got $$(cat ${BUILD}/calc.out)" && exit 1)
+	echo "-[----->+<]>++++." | ${CLI_OUTPUT} - > ${BUILD}/bf.out
+	[ "$$(cat ${BUILD}/bf.out)" = "7" ] || (echo "Expected '7', got $$(cat ${BUILD}/bf.out)" && exit 1)
 
 ## WASM
 

@@ -121,6 +121,14 @@ void arg_parse(int argc, char* argv[]){
       timeout = atoi(argv[++i]) * 1000;
     } else if (strcmp("-s", argv[i]) == 0 || strcmp("--src", argv[i]) == 0) {
       print_src = 1;
+    } else if (strcmp("-", argv[i]) == 0 || strcmp("--stdin", argv[i]) == 0) {
+      char c;
+      while ((c = getc(stdin)) != EOF) {
+        int size = strlen(src) + 2;
+        src = realloc(src, size);
+        src[size - 2] = c;
+        src[size - 1] = 0;
+      }
     } else {
       int size = strlen(src) + strlen(argv[i]) + 1;
       src = realloc(src, size);

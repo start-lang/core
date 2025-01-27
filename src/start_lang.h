@@ -29,6 +29,8 @@ extern "C" {
 #define JM_REOB 11
 #define JM_EXEN 12
 
+#define MAX_IDLEN 16
+
 typedef union {
   uint8_t i8 [4];
   uint16_t i16 [2];
@@ -54,7 +56,7 @@ typedef struct _State {
   uint8_t* _m;
   uint8_t* _m0;
   uint16_t _mlen;
-  uint8_t* _id;
+  uint8_t _id[MAX_IDLEN];
   uint8_t _stack_h;
 
   uint16_t _ans:1;

@@ -8,6 +8,9 @@ uint8_t _varc = 0;
 RTFunction * _funcs = NULL;
 uint8_t _funcc = 0;
 
+int8_t f_print(State * s);
+int8_t f_input(State * s);
+
 uint8_t jump(State * s){
   uint8_t token = *(s->src);
   uint8_t prev = 0;
@@ -236,15 +239,11 @@ uint8_t st_op(uint8_t token, State * s){
   }
 
   if (token == PRINT && (prev < '0' || prev > '9')) {
-    s->_id[0] = 'P';
-    s->_id[1] = 'C';
-    s->_id[2] = 0;
-    s->_idlen = 2;
+    f_print(s);
+    return SUCCESS;
   } else if (token == INPUT) {
-    s->_id[0] = 'I';
-    s->_id[1] = 'N';
-    s->_id[2] = 0;
-    s->_idlen = 2;
+    f_input(s);
+    return SUCCESS;
   }
 
   if ((token >= 'A' && token <= 'Z') || token == '_'

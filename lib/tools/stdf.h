@@ -13,6 +13,7 @@ uint8_t stop = 0;
 uint16_t output_len = 0;
 
 int8_t f_print(State * s);
+int8_t f_input(State * s);
 int8_t f_printstr(State * s);
 int8_t f_printnum(State * s);
 int8_t exception_handler(State * s);

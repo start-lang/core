@@ -232,7 +232,11 @@ uint8_t print_step(State * s, uint8_t color) {
   if (color) {
 
   } else {
-    for (uint8_t * i = s->_m0; i <= s->_m + 2; i++){
+    uint8_t * m = s->_m;
+    for (uint8_t i = 0; i < 5 && m != s->_m0; i++) {
+      m--;
+    }
+    for (uint8_t * i = m; i < s->_m + 2; i++){
       if (i == s->_m) {
         printf("[%d:%d:%d> ", REG.i32, s->_ans, s->_type);
       }
@@ -257,8 +261,19 @@ void flush_term(uint8_t lines) {
 
 uint8_t debug_state(State * s, uint8_t enable, uint8_t interactive){
   if (first_callback) {
+    if (vars) free(vars);
+    varc = 0;
     start_time = clock();
     first_callback = 0;
+    breakpoint = 0;
+    srclen = 0;
+    mem_offset = 0;
+    code_offset = 0;
+    mem_used = 0;
+    steps = 0;
+    forward_steps = 0;
+    time_spent = 0;
+    forward_multiply = 1;
     uint8_t * src = s->_src0;
     while (*src) {
       if (*src == DEBUG) {
@@ -284,7 +299,7 @@ uint8_t debug_state(State * s, uint8_t enable, uint8_t interactive){
 
   if (breakpoint) enable = interactive = 1;
 
-  if (follow_vars && s->_prev_token == NEW_VAR && s->_idlen) {
+  if (follow_vars && s->_prev_token == NEW_VAR) {
     vars = (TypedVariable*) realloc(vars, (varc + 1) * sizeof(TypedVariable));
     Variable * v = _vars + _varc - 1;
     vars[varc] = (TypedVariable){.name = v->name, .pos = v->pos, .type = s->_type};
@@ -301,12 +316,8 @@ uint8_t debug_state(State * s, uint8_t enable, uint8_t interactive){
 
   if (!enable && s->src[0] != DEBUG) return stop;
 
-  if (enable == 0 && s->src[0] == DEBUG && 0){
-    print_step(s, 1);
-  } else if (interactive == 0) {
-    printf("\033[1F");
+  if (interactive == 0) {
     print_step(s, 0);
-    print_state_code(s);
   } else {
     printf("\033[s");
 

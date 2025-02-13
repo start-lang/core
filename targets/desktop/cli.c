@@ -18,7 +18,6 @@ extern uint16_t max_output;
 extern uint8_t follow_vars;
 extern uint8_t follow_mem;
 extern uint8_t first_callback;
-extern uint16_t forward_multiply;
 
 int8_t step_callback(State * s) {
   return stop || debug_state(s, debug, interactive);
@@ -75,7 +74,6 @@ void reset_env() {
   max_steps = 0;
   max_output = 0;
   first_callback = 1;
-  forward_multiply = 1;
   src = realloc(src, 1);
   src[0] = 0;
 }

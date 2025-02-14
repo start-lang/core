@@ -16,13 +16,28 @@ TEST = tests/main.c
 CLI  = targets/desktop/cli.c
 BUILD = build
 
+## VERSION
+
+VERSION_TAG    = $(shell git tag --sort=-creatordate --merged HEAD | grep '^v' | head -n 1)
+CURRENT_COMMIT = $(shell git rev-parse HEAD)
+TAG_COMMIT     = $(shell git rev-parse $(VERSION_TAG))
+CLEAN_REPO     = $(shell test -z "$$(git status --porcelain)" && echo "0" || echo "1")
+ifneq ($(CLEAN_REPO),0)
+	COMMIT = ""
+else ifeq ($(CURRENT_COMMIT),$(TAG_COMMIT))
+	COMMIT = -D COMMIT=\"$(CURRENT_COMMIT)\"
+else
+	COMMIT = ""
+endif
+VERSION = -D VERSION=\"${VERSION_TAG}\" ${COMMIT}
+
 ## DESKTOP
 
 INCLUDES     = $(addprefix -I, $(LIBS))
 SOURCES      = $(foreach dir, $(LIBS), $(wildcard $(dir)/*.c))
 SRC_FILES    = $(foreach dir, $(LIBS), $(wildcard $(dir)/*.c)) $(foreach dir, $(LIBS), $(wildcard $(dir)/*.h))
 ASSERTS      = tests/unit/lang_assertions.c -Itests/unit
-CFLAGS       = -std=c99 -Wall -g -Os -flto ${INCLUDES} ${SOURCES}
+CFLAGS       = -std=c99 -Wall -g -Os -flto ${VERSION} ${INCLUDES} ${SOURCES}
 TEST_OUTPUT  = ${BUILD}/test
 CLI_OUTPUT   = ${BUILD}/start
 BMARK_OUTPUT = ${BUILD}/benchmark
@@ -34,7 +49,7 @@ WASM_INCLUDES     = $(addprefix -I, $(WASM_LIBS))
 WASM_SOURCES      = $(foreach dir, $(WASM_LIBS), $(wildcard $(dir)/*.c))
 WASM_SRC_FILES    = $(foreach dir, $(WASM_LIBS), $(wildcard $(dir)/*.c)) $(foreach dir, $(LIBS), $(wildcard $(dir)/*.h))
 WASM_LFLAGS       = -Wl,--export-dynamic -Wl,--no-entry -Wl,--error-limit=0
-WASM_CFLAGS       = --target=wasm32 -std=c99 -Wall -g -Os -flto -nostdlib ${WASM_LFLAGS} ${WASM_INCLUDES} ${WASM_SOURCES}
+WASM_CFLAGS       = --target=wasm32 -std=c99 -Wall -g -Os -flto -nostdlib ${VERSION} ${WASM_LFLAGS} ${WASM_INCLUDES} ${WASM_SOURCES}
 WASM_RUNTIME      = targets/web/wasm_runtime.js
 WASM_TEST_OUTPUT  = ${BUILD}/test.wasm
 WASM_CLI_OUTPUT   = ${BUILD}/start.wasm

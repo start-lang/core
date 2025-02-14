@@ -59,8 +59,33 @@ Function ext[] = {
   STAR_T_FUNCTIONS,
 };
 
-void help(char* cmd){
-  printf("Usage: %s [ -h ] [ -f filename ] [ code ]", cmd);
+void help(char* cmd) {
+  printf(
+    "Usage: %s [OPTIONS] [CODE]\n\n"
+    "Executes the provided code or loads it from a file.\n\n"
+    "Options:\n"
+    "  -h, --help           Show this help message and exit\n"
+    "  -f, --file FILE      Load source code from FILE\n"
+    "  -d, --debug          Enable step-by-step debug mode\n"
+    "  -i, --interactive    Enable interactive debug mode\n"
+    "  -e, --exec-info      Print execution statistics\n"
+    "  -S, --max-steps N    Set execution step limit to N * 1000\n"
+    "  -O, --max-output N   Set text output limit to N characters\n"
+    "  -t, --timeout N      Set execution timeout to N * 1000 ms (default: 3000)\n"
+    "  -s, --src            Print processed source code before execution\n"
+    "  -v, --version        Print version and exit\n"
+    "  -,  --stdin          Read source code from standard input\n\n"
+    "Examples:\n"
+    "  %s '\"Hello, World!\" PS'                # Print string\n"
+    "  %s -f quine.st                         # Run code from a file\n"
+    "  %s -i '8!>0!>1!?=[2<1-?!2>;<@>+] ;PN'  # 8th Fibonacci number\n"
+    "  %s '>,[>,]<[.<]'                       # Reverse input (ESC+Enter to end)\n"
+    "  echo \"-[----->+<]>++++.\" | %s -e -     # Print 7\n\n"
+    "Notes:\n"
+    "  - Default limit is 2.5M steps or 1000 steps in debug mode\n"
+    "  - Default timeout is 3s unless specified.\n",
+    cmd, cmd, cmd, cmd, cmd, cmd
+  );
   exit(0);
 }
 
@@ -78,9 +103,21 @@ void reset_env() {
   src[0] = 0;
 }
 
+#ifndef VERSION
+#define VERSION "0.0.0"
+#endif
+
+#ifndef COMMIT
+#define COMMIT "nightly"
+#endif
+
 void arg_parse(int argc, char* argv[]){
   reset_env();
   uint8_t print_src = 0;
+  if (argc == 1) {
+    help(argv[0]);
+    exit(1);
+  }
   for (int i = 1; i < argc; i++) {
     if (strcmp("-h", argv[i]) == 0 || strcmp("--help", argv[i]) == 0) {
       help(argv[0]);
@@ -119,6 +156,11 @@ void arg_parse(int argc, char* argv[]){
       timeout = atoi(argv[++i]) * 1000;
     } else if (strcmp("-s", argv[i]) == 0 || strcmp("--src", argv[i]) == 0) {
       print_src = 1;
+    } else if (strcmp("-v", argv[i]) == 0 || strcmp("--version", argv[i]) == 0) {
+      printf("*T lang %s - %s\n", VERSION, COMMIT);
+      printf("%s\n", __VERSION__);
+      printf("%s\n", __DATE__);
+      exit(0);
     } else if (strcmp("-", argv[i]) == 0 || strcmp("--stdin", argv[i]) == 0) {
       char c;
       while ((c = getc(stdin)) != EOF) {

@@ -52,6 +52,8 @@
     const terminalToggleArrow = document.getElementById('terminal-toggle-arrow');
     const floatingMenu = document.getElementById('floating-menu');
     const codeInput = document.getElementById('code-input');
+    const basePath = window.location.pathname.split('/').slice(0, -1).join('/');
+    const docPath = `${window.location.origin}${basePath}/doc`;
 
     themeToggleButton.addEventListener('click', () => {
       body.classList.toggle('dark');
@@ -60,7 +62,7 @@
 
     langToggleButton.addEventListener('click', () => {
       window.lang = window.lang === 'br' ? 'en' : 'br';
-      fetchAndRenderMarkdown(`/doc/intro_${window.lang}.md`);
+      fetchAndRenderMarkdown(`${docPath}/intro_${window.lang}.md`);
       langToggleButton.textContent = window.lang === 'en' ? 'EN/br' : 'en/BR';
     });
 
@@ -197,7 +199,7 @@
         });
     }
 
-    fetchAndRenderMarkdown("/doc/intro_en.md");
+    fetchAndRenderMarkdown(`${docPath}/intro_en.md`);
 
     window.addEventListener('load', () => {
       window.inputColor = getComputedStyle(document.documentElement).getPropertyValue('--code-dark');

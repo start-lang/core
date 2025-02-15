@@ -146,14 +146,22 @@
         while (true) {
           if (needs_input === 1) {
             needs_input = 0;
+            if (window.term) {
+              if (window.inputColor) {
+                term.options.theme = { cursor: window.inputColor };
+              }
+              console.log("input:");
+            }
             c = await input();
+            if (window.term) {
+              console.log(c);
+              term.options.theme = { cursor: '#000' };
+            }
           } else {
             c = 0;
           }
           r = step(c);
           if (r.code !== 0) {
-            break;
-          } else if (c === 'q') {
             break;
           }
         }
@@ -237,6 +245,7 @@
     window.addEventListener('load', async function () {
       const ie = document.getElementById('interpreter');
       var term = null;
+      var fitAddon = null;
 
       if (ie) {
         const t = document.createElement('div');
@@ -261,20 +270,26 @@
             brightCyan:    '#72F0FF',
             white:         '#F8F8F8',
             brightWhite:   '#FFFFFF',
+            black:         '#00000000',
           };
           term = new Terminal({
             fontFamily: 'monospace',
             fontSize: 14,
             theme: baseTheme,
             cursorStyle: 'underline',
+            allowTransparency: true,
           });
+          fitAddon = new FitAddon.FitAddon();
+          term.loadAddon(fitAddon);
           term.open(document.getElementById('terminal'));
           document.getElementById('interpreter').style.display = 'flex';
-          term.resize(131, 30);
+          //term.resize(131, 30);
           term.write("loading...\r");
 
           term.options.cursorBlink = false;
           term.options.theme = { cursor: '#000' };
+          term.options.theme = { background: '#00000000' };
+          window.term = term;
         } catch (e) {
           console.error(e);
         }
@@ -306,11 +321,13 @@
         async function runStarT(args) {
           console.log(args);
           term.focus();
+          term.write("\x1b[2J\x1b[3J\x1b[H");
           term.options.cursorBlink = true;
           term.options.theme = { cursor: '#fff' };
           const result = await w.runAsync(args);
           term.options.cursorBlink = false;
           term.options.theme = { cursor: '#000' };
+          term.options.theme = { background: '#00000000' };
           term.blur();
           if (result.stdout) term.writeln(result.stdout);
           if (result.stderr) term.writeln(result.stderr);
@@ -320,6 +337,9 @@
           return result;
         }
         window.runStarT = runStarT;
+        window.fitTerminal = () => {
+          return fitAddon.fit();
+        };
       } else {
         function removeAnsi(str) {
           return str.replace(/\x1b\[[0-9;]*[a-zA-Z]/g, '');

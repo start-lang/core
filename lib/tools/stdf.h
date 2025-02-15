@@ -78,7 +78,11 @@ int8_t f_quit(State * s){
 
 #ifndef STDF_IGN_INPUT
 int8_t f_input(State * s){
-  s->_m[0] = getc(stdin);
+  uint8_t c = getc(stdin);
+  if (c == 27) {
+    c = 0;
+  }
+  s->_m[0] = c;
   return 0;
 }
 #endif

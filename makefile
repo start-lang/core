@@ -266,7 +266,8 @@ test-full:
 DIAGRAMS := targets/web/grammar/start_diagram.py
 
 ${BUILD}/.venv: init
-	python3 -m venv ${BUILD}/.venv && \
+	[ -e ${BUILD}/.venv ] || \
+	  python3 -m venv ${BUILD}/.venv && \
 	  source ${BUILD}/.venv/bin/activate && \
 	  python3 -m pip install railroad-diagrams==1.1.0 || \
 	  { echo "Error: Could not setup venv"; rm -rf ${BUILD}/.venv; exit 1; }
@@ -285,6 +286,7 @@ svg: ${BUILD}/.venv
 
 .PHONY: assets
 assets: init ${WASM_CLI_OUTPUT} svg
+	rm -rf ${BUILD}/assets
 	mkdir -p ${BUILD}/assets/img
 	cp ${BUILD}/*.svg ${BUILD}/assets/img
 	cp assets/logo.svg ${BUILD}/assets/img/logo.svg
@@ -292,6 +294,19 @@ assets: init ${WASM_CLI_OUTPUT} svg
 	cp targets/web/wasm_runtime.js ${BUILD}/assets
 	cp targets/web/wasm_runtime.css ${BUILD}/assets
 	cp targets/web/wasm_runtime.html ${BUILD}/assets
+	rm -f ${BUILD}/assets/index.*
+	cp targets/web/index.* ${BUILD}/assets
+	rm -rf ${BUILD}/assets/doc
+	cp -r doc ${BUILD}/assets
+
+.PHONY: assets-dev
+assets-dev: assets
+	rm -f ${BUILD}/assets/index.*
+	ln -s ${PWD}/targets/web/index.* ${BUILD}/assets
+	rm -rf ${BUILD}/assets/doc
+	ln -s ${PWD}/doc ${BUILD}/assets/doc
+	rm -f ${BUILD}/assets/wasm_runtime.*
+	ln -s ${PWD}/targets/web/wasm_runtime.* ${BUILD}/assets
 
 .PHONY: act
 act:

@@ -232,6 +232,9 @@ int main(int argc, char* argv[]){
 }
 
 #ifdef EXPORT
+
+extern uint8_t getch_input;
+
 int main_init(int argc, char* argv[]){
   setvbuf(stdout, NULL, _IONBF, 0);
   arg_parse(argc, argv);
@@ -251,6 +254,14 @@ int main_init(int argc, char* argv[]){
 int main_step(void){
   State * sub = s;
   while (sub->sub) sub = sub->sub;
+  if (getch_input) {
+    uint8_t c = getch_input;
+    if (c == 27) {
+      c = 0;
+    }
+    sub->_m[0] = c;
+    getch_input = 0;
+  }
   if (step_callback(sub) != 0){
     return LOOP_ST; // TODO change return val?
   }

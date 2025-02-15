@@ -1,9 +1,291 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Hello World</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>*T Lang</title>
+
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@200;300&amp;display=swap">
+  <link rel="stylesheet" href="index.css">
+  <script src="https://cdn.jsdelivr.net/npm/@xterm/addon-fit@0.10.0/lib/addon-fit.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@xterm/xterm@5.5.0/lib/xterm.min.js"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@xterm/xterm@5.5.0/css/xterm.min.css">
+  <script src="wasm_runtime.js"></script>
 </head>
 <body>
-  <h1>Hello World</h1>
+  <button class="theme-toggle-button" id="toggle-theme">w/b</button>
+  <button class="lang-toggle-button" id="toggle-lang">EN/br</button>
+
+  <section>
+    <img class="logo" src="img/logo.svg" alt="Logo"/>
+  </section>
+
+  <section id="content"></section>
+
+  <section style="padding-top: 0;">
+    <textarea id="code-input" rows="10">"Hello World!" PS</textarea>
+  </section>
+
+  <div id="terminal-container">
+    <div id="terminal-header">
+      <span id="floating-menu" class="floating-menu">
+        <button id="run-button">Run</button>
+        <button id="debug-button">Debug</button>
+      </span>
+      <button id="terminal-toggle-button" class="terminal-toggle-button">
+        <span id="terminal-toggle-arrow" class="arrow arrow-up"></span>
+      </button>
+    </div>
+    <div id="terminal-resizer"></div>
+    <div id="terminal-content">
+      <div id="interpreter"></div>
+    </div>
+  </div>
+
+  <script>
+    const themeToggleButton = document.getElementById('toggle-theme');
+    const langToggleButton = document.getElementById('toggle-lang');
+    const body = document.body;
+    const terminalContainer = document.getElementById('terminal-container');
+    const terminalToggleButton = document.getElementById('terminal-toggle-button');
+    const terminalToggleArrow = document.getElementById('terminal-toggle-arrow');
+    const floatingMenu = document.getElementById('floating-menu');
+    const codeInput = document.getElementById('code-input');
+
+    themeToggleButton.addEventListener('click', () => {
+      body.classList.toggle('dark');
+      themeToggleButton.textContent = body.classList.contains('dark') ? 'w/B' : 'W/b';
+    });
+
+    langToggleButton.addEventListener('click', () => {
+      window.lang = window.lang === 'br' ? 'en' : 'br';
+      fetchAndRenderMarkdown(`/doc/intro_${window.lang}.md`);
+      langToggleButton.textContent = window.lang === 'en' ? 'EN/br' : 'en/BR';
+    });
+
+    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      body.classList.add('dark');
+      themeToggleButton.textContent = 'w/B';
+    }
+
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', event => {
+      if (event.matches) {
+        body.classList.add('dark');
+        themeToggleButton.textContent = 'w/B';
+      } else {
+        body.classList.remove('dark');
+        themeToggleButton.textContent = 'W/b';
+      }
+    });
+
+    let currentTarget = null;
+
+    codeInput.addEventListener('mouseenter', (event) => {
+      if (currentTarget && currentTarget !== codeInput) {
+        currentTarget.classList.remove("code-selected");
+      }
+      if (codeInput.value.trim() !== "") {
+        codeInput.classList.add("code-selected");
+        currentTarget = codeInput;
+        floatingMenu.style.display = "block";
+      } else {
+        codeInput.classList.remove("code-selected");
+        currentTarget = null;
+        floatingMenu.style.display = "none";
+      }
+    });
+
+    codeInput.addEventListener('keyup', (event) => {
+      if (currentTarget && currentTarget !== codeInput) {
+        currentTarget.classList.remove("code-selected");
+      }
+      if (codeInput.value.trim() !== "") {
+        codeInput.classList.add("code-selected");
+        currentTarget = codeInput;
+        floatingMenu.style.display = "block";
+      } else {
+        codeInput.classList.remove("code-selected");
+        currentTarget = null;
+        floatingMenu.style.display = "none";
+      }
+    });
+
+    const renderer = {
+      code(data) {
+        return `<pre class="language-${data.lang}"><code>${data.text}</code></pre>`;
+      },
+      codespan(data) {
+        if (data.raw.startsWith("```")) {
+          return `<code class="language-st debug-only">${data.text}</code>`;
+        } else if (data.raw.startsWith("``")) {
+          return `<code class="language-st">${data.text}</code>`;
+        } else {
+          return `<code>${data.text}</code>`;
+        }
+      },
+    };
+
+    marked.use({ renderer });
+
+    function fetchAndRenderMarkdown(url) {
+      fetch(url)
+        .then(response => response.text())
+        .then(markdown => {
+          document.getElementById("content").innerHTML = marked.parse(markdown)
+        }).then(() => {
+          const targets = Array.from(document.getElementsByClassName("language-st"));
+
+          targets.forEach((target) => {
+            target.addEventListener("mouseenter", (event) => {
+              if (currentTarget) {
+                currentTarget.classList.remove("code-selected");
+              }
+              currentTarget = event.currentTarget;
+              currentTarget.classList.add("code-selected");
+              if (target.classList.contains("debug-only")) {
+                floatingMenu.querySelector("#run-button").style.display = "none";
+              } else {
+                floatingMenu.querySelector("#run-button").style.removeProperty("display");
+              }
+              floatingMenu.style.display = "block";
+            });
+          });
+
+          floatingMenu.querySelector("#run-button").addEventListener("click", () => {
+            if (currentTarget) {
+              let code = currentTarget.textContent.trim();
+              if (currentTarget === codeInput) {
+                code = codeInput.value;
+              }
+              if (!terminalContainer.classList.contains('active')) {
+                terminalContainer.classList.add('active');
+                terminalToggleArrow.classList.remove('arrow-up');
+                terminalToggleArrow.classList.add('arrow-down');
+              }
+              floatingMenu.querySelector("#run-button").disabled = true;
+              floatingMenu.querySelector("#debug-button").disabled = true;
+              runStarT([code]).then(() => {
+                floatingMenu.querySelector("#run-button").disabled = false;
+                floatingMenu.querySelector("#debug-button").disabled = false;
+              });
+            }
+          });
+
+          floatingMenu.querySelector("#debug-button").addEventListener("click", () => {
+            if (currentTarget) {
+              let code = currentTarget.textContent.trim();
+              if (currentTarget === codeInput) {
+                code = codeInput.value;
+              }
+              if (!terminalContainer.classList.contains('active')) {
+                terminalContainer.classList.add('active');
+                terminalToggleArrow.classList.remove('arrow-up');
+                terminalToggleArrow.classList.add('arrow-down');
+              }
+              floatingMenu.querySelector("#run-button").disabled = true;
+              floatingMenu.querySelector("#debug-button").disabled = true;
+              runStarT(["-e", "-i", code]).then(() => {
+                floatingMenu.querySelector("#run-button").disabled = false;
+                floatingMenu.querySelector("#debug-button").disabled = false;
+              });
+            }
+          });
+        })
+        .catch(error => {
+          console.error("Erro ao buscar o Markdown:", error);
+        });
+    }
+
+    fetchAndRenderMarkdown("/doc/intro_en.md");
+
+    window.addEventListener('load', () => {
+      window.inputColor = getComputedStyle(document.documentElement).getPropertyValue('--code-dark');
+      function updateBodyPadding() {
+        const terminalHeight = terminalContainer.offsetHeight;
+        fitTerminal();
+        console.log(terminalHeight);
+      }
+
+      window.addEventListener('load', updateBodyPadding);
+      window.addEventListener('resize', updateBodyPadding);
+
+      function toggleTerminal() {
+        terminalContainer.classList.toggle('active');
+        if (terminalContainer.classList.contains('active')) {
+          terminalToggleArrow.classList.remove('arrow-up');
+          terminalToggleArrow.classList.add('arrow-down');
+        } else {
+          terminalToggleArrow.classList.remove('arrow-down');
+          terminalToggleArrow.classList.add('arrow-up');
+          terminalContainer.style.maxHeight = '';
+        }
+        updateBodyPadding();
+      }
+
+      terminalToggleButton.addEventListener('click', (e) => {
+        e.stopPropagation();
+        toggleTerminal();
+      });
+
+      let isResizing = false;
+      let startY = 0;
+      let startMaxHeight = 0;
+
+      const resizer = document.getElementById('terminal-resizer');
+
+      resizer.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        isResizing = true;
+        startY = e.clientY;
+        startMaxHeight = parseInt(getComputedStyle(terminalContainer).maxHeight, 10);
+        document.body.classList.add('no-select');
+      });
+
+      resizer.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        isResizing = true;
+        startY = e.touches[0].clientY;
+        startMaxHeight = parseInt(getComputedStyle(terminalContainer).maxHeight, 10);
+        document.body.classList.add('no-select');
+      });
+
+      document.addEventListener('mousemove', (e) => {
+        if (!isResizing) return;
+        const dy = startY - e.clientY;
+        let newMaxHeight = startMaxHeight + dy;
+        const maxAllowed = window.innerHeight * 0.9;
+        if (newMaxHeight < 100) newMaxHeight = 100;
+        if (newMaxHeight > maxAllowed) newMaxHeight = maxAllowed;
+        terminalContainer.style.maxHeight = `${newMaxHeight}px`;
+        updateBodyPadding();
+      });
+
+      document.addEventListener('touchmove', (e) => {
+        if (!isResizing) return;
+        const dy = startY - e.touches[0].clientY;
+        let newMaxHeight = startMaxHeight + dy;
+        const maxAllowed = window.innerHeight * 0.9;
+        if (newMaxHeight < 100) newMaxHeight = 100;
+        if (newMaxHeight > maxAllowed) newMaxHeight = maxAllowed;
+        terminalContainer.style.maxHeight = `${newMaxHeight}px`;
+        updateBodyPadding();
+      });
+
+      document.addEventListener('mouseup', () => {
+        if (isResizing) {
+          isResizing = false;
+          document.body.classList.remove('no-select');
+        }
+      });
+
+      document.addEventListener('touchend', () => {
+        if (isResizing) {
+          isResizing = false;
+          document.body.classList.remove('no-select');
+        }
+      });
+    });
+  </script>
 </body>
 </html>

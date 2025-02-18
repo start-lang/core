@@ -18,6 +18,7 @@ extern uint16_t max_output;
 extern uint8_t follow_vars;
 extern uint8_t follow_mem;
 extern uint8_t first_callback;
+extern uint32_t seed;
 
 int8_t step_callback(State * s) {
   return stop || debug_state(s, debug, interactive);
@@ -101,6 +102,7 @@ void reset_env() {
   first_callback = 1;
   src = realloc(src, 1);
   src[0] = 0;
+  seed = clock();
 }
 
 #ifndef VERSION

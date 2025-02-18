@@ -20,6 +20,7 @@ int8_t exception_handler(State * s);
 int8_t undef(State * s);
 int8_t f_error(State * s);
 int8_t f_quit(State * s);
+int8_t f_rand(State * s);
 
 #ifndef STDF_IGN_PRINT
 int8_t f_print(State * s){
@@ -87,6 +88,16 @@ int8_t f_input(State * s){
 }
 #endif
 
+#ifndef STDF_IGN_RAND
+uint32_t seed = 0;
+
+int8_t f_rand(State * s){
+  seed = seed * 1103515245 + 12345;
+  s->reg.i32 = (seed / 65536) % 32768;
+  return 0;
+}
+#endif
+
 #define STAR_T_FUNCTIONS             \
   {(uint8_t*)"", exception_handler}, \
   {(uint8_t*)"PRINT", f_print},      \
@@ -101,6 +112,7 @@ int8_t f_input(State * s){
   {(uint8_t*)"WS", f_printstr},      \
   {(uint8_t*)"IN", f_input},         \
   {(uint8_t*)"INPUT", f_input},      \
+  {(uint8_t*)"RAND", f_rand},        \
   {NULL, undef}                      \
 
 #ifdef __cplusplus

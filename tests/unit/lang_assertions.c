@@ -125,6 +125,7 @@ Function ext[] = {
   {(uint8_t*)"INPUT", f_input},
   {(uint8_t*)"IN", f_input},
   {(uint8_t*)"PRINTSTR", f_printstr},
+  {(uint8_t*)"PS", f_printstr},
   {(uint8_t*)"PRINTNUM", f_printnum},
   {(uint8_t*)"QUIT", f_quit},
   {(uint8_t*)"ERROR", f_error},
@@ -761,6 +762,8 @@ void validate(void){
   assert_eq((run("1k/* rotate */kk1"), REG.i32), 16777217);
   assert_eq((run("N^8!>B^0!>A^1!?=[N /* Hello!? */1-?!A;B@A+]"), RM.i8[0]), 21);
   assert_eq((run("N^8!>B^0!>A^1!?=[N // Hello!?\n1-?!A;B@A+]"), RM.i8[0]), 21);
+  assert_eq(run("//Hello\n\"Hello\"PS"), 0);
+  assert_str_eq((run("//Hello\n\"Hello\" PS"), out), "Hello");
   end_section();
 
   begin_section("FLOAT");

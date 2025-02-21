@@ -349,47 +349,47 @@ uint8_t st_op(uint8_t token, State * s){
         s->_cond = 1;
         switch (token) {
           case C_EQ:
-            if (s->_type == INT8) s->_ans = REG.i8[0] == s->_m[0];
-            else if (s->_type == INT16) s->_ans = REG.i16[0] == mload(s).i16[0];
-            else if (s->_type == INT32) s->_ans = REG.i32 == mload(s).i32;
-            else if (s->_type == FLOAT) s->_ans = REG.f32 == mload(s).f32;
-            break;
+              if (s->_type == INT8) s->_ans = s->_m[0] == REG.i8[0];
+              else if (s->_type == INT16) s->_ans = mload(s).i16[0] == REG.i16[0];
+              else if (s->_type == INT32) s->_ans = mload(s).i32 == REG.i32;
+              else if (s->_type == FLOAT) s->_ans = mload(s).f32 == REG.f32;
+              break;
           case C_NEQ:
-            if (s->_type == INT8) s->_ans = REG.i8[0] != s->_m[0];
-            else if (s->_type == INT16) s->_ans = REG.i16[0] != mload(s).i16[0];
-            else if (s->_type == INT32) s->_ans = REG.i32 != mload(s).i32;
-            else if (s->_type == FLOAT) s->_ans = REG.f32 != mload(s).f32;
-            break;
+              if (s->_type == INT8) s->_ans = s->_m[0] != REG.i8[0];
+              else if (s->_type == INT16) s->_ans = mload(s).i16[0] != REG.i16[0];
+              else if (s->_type == INT32) s->_ans = mload(s).i32 != REG.i32;
+              else if (s->_type == FLOAT) s->_ans = mload(s).f32 != REG.f32;
+              break;
           case C_LT:
-            if (s->_type == INT8) s->_ans = REG.i8[0] < s->_m[0];
-            else if (s->_type == INT16) s->_ans = REG.i16[0] < mload(s).i16[0];
-            else if (s->_type == INT32) s->_ans = REG.i32 < mload(s).i32;
-            else if (s->_type == FLOAT) s->_ans = REG.f32 < mload(s).f32;
-            break;
+              if (s->_type == INT8) s->_ans = s->_m[0] < REG.i8[0];
+              else if (s->_type == INT16) s->_ans = mload(s).i16[0] < REG.i16[0];
+              else if (s->_type == INT32) s->_ans = mload(s).i32 < REG.i32;
+              else if (s->_type == FLOAT) s->_ans = mload(s).f32 < REG.f32;
+              break;
           case C_GT:
-            if (s->_type == INT8) s->_ans = REG.i8[0] > s->_m[0];
-            else if (s->_type == INT16) s->_ans = REG.i16[0] > mload(s).i16[0];
-            else if (s->_type == INT32) s->_ans = REG.i32 > mload(s).i32;
-            else if (s->_type == FLOAT) s->_ans = REG.f32 > mload(s).f32;
-            break;
+              if (s->_type == INT8) s->_ans = s->_m[0] > REG.i8[0];
+              else if (s->_type == INT16) s->_ans = mload(s).i16[0] > REG.i16[0];
+              else if (s->_type == INT32) s->_ans = mload(s).i32 > REG.i32;
+              else if (s->_type == FLOAT) s->_ans = mload(s).f32 > REG.f32;
+              break;
           case C_LE:
-            if (s->_type == INT8) s->_ans = REG.i8[0] <= s->_m[0];
-            else if (s->_type == INT16) s->_ans = REG.i16[0] <= mload(s).i16[0];
-            else if (s->_type == INT32) s->_ans = REG.i32 <= mload(s).i32;
-            else if (s->_type == FLOAT) s->_ans = REG.f32 <= mload(s).f32;
-            break;
+              if (s->_type == INT8) s->_ans = s->_m[0] <= REG.i8[0];
+              else if (s->_type == INT16) s->_ans = mload(s).i16[0] <= REG.i16[0];
+              else if (s->_type == INT32) s->_ans = mload(s).i32 <= REG.i32;
+              else if (s->_type == FLOAT) s->_ans = mload(s).f32 <= REG.f32;
+              break;
           case C_GE:
-            if (s->_type == INT8) s->_ans = REG.i8[0] >= s->_m[0];
-            else if (s->_type == INT16) s->_ans = REG.i16[0] >= mload(s).i16[0];
-            else if (s->_type == INT32) s->_ans = REG.i32 >= mload(s).i32;
-            else if (s->_type == FLOAT) s->_ans = REG.f32 >= mload(s).f32;
-            break;
+              if (s->_type == INT8) s->_ans = s->_m[0] >= REG.i8[0];
+              else if (s->_type == INT16) s->_ans = mload(s).i16[0] >= REG.i16[0];
+              else if (s->_type == INT32) s->_ans = mload(s).i32 >= REG.i32;
+              else if (s->_type == FLOAT) s->_ans = mload(s).f32 >= REG.f32;
+              break;
           case C_NOT_NULL:
-            if (s->_type == INT8) s->_ans = s->_m[0] != 0;
-            else if (s->_type == INT16) s->_ans = mload(s).i16[0] != 0;
-            else if (s->_type == INT32) s->_ans = mload(s).i32 != 0;
-            else if (s->_type == FLOAT) s->_ans = mload(s).f32 != 0;
-            break;
+              if (s->_type == INT8) s->_ans = s->_m[0] != 0;
+              else if (s->_type == INT16) s->_ans = mload(s).i16[0] != 0;
+              else if (s->_type == INT32) s->_ans = mload(s).i32 != 0;
+              else if (s->_type == FLOAT) s->_ans = mload(s).f32 != 0;
+              break;
           case C_ZERO:
             if (s->_type == INT8) s->_ans = s->_m[0] == 0;
             else if (s->_type == INT16) s->_ans = mload(s).i16[0] == 0;

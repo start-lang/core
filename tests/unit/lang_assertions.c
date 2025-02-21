@@ -304,17 +304,20 @@ void validate(void){
   end_section();
 
   begin_section("COMP");
-  // [1|0> 0
-  assert_eq((run("0@1?<"), s->_ans), 0);
-  // [1|0> 1
-  assert_eq((run("1@1?<"), s->_ans), 0);
-  // [1|1> 2
-  assert_eq((run("2@1?<"), s->_ans), 1);
-  assert_eq((run("0@1@?>"), s->_ans), 0);
-  assert_eq((run("1@1@?>"), s->_ans), 0);
-  assert_eq((run("2@1@?>"), s->reg.i8[0]), 2);
-  assert_eq((run("2@1@?>"), M[0]), 1);
-  assert_eq((run("2@1@?>"), s->_ans), 1);
+  // ANS = MEM <OP> REG
+  // [1|0> 0 // 1 > 0
+  assert_eq((run("0!1?>"), s->_ans), 0);
+  // [1|0> 1 // 1 > 1
+  assert_eq((run("1!1?>"), s->_ans), 0);
+  // [1|1> 2 // 1 > 2
+  assert_eq((run("2!1?>"), s->_ans), 1);
+
+  assert_eq((run("0@1@?<"), s->_ans), 0);
+  assert_eq((run("1@1@?<"), s->_ans), 0);
+  assert_eq((run("2@1@?<"), s->reg.i8[0]), 2);
+  assert_eq((run("2@1@?<"), M[0]), 1);
+  assert_eq((run("2@1@?<"), s->_ans), 1);
+
   assert_eq((run(""), s->_ans), 0);
   assert_eq((run("t"), s->_ans), 1);
   assert_eq((run("t~"), s->_ans), 0);
@@ -413,11 +416,17 @@ void validate(void){
   assert_eq((run("0?=~(1:2)"), s->_ans), 0);
   assert_eq((run("0?=~(1:2)"), s->reg.i8[0]), 2);
   // 0 > 1 ?
-  assert_eq((run("0@1@?>(2:3)!"), s->_m[0]), 3);
+  assert_eq((run("0@1?>(2:3)!"), s->_m[0]), 3);
   // 1 > 1 ?
-  assert_eq((run("1@1@?>(2:3)!"), s->_m[0]), 3);
+  assert_eq((run("1@1?>(2:3)!"), s->_m[0]), 3);
   // 2 > 1 ?
-  assert_eq((run("2@1@?>(2:3)!"), s->_m[0]), 2);
+  assert_eq((run("2@1?>(2:3)!"), s->_m[0]), 2);
+  // 0 > 1 ?
+  assert_eq((run("0!1?>(2:3)!"), s->_m[0]), 3);
+  // 1 > 1 ?
+  assert_eq((run("1!1?>(2:3)!"), s->_m[0]), 3);
+  // 2 > 1 ?
+  assert_eq((run("2!1?>(2:3)!"), s->_m[0]), 2);
   end_section();
 
   begin_section("Stack");

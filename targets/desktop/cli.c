@@ -224,7 +224,16 @@ int main(int argc, char* argv[]){
     help(argv[0]);
     exit(1);
   }
-  remove_whitespace();
+  int cmt = 0;
+  for (int i = 0; i < strlen(src); i++) {
+    if (src[i] == COMMENT_OUT) {
+      cmt = 1;
+      break;
+    }
+  }
+  if (!cmt) {
+    remove_whitespace();
+  }
   int8_t r = run(src);
   st_state_free(s);
   if (exec_info) {
@@ -244,7 +253,16 @@ int main_init(int argc, char* argv[]){
     help(argv[0]);
     exit(1);
   }
-  remove_whitespace();
+  int cmt = 0;
+  for (int i = 0; i < strlen(src); i++) {
+    if (src[i] == COMMENT_OUT) {
+      cmt = 1;
+      break;
+    }
+  }
+  if (!cmt) {
+    remove_whitespace();
+  }
   stop = 0;
   s = (State*) malloc(sizeof(State));
   memset(s, 0, sizeof(State));

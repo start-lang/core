@@ -329,6 +329,7 @@
           term.options.theme = { cursor: '#000' };
           term.options.theme = { background: '#00000000' };
           term.blur();
+          term.writeln("");
           if (result.stdout) term.writeln(result.stdout);
           if (result.stderr) term.writeln(result.stderr);
           if (result.code !== 0) {

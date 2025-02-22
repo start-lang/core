@@ -180,6 +180,19 @@ test-cli: ${CLI_OUTPUT}
 	[ "$$(cat ${BUILD}/calc.out)" = "84" ] || (echo "Expected 84, got $$(cat ${BUILD}/calc.out)" && exit 1)
 	echo "-[----->+<]>++++." | ${CLI_OUTPUT} - > ${BUILD}/bf.out
 	[ "$$(cat ${BUILD}/bf.out)" = "7" ] || (echo "Expected '7', got $$(cat ${BUILD}/bf.out)" && exit 1)
+	@for out_file in tests/cli/*.out; do \
+		test_name=$$(basename $$out_file .out); \
+		if [ -f "tests/cli/$$test_name.in" -a -f "tests/cli/$$test_name.st" ]; then \
+			cat tests/cli/$$test_name.in | ${CLI_OUTPUT} -f tests/cli/$$test_name.st > ${BUILD}/$$test_name.out; \
+			echo "cat tests/cli/$$test_name.in | ${CLI_OUTPUT} -f tests/cli/$$test_name.st > ${BUILD}/$$test_name.out"; \
+		elif [ -f "tests/cli/$$test_name.st" ]; then \
+			${CLI_OUTPUT} -f tests/cli/$$test_name.st > ${BUILD}/$$test_name.out; \
+			echo "${CLI_OUTPUT} -f tests/cli/$$test_name.st > ${BUILD}/$$test_name.out"; \
+		else \
+			continue; \
+		fi; \
+		diff $$out_file ${BUILD}/$$test_name.out || (echo "Test $$test_name failed" && exit 1); \
+	done;
 
 ## WASM
 

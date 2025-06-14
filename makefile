@@ -23,11 +23,11 @@ CURRENT_COMMIT = $(shell git rev-parse HEAD)
 TAG_COMMIT     = $(shell git rev-parse $(VERSION_TAG))
 CLEAN_REPO     = $(shell test -z "$$(git status --porcelain)" && echo "0" || echo "1")
 ifneq ($(CLEAN_REPO),0)
-	COMMIT = ""
+	COMMIT =
 else ifeq ($(CURRENT_COMMIT),$(TAG_COMMIT))
 	COMMIT = -D COMMIT=\"$(CURRENT_COMMIT)\"
 else
-	COMMIT = ""
+	COMMIT =
 endif
 VERSION = -D VERSION=\"${VERSION_TAG}\" ${COMMIT}
 

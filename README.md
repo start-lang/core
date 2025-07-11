@@ -1,0 +1,5 @@
+![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/start-lang/core/ci.yaml)
+![Version](https://start-lang.github.io/core/img/version.svg)
+![GitHub commit activity](https://img.shields.io/github/commit-activity/t/start-lang/core/main?label=Commits)
+![Coverage](https://start-lang.github.io/core/img/coverage.svg)
+![Tests](https://start-lang.github.io/core/img/tests.svg)

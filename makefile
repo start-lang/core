@@ -18,7 +18,7 @@ BUILD = build
 
 ## VERSION
 
-VERSION_TAG    = $(shell git tag --sort=-creatordate --merged HEAD | grep '^v' | head -n 1)
+VERSION_TAG    = $(shell git describe --tags --abbrev=0 --match "v*")
 CURRENT_COMMIT = $(shell git rev-parse HEAD)
 TAG_COMMIT     = $(shell git rev-parse $(VERSION_TAG))
 CLEAN_REPO     = $(shell test -z "$$(git status --porcelain)" && echo "0" || echo "1")

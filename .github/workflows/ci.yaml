@@ -16,13 +16,17 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           submodules: recursive
           fetch-depth: 0
 
       - name: Tests
         run: |
+          git config --global --add safe.directory $GITHUB_WORKSPACE
+          git log --graph --decorate --oneline --all --simplify-by-decoration --pretty=format:"%h %d"
+          git fetch --tags --force
+          git describe --tags --abbrev=0 --match "v*"
           make test
           make assets
 

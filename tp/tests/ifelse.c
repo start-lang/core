@@ -1,0 +1,12 @@
+#include <stdio.h>
+
+int main() {
+    int x = 10;
+    int y = 20;
+    if (x < y) {
+        printf("%d\n", x);
+    } else {
+        printf("%d\n", y);
+    }
+    return 0;
+}

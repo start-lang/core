@@ -102,6 +102,42 @@ class CToStart:
             out.append(f'{st_type}>')
         return out
 
+    def _cond_to_start(self, cond_str):
+        """Converte condição C para Start, deixando _ans configurado.
+        Padrão: carrega operando direito no reg, aponta mem para operando esquerdo.
+        ?< testa mem[left] < reg(right).
+        """
+        tokens = tokenize(cond_str)
+        rpn = to_rpn(tokens)
+        if len(rpn) == 3:
+            (at, av), (bt, bv), (ot, ov) = rpn
+            if ov in CMP_MAP:
+                out = []
+                lst = self.vars.get(av, 'i') if at == 'ID' else 'i'
+                rst = self.vars.get(bv, 'i') if bt == 'ID' else lst
+                # Carrega operando direito no reg
+                if bt == 'NUM':
+                    out.append(f'{lst}{bv}')
+                else:
+                    bvn = self.var_name(bv)
+                    out.append(f'{rst}{bvn};')
+                # Move pointer para operando esquerdo (sem carregar no reg)
+                if at == 'NUM':
+                    # Literal não tem var: coloca no reg e compara com mem atual
+                    out.append(f'{lst}{av}')
+                else:
+                    avn = self.var_name(av)
+                    out.append(f'{lst}{avn}')  # muda pointer sem ;
+                out.append(CMP_MAP[ov])
+                return out
+        elif len(rpn) == 1:
+            ttype, tval = rpn[0]
+            if ttype == 'ID':
+                vn = self.var_name(tval)
+                st = self.vars.get(tval, 'i')
+                return [f'{st}{vn};??']
+        return [f'/* unsupported cond: {cond_str} */']
+
     def expr_to_start(self, expr_str, dest_var=None):
         """
         Converte uma expressão C para operações Start.
@@ -172,26 +208,35 @@ class CToStart:
 
             if ov in ARITH_MAP:
                 # Aritmética: dest = a OP b
-                # Padrão: copia 'a' em dest, depois aplica OP com 'b'
                 out = []
                 if dvn:
-                    # Copia 'a' em dest
-                    if at == 'NUM':
-                        out.append(f'{st}{av}')
-                        out.append(f'{dvn}!')
+                    # Optimização: se 'a' é o próprio dest, opera directamente
+                    if at == 'ID' and av == dest_var:
+                        # dest OP= b
+                        if bt == 'NUM':
+                            out.append(f'{st}{bv}')
+                        else:
+                            bvn = self.var_name(bv)
+                            bst = self.vars.get(bv, 'i')
+                            out.append(f'{bst}{bvn};')
+                        out.append(f'{dvn}{ARITH_MAP[ov]}')
                     else:
-                        svn = self.var_name(av)
-                        sst = self.vars.get(av, 'i')
-                        out.append(f'{sst}{svn};')
-                        out.append(f'{dvn}!')
-                    # Aplica OP 'b' em dest
-                    if bt == 'NUM':
-                        out.append(f'{st}{bv}')
-                    else:
-                        bvn = self.var_name(bv)
-                        bst = self.vars.get(bv, 'i')
-                        out.append(f'{bst}{bvn};')
-                    out.append(f'{dvn}{ARITH_MAP[ov]}')
+                        # Copia 'a' em dest, depois aplica OP 'b'
+                        if at == 'NUM':
+                            out.append(f'{st}{av}')
+                            out.append(f'{dvn}!')
+                        else:
+                            svn = self.var_name(av)
+                            sst = self.vars.get(av, 'i')
+                            out.append(f'{sst}{svn};')
+                            out.append(f'{dvn}!')
+                        if bt == 'NUM':
+                            out.append(f'{st}{bv}')
+                        else:
+                            bvn = self.var_name(bv)
+                            bst = self.vars.get(bv, 'i')
+                            out.append(f'{bst}{bvn};')
+                        out.append(f'{dvn}{ARITH_MAP[ov]}')
                     return out
 
         # Fallback: não suportado, retorna comentário
@@ -239,17 +284,7 @@ class CToStart:
             line = line.strip()
             if not line or line.startswith('//') or line.startswith('#'):
                 continue
-            if re.match(r'^(int|void)\s+main', line) or line in ('{', '}', 'return 0;'):
-                if line == '}' and self.loop_stack:
-                    # Fecha loop
-                    loop_var = self.loop_stack.pop()
-                    vn = self.var_name(loop_var)
-                    st = self.vars.get(loop_var, 'i')
-                    out.append(f'{st}{vn} 1+')
-                    out.append('t')
-                    out.append(']')
-                continue
-            if line == 'return 0;':
+            if re.match(r'^(int|void)\s+main', line) or line in ('{', 'return 0;'):
                 continue
 
             # Declaração com inicialização
@@ -262,19 +297,19 @@ class CToStart:
                 out.extend(ops)
                 continue
 
-            # for (int i = 0; i < N; i++)
-            m = re.match(r'^for\s*\(\s*int\s+(\w+)\s*=\s*(\d+)\s*;\s*\w+\s*(<|>|<=|>=)\s*(\w+)\s*;\s*\w+\+\+\s*\)', line)
+            # for (int i = INIT; i CMP LIMIT; i++ ou i--)
+            m = re.match(r'^for\s*\(\s*int\s+(\w+)\s*=\s*(\d+)\s*;\s*\w+\s*(<|>|<=|>=)\s*(\w+)\s*;\s*\w+(\+\+|--)\s*\)', line)
             if m:
-                ivar, init, cmp_op, limit = m.group(1), m.group(2), m.group(3), m.group(4)
+                ivar, init, cmp_op, limit, step = m.group(1), m.group(2), m.group(3), m.group(4), m.group(5)
                 st = self.vars.get(ivar, 'i')
                 vn = self.var_name(ivar)
-                self.loop_stack.append(ivar)
+                self.loop_stack.append((ivar, step))
                 # Inicializa
                 out.append(f'{st}{init}')
                 out.append(f'{vn}!')
                 # Abre loop com t[ e verifica condição no início
                 out.append('t[')
-                # Condição: se NOT (i < N) → break
+                # Condição: se NOT (i CMP LIMIT) → break
                 if limit.isdigit():
                     limit_code = f'{st}{limit}'
                 else:
@@ -284,6 +319,21 @@ class CToStart:
                 out.append(f'{st}{vn};')
                 out.append(limit_code)
                 out.append(f'{CMP_MAP[cmp_op]}~(x:)')
+                continue
+
+            # if (cond) {
+            m = re.match(r'^if\s*\((.+)\)\s*\{?$', line)
+            if m and not line.startswith('for'):
+                cond = m.group(1).strip()
+                ops = self._cond_to_start(cond)
+                out.extend(ops)
+                self.loop_stack.append(('__if__', None))
+                out.append('(')
+                continue
+
+            # } else {
+            if re.match(r'^\}\s*else\s*\{', line):
+                out.append(':')
                 continue
 
             # printf("%d\\n", var_or_expr)
@@ -344,12 +394,19 @@ class CToStart:
             # Fecha bloco }
             if line == '}':
                 if self.loop_stack:
-                    loop_var = self.loop_stack.pop()
-                    vn = self.var_name(loop_var)
-                    st = self.vars.get(loop_var, 'i')
-                    out.append(f'{st}{vn} 1+')
-                    out.append('t')
-                    out.append(']')
+                    top = self.loop_stack.pop()
+                    if isinstance(top, tuple) and top[0] == '__if__':
+                        out.append(')')
+                    else:
+                        loop_var, step = top
+                        vn = self.var_name(loop_var)
+                        st = self.vars.get(loop_var, 'i')
+                        if step == '--':
+                            out.append(f'{st}{vn} 1-')
+                        else:
+                            out.append(f'{st}{vn} 1+')
+                        out.append('t')
+                        out.append(']')
 
         return '\n'.join(out)
 

@@ -13,7 +13,6 @@ int8_t f_input(State * s);
 
 // Forward declarations
 static uint8_t exec_math(uint8_t op, State *s, uint8_t prev);
-static uint8_t exec_bitwise(uint8_t op, State *s, uint8_t prev);
 static uint8_t exec_cmp(uint8_t op, State *s, uint8_t prev);
 static uint8_t exec_var(uint8_t idx, State *s, uint8_t prev);
 static uint8_t exec_func(uint8_t idx, State *s, uint8_t prev);
@@ -283,7 +282,6 @@ uint8_t st_op(uint8_t op, State *s) {
     s->_prev_token = op;
     if (op >= OP_CONST_MIN && op <= OP_CONST_MAX) return exec_const(op - OP_CONST_MIN, s);
     if (op >= OP_MATH_FIRST && op <= OP_MATH_LAST) return exec_math(op, s, prev);
-    if (op >= OP_BIT_FIRST && op <= OP_BIT_LAST) return exec_bitwise(op, s, prev);
     if (op >= OP_CMP_FIRST && op <= OP_CMP_LAST) return exec_cmp(op, s, prev);
     if (op >= OP_TYPE_FIRST && op <= OP_TYPE_LAST) {
         uint8_t new_type = op - OP_TYPE_FIRST;
@@ -369,25 +367,17 @@ static uint8_t exec_math(uint8_t op, State *s, uint8_t prev) {
             else if (type == 1) m.i16[0] >>= s->reg.i16[0];
             else m.i8[0] >>= s->reg.i8[0];
             break;
+        case OP_NOT_BIT:
+            if (type == 3) return SUCCESS; // No bitwise on float
+            if (type == 2) s->reg.i32 = ~s->reg.i32;
+            else if (type == 1) s->reg.i16[0] = ~s->reg.i16[0];
+            else s->reg.i8[0] = ~s->reg.i8[0];
+            return SUCCESS;
     }
     mstore(s, m);
     return SUCCESS;
 }
 
-static uint8_t exec_bitwise(uint8_t op, State *s, uint8_t prev) {
-    int type = s->_type;
-    if (type == 3) return SUCCESS; // No bitwise on float
-    switch (op) {
-        case OP_NOT_BIT:
-            if (type == 2) s->reg.i32 = ~s->reg.i32;
-            else if (type == 1) s->reg.i16[0] = ~s->reg.i16[0];
-            else s->reg.i8[0] = ~s->reg.i8[0];
-            break;
-        default:
-            return exec_math(op, s, prev);
-    }
-    return SUCCESS;
-}
 
 static uint8_t exec_cmp(uint8_t op, State *s, uint8_t prev) {
     s->_cond = 1;
@@ -545,8 +535,8 @@ static uint8_t exec_misc(uint8_t op, State *s, uint8_t prev) {
             uint16_t len = strlen((char*) s->_m);
             uint8_t * src = (uint8_t*) malloc(len + 1);
             strcpy((char*) src, (char*) s->_m);
-            uint16_t *jumps = calloc(len + 1, sizeof(uint16_t));
-            st_prepare(src, jumps, len + 1, s);
+            uint16_t *jumps = calloc(len * 8 + 1, sizeof(uint16_t));
+            st_prepare(src, jumps, len * 8 + 1, s);
             new_sub(src, jumps, s);
             s->sub->_freesrc = 1;
             break;
@@ -749,7 +739,7 @@ static int8_t st_prepare_internal(uint8_t *buf, uint16_t *jumps, State *s, SymEn
     uint8_t *w = buf;
     uint16_t stack[ST_MAX_DEPTH];
     uint8_t type_stack[ST_MAX_DEPTH]; // 0 for IF, 1 for WHILE
-    uint16_t break_stack[ST_MAX_DEPTH][32]; // Increased to 32 breaks per loop
+    uint16_t break_stack[ST_MAX_DEPTH][MAX_BREAKS_PER_LOOP];
     uint8_t break_count[ST_MAX_DEPTH];
     int depth = 0;
     int current_type = s->_type;
@@ -1040,7 +1030,7 @@ static int8_t st_prepare_internal(uint8_t *buf, uint16_t *jumps, State *s, SymEn
                 // store position to patch when WHILE ends
                 for (int i = depth - 1; i >= 0; i--) {
                     if (type_stack[i] == 1) {
-                        if (break_count[i] < MAX_IDLEN) {
+                        if (break_count[i] < MAX_BREAKS_PER_LOOP) {
                             break_stack[i][break_count[i]++] = pos;
                         }
                         break;

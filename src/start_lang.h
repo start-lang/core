@@ -48,6 +48,7 @@ extern "C" {
 #define JM_EXEN 12
 
 #define MAX_IDLEN 16
+#define MAX_BREAKS_PER_LOOP 32
 
 typedef enum {
   // 0x00 — end of program
@@ -78,24 +79,20 @@ typedef enum {
   OP_ROTATE       = 0x1A,  // k
   OP_CAST         = 0x1B,  // e
 
-  // 0x20–0x27 — math
+  // 0x20–0x2A — math (including bitwise)
   OP_MATH_FIRST   = 0x20,
   OP_ADD          = 0x20,  // +
   OP_SUB          = 0x21,  // -
   OP_MUL          = 0x22,  // *
   OP_DIV          = 0x23,  // /
   OP_MOD          = 0x24,  // %
-  OP_MATH_LAST    = 0x24,
-
-  // 0x28–0x2F — bitwise
-  OP_BIT_FIRST    = 0x28,
-  OP_AND          = 0x28,  // w&
-  OP_OR           = 0x29,  // w|
-  OP_XOR          = 0x2A,  // w^
-  OP_NOT_BIT      = 0x2B,  // w~
-  OP_SHL          = 0x2C,  // w<
-  OP_SHR          = 0x2D,  // w>
-  OP_BIT_LAST     = 0x2D,
+  OP_AND          = 0x25,  // w&
+  OP_OR           = 0x26,  // w|
+  OP_XOR          = 0x27,  // w^
+  OP_NOT_BIT      = 0x28,  // w~
+  OP_SHL          = 0x29,  // w<
+  OP_SHR          = 0x2A,  // w>
+  OP_MATH_LAST    = 0x2A,
 
   // 0x30–0x3F — comparisons
   OP_CMP_FIRST    = 0x30,

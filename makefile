@@ -244,15 +244,19 @@ ${WASM_BMARK_OUTPUT}: ${WASM_SRC_FILES} ${TEST}
 	${MAKE} build-wasm-benchmark
 
 .PHONY: benchmark
-benchmark: init ${BMARK_OUTPUT}.gcc ${BMARK_OUTPUT}.clang ${WASM_BMARK_OUTPUT}
+benchmark: init ${BMARK_OUTPUT}.gcc ${BMARK_OUTPUT}.clang #${WASM_BMARK_OUTPUT}
 	time ${BMARK_OUTPUT}.gcc
 	time ${BMARK_OUTPUT}.clang
-	time node ${WASM_RUNTIME} ${WASM_BMARK_OUTPUT}
+	#time node ${WASM_RUNTIME} ${WASM_BMARK_OUTPUT}
 
 .PHONY: test-cli-mandelbrot
 test-cli-mandelbrot: ${CLI_OUTPUT} ${WASM_CLI_OUTPUT}
 	time ${CLI_OUTPUT} -e -f tests/mandelbrot/m.st
 	time node ${WASM_RUNTIME} ${WASM_CLI_OUTPUT} -e "$$(cat tests/mandelbrot/m.st)"
+
+.PHONY: test-tp
+test-tp: ${CLI_OUTPUT}
+	./tp/test_tp.sh
 
 ## TEST
 

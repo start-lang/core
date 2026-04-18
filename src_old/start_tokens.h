@@ -8,8 +8,8 @@
 #define BREAK           'x'
 #define CONTINUE        'c'
 #define ENDWHILE        ']'
-#define ARRAY           '{'
-#define ENDARRAY        '}'
+#define ARRAY           '{' // unused
+#define ENDARRAY        '}' // unused
 #define COMMENT_OUT     '/'
 #define COMMENT_IN      '*'
 
@@ -69,9 +69,10 @@
 #define T_INT32         'i'
 #define T_FLOAT         'f'
 #define STRING          '\"'
-#define CHAR            '\''
+#define CHAR            '\'' // unused
 #define SCAPE           '\\'
 #define FLOAT_POINT     '.'
+
 
 #define INT8    0
 #define INT16   1

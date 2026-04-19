@@ -497,7 +497,7 @@ void validate(void){
       strncpy(block, code + (index*max_block_size),  block_size);
       block[block_size] = '\0';
       s->src = (uint8_t*) block;
-      direction = st_run(s);
+      direction = st_run_stream(s);
       // printf("%s %d %d %d\n", block, block_size, direction, index);
 
       if (direction == -1){

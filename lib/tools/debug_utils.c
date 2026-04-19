@@ -40,8 +40,6 @@ uint32_t time_spent = 0;
 uint16_t forward_multiply = 1;
 extern uint16_t output_len;
 
-extern Variable * _vars;
-extern uint8_t _varc;
 
 #if defined(__linux__) || defined(__APPLE__)
 uint8_t getch(void) {
@@ -299,10 +297,10 @@ uint8_t debug_state(State * s, uint8_t enable, uint8_t interactive){
 
   if (breakpoint) enable = interactive = 1;
 
-  if (follow_vars && s->_prev_token == NEW_VAR) {
+  if (follow_vars && s->_prev_token == NEW_VAR && s->varc > 0) {
     vars = (TypedVariable*) realloc(vars, (varc + 1) * sizeof(TypedVariable));
-    Variable * v = _vars + _varc - 1;
-    vars[varc] = (TypedVariable){.name = v->name, .pos = v->pos, .type = s->_type};
+    uint8_t vi = s->varc - 1;
+    vars[varc] = (TypedVariable){.name = s->var_names[vi], .pos = s->var_pos[vi], .type = s->_type};
     varc++;
   }
 

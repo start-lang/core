@@ -13,10 +13,16 @@ extern "C" {
 #define INT32   2
 #define FLOAT   3
 
+#ifndef MEM_SIZE
 #define MEM_SIZE 64
+#endif
 
-#ifndef ST_MAX_DEPTH
-#define ST_MAX_DEPTH 32
+#ifndef ST_MAX_CTRL_DEPTH
+#define ST_MAX_CTRL_DEPTH 16
+#endif
+
+#ifndef ST_MAX_CALL_DEPTH
+#define ST_MAX_CALL_DEPTH 16
 #endif
 
 #ifndef MAX_VARS
@@ -25,6 +31,18 @@ extern "C" {
 
 #ifndef MAX_FUNCS
 #define MAX_FUNCS 32
+#endif
+
+#ifndef MAX_IDLEN
+#define MAX_IDLEN 16
+#endif
+
+#ifndef MAX_BREAKS_PER_LOOP
+#define MAX_BREAKS_PER_LOOP 32
+#endif
+
+#ifndef MAX_FUNC_BODY
+#define MAX_FUNC_BODY 256
 #endif
 
 #define SUCCESS 0
@@ -46,9 +64,6 @@ extern "C" {
 #define JM_PEXC 10
 #define JM_REOB 11
 #define JM_EXEN 12
-
-#define MAX_IDLEN 16
-#define MAX_BREAKS_PER_LOOP 32
 
 typedef enum {
   // 0x00 — end of program
@@ -165,6 +180,21 @@ typedef union {
   float f32;
 } Register;
 
+typedef struct {
+  uint8_t *src;
+  uint8_t *src0;
+  uint16_t *jumps;
+  uint8_t *_m;   // cursor — restored on return
+  uint8_t *_m0;  // tape base — restored on return
+  uint16_t _mlen;
+  uint8_t _type;
+  uint8_t _ans;
+  uint8_t _cond;
+  uint8_t _prev_token;
+  int8_t _matching;
+  uint8_t _freesrc; // if 1, src0/jumps are heap-allocated and must be freed on pop
+} CallFrame;
+
 typedef struct _State {
   Register reg;
 
@@ -175,33 +205,28 @@ typedef struct _State {
   uint16_t _mlen;
   uint8_t _stack_h;
 
-  uint16_t _ans:1;
-  uint16_t _type:2;
-  uint16_t _forward:1;
-  uint16_t _lookahead_unused:1; // kept for padding/source compatibility if needed
-  uint16_t _op_result:4;
-  uint16_t _string_unused:1;    // kept for padding
-  uint16_t _srcinput_unused:1;  // kept for padding
-  uint16_t _freesrc:1;
-  uint16_t _cond:1;
-  uint16_t _ignend:1;
+  uint8_t _type;
+  uint8_t _ans;
+  uint8_t _cond;
+  uint8_t _forward;
+  uint8_t _freesrc;
+  uint8_t _ignend;
+  uint8_t _last_result; // last jump result; persists between st_run_stream calls
 
   uint8_t _id[MAX_IDLEN];
   uint8_t _prev_token;
   uint8_t _matching;
-  uint16_t _fmatching_unused;
-
-  uint16_t _lensrc_unused;
-  uint16_t _fmatching_old_unused;
 
   uint8_t _pending_char;
   uint32_t _pending_digit;
   uint8_t _has_pending_digit;
-  struct _State * sub;
+  uint8_t _depth;
+  CallFrame _frames[ST_MAX_CALL_DEPTH];
 
   uint16_t var_pos[MAX_VARS];
-  uint8_t *func_src[MAX_FUNCS];
-  uint16_t *func_jumps[MAX_FUNCS];
+  uint8_t var_names[MAX_VARS][MAX_IDLEN];
+  uint8_t func_body[MAX_FUNCS][MAX_FUNC_BODY];
+  uint16_t func_jmp[MAX_FUNCS][MAX_FUNC_BODY];
   uint8_t func_names[MAX_FUNCS][MAX_IDLEN];
   int8_t (*ext_fp[MAX_FUNCS])(struct _State * s);
   uint8_t varc;
@@ -215,6 +240,7 @@ extern int8_t step_callback(State * s);
 #define REG s->reg
 
 int8_t st_run(State * s);
+int8_t st_run_stream(State * s);
 int8_t st_state_init(State * s);
 int8_t st_step(State * s);
 uint8_t st_op(uint8_t op, State * s);

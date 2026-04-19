@@ -14,6 +14,7 @@ LIBS = src lib/microcuts/src lib/tools
 MAIN_SRC = start_lang
 TEST = tests/main.c
 CLI  = targets/desktop/cli.c
+BENCH = bench/bench.c
 BUILD = build
 
 ## VERSION
@@ -224,6 +225,21 @@ test-wasm-example: ${WASM_TEST_OUTPUT}
 	node targets/web/example.js ../../${WASM_RUNTIME} ${WASM_TEST_OUTPUT} > ${BUILD}/example.out || { cat ${BUILD}/example.out; exit 1; }
 
 ## BENCHMARK
+
+## BENCH (simple throughput benchmark, no test suite overhead)
+
+BENCH_OUTPUT = ${BUILD}/bench
+
+.PHONY: build-bench
+build-bench: init
+	${CC} ${CFLAGS} ${BENCH} -o ${BENCH_OUTPUT}
+	chmod +x ${BENCH_OUTPUT}
+
+.PHONY: bench
+bench: build-bench
+	${BENCH_OUTPUT} tests/mandelbrot/m.st
+
+## OLD BENCHMARK (test-suite loop, kept for CI comparison)
 
 .PHONY: build-benchmark
 build-benchmark: init

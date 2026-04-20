@@ -225,8 +225,8 @@ typedef struct _State {
 
   uint16_t var_pos[MAX_VARS];
   uint8_t var_names[MAX_VARS][MAX_IDLEN];
-  uint8_t func_body[MAX_FUNCS][MAX_FUNC_BODY];
-  uint16_t func_jmp[MAX_FUNCS][MAX_FUNC_BODY];
+  uint8_t *func_body[MAX_FUNCS];
+  uint16_t *func_jmp[MAX_FUNCS];
   uint8_t func_names[MAX_FUNCS][MAX_IDLEN];
   int8_t (*ext_fp[MAX_FUNCS])(struct _State * s);
   uint8_t varc;

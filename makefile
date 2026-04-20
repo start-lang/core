@@ -38,7 +38,13 @@ INCLUDES     = $(addprefix -I, $(LIBS))
 SOURCES      = $(foreach dir, $(LIBS), $(wildcard $(dir)/*.c))
 SRC_FILES    = $(foreach dir, $(LIBS), $(wildcard $(dir)/*.c)) $(foreach dir, $(LIBS), $(wildcard $(dir)/*.h))
 ASSERTS      = tests/unit/lang_assertions.c -Itests/unit
-CFLAGS       = -std=c99 -Wall -g -Os -flto ${VERSION} ${INCLUDES} ${SOURCES}
+CFLAGS          = -std=c99 -Wall -g -Os -flto ${VERSION} ${INCLUDES} ${SOURCES}
+ifeq (${UNAME}, Linux)
+  RELEASE_LDFLAGS = -Wl,--gc-sections
+else
+  RELEASE_LDFLAGS = -Wl,-dead_strip
+endif
+CFLAGS_RELEASE  = -std=c99 -Wall -Os -flto -ffunction-sections -fdata-sections ${RELEASE_LDFLAGS} ${VERSION} ${INCLUDES} ${SOURCES}
 TEST_OUTPUT  = ${BUILD}/test
 CLI_OUTPUT   = ${BUILD}/start
 BMARK_OUTPUT = ${BUILD}/benchmark
@@ -155,7 +161,8 @@ coverage: init
 
 .PHONY: build-cli
 build-cli: init
-	${CC} ${CFLAGS} -D ENABLE_FILES ${CLI} -o ${CLI_OUTPUT}
+	${CC} ${CFLAGS_RELEASE} -D ENABLE_FILES ${CLI} -o ${CLI_OUTPUT}
+	strip ${CLI_OUTPUT}
 	chmod +x ${CLI_OUTPUT}
 
 ${CLI_OUTPUT}: ${SRC_FILES} ${CLI}

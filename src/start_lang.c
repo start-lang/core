@@ -25,7 +25,7 @@ static int is_id_cont(char c) {
   return is_id_start(c) || (c >= '0' && c <= '9');
 }
 
-static Register mget(State *s) {
+static __attribute__((always_inline)) Register mget(State *s) {
   Register x = {.i32 = 0};
   x.i8[0] = s->_m[0];
   if (s->_type >= INT16) x.i8[1] = s->_m[1];
@@ -33,19 +33,19 @@ static Register mget(State *s) {
   return x;
 }
 
-static void mset(State *s, Register x) {
+static __attribute__((always_inline)) void mset(State *s, Register x) {
   s->_m[0] = x.i8[0];
   if (s->_type >= INT16) s->_m[1] = x.i8[1];
   if (s->_type >= INT32) { s->_m[2] = x.i8[2]; s->_m[3] = x.i8[3]; }
 }
 
-static float mgetf(State *s) {
+static __attribute__((always_inline)) float mgetf(State *s) {
   float f;
   memcpy(&f, s->_m, 4);
   return f;
 }
 
-static void msetf(State *s, float f) {
+static __attribute__((always_inline)) void msetf(State *s, float f) {
   memcpy(s->_m, &f, 4);
 }
 
@@ -54,6 +54,10 @@ void st_state_free(State *s) {
   if (s->_jumps) { free(s->_jumps); s->_jumps = NULL; }
   if (s->_freesrc && s->_src0) { free(s->_src0); s->_src0 = NULL; s->src = NULL; }
   if (s->_m0) { free(s->_m0); s->_m0 = NULL; s->_m = NULL; }
+  for (int i = 0; i < MAX_FUNCS; i++) {
+    if (s->func_body[i]) { free(s->func_body[i]); s->func_body[i] = NULL; }
+    if (s->func_jmp[i])  { free(s->func_jmp[i]);  s->func_jmp[i]  = NULL; }
+  }
   free(s);
 }
 
@@ -266,25 +270,30 @@ int8_t st_run_stream(State * s) {
 uint8_t st_op(uint8_t op, State *s) {
   uint8_t prev = s->_prev_token;
   s->_prev_token = op;
-  if (op >= OP_CONST_MIN && op <= OP_CONST_MAX) return exec_const(op - OP_CONST_MIN, s);
-  if (op >= OP_MATH_FIRST && op <= OP_MATH_LAST) return exec_math(op, s, prev);
-  if (op >= OP_CMP_FIRST && op <= OP_CMP_LAST) return exec_cmp(op, s, prev);
-  if (op >= OP_TYPE_FIRST && op <= OP_TYPE_LAST) {
-    uint8_t new_type = op - OP_TYPE_FIRST;
-    // src_old semantics: converting between FLOAT and INT32 via type switch
-    // reinterprets/casts the register value; narrow integer switches leave
-    // the register bytes untouched.
-    if (new_type == INT32 && s->_type == FLOAT) {
-      s->reg.i32 = (uint32_t) s->reg.f32;
-    } else if (new_type == FLOAT && s->_type == INT32) {
-      s->reg.f32 = (float) s->reg.i32;
+  switch (op) {
+    case OP_CONST_MIN ... OP_CONST_MAX:
+      return exec_const(op - OP_CONST_MIN, s);
+    case OP_MATH_FIRST ... OP_MATH_LAST:
+      return exec_math(op, s, prev);
+    case OP_CMP_FIRST ... OP_CMP_LAST:
+      return exec_cmp(op, s, prev);
+    case OP_TYPE_FIRST ... OP_TYPE_LAST: {
+      uint8_t new_type = op - OP_TYPE_FIRST;
+      if (new_type == INT32 && s->_type == FLOAT) {
+        s->reg.i32 = (uint32_t) s->reg.f32;
+      } else if (new_type == FLOAT && s->_type == INT32) {
+        s->reg.f32 = (float) s->reg.i32;
+      }
+      s->_type = new_type;
+      return SUCCESS;
     }
-    s->_type = new_type;
-    return SUCCESS;
+    case OP_VAR_FIRST ... OP_VAR_LAST:
+      return exec_var(op - OP_VAR_FIRST, s, prev);
+    case OP_FUNC_FIRST ... OP_FUNC_LAST:
+      return exec_func(op - OP_FUNC_FIRST, s, prev);
+    default:
+      return exec_misc(op, s, prev);
   }
-  if (op >= OP_VAR_FIRST && op <= OP_VAR_LAST) return exec_var(op - OP_VAR_FIRST, s, prev);
-  if (op >= OP_FUNC_FIRST && op <= OP_FUNC_LAST) return exec_func(op - OP_FUNC_FIRST, s, prev);
-  return exec_misc(op, s, prev);
 }
 
 static uint8_t exec_const(uint8_t val, State *s) {
@@ -1037,13 +1046,13 @@ static int8_t st_prepare_internal(uint8_t *buf, uint16_t *jumps, State *s, SymEn
         if (idx != -1) {
           int flen = r - start - 1;
           if (flen >= MAX_FUNC_BODY) { free(read_buf); return JM_REOB; }
-          // copy source text into static pool; st_prepare_internal reads via
-          // an internal copy and writes bytecode back into the same buffer
+          if (!s->func_body[idx]) {
+            s->func_body[idx] = (uint8_t *)malloc(MAX_FUNC_BODY);
+            s->func_jmp[idx]  = (uint16_t *)malloc(MAX_FUNC_BODY * sizeof(uint16_t));
+          }
           memcpy(s->func_body[idx], start, flen);
           s->func_body[idx][flen] = 0;
-          memset(s->func_jmp[idx], 0, sizeof(s->func_jmp[idx]));
-          // clear ext_fp so the compiled body takes precedence over any
-          // previously registered undef/ext handler for this slot
+          memset(s->func_jmp[idx], 0, MAX_FUNC_BODY * sizeof(uint16_t));
           funcs[idx].ext_fp = NULL;
           st_prepare_internal(s->func_body[idx], s->func_jmp[idx], s, vars, varc, funcs, funcc);
         }

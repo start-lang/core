@@ -82,40 +82,23 @@ int8_t st_state_init(State * s) {
 int8_t st_step(State *s) {
   uint8_t op = *(s->src);
   if (op == OP_END) {
-    if (s->_depth > 0) {
-      call_pop(s);
-      // src is already pointing to the instruction after the call opcode
-      return SUCCESS;
-    }
+    if (s->_depth > 0) { call_pop(s); return SUCCESS; }
+    return LOOP_ST;
+  }
+  if (op == OP_RETURN) {
+    if (s->_depth > 0) { call_pop(s); s->src++; return SUCCESS; }
     return LOOP_ST;
   }
 
   uint8_t depth_before = s->_depth;
   uint8_t r = st_op(op, s);
 
-  if (s->_depth > depth_before) {
-    // call_push was invoked; advance parent's saved src past the call opcode
-    s->_frames[s->_depth - 1].src++;
-    return SUCCESS;
-  }
+  // call_push pre-advances f->src; just detect that a call happened
+  if (__builtin_expect(s->_depth != depth_before, 0)) return SUCCESS;
 
-  // OP_RETURN returns uint8_t(-1) = 255; handle it as "end of call frame"
-  if (r == 255) {
-    if (s->_depth > 0) {
-      call_pop(s);
-      s->src++;
-      return SUCCESS;
-    }
-    return LOOP_ST;
-  }
-
-  s->_last_result = r;
-  if (r >= JM_ERR0) return r;
-
-  if (r == SUCCESS) {
-    s->src++;
-  } else {
-    // control flow jump
+  if (__builtin_expect(r != SUCCESS, 0)) {
+    s->_last_result = r;
+    if (r >= JM_ERR0) return r;
     uint16_t pos = s->src - s->_src0;
     if (s->_jumps[pos] == 0) {
       if (r == JM_WHI0 || r == JM_WHI1) return BL_PREV;
@@ -127,8 +110,9 @@ int8_t st_step(State *s) {
     }
     s->src = s->_src0 + s->_jumps[pos];
     if (r != JM_WHI0) s->src++;
+    return SUCCESS;
   }
-
+  s->src++;
   return SUCCESS;
 }
 
@@ -459,7 +443,7 @@ static uint8_t exec_var(uint8_t idx, State *s, uint8_t prev) {
 static void call_push(State *s, uint8_t *src, uint16_t *jumps) {
   if (s->_depth >= ST_MAX_CALL_DEPTH) return;
   CallFrame *f = &s->_frames[s->_depth++];
-  f->src = s->src;
+  f->src = s->src + 1;  // pre-advance: return past the call opcode
   f->src0 = s->_src0;
   f->jumps = s->_jumps;
   f->_m = s->_m;
@@ -551,8 +535,6 @@ static uint8_t exec_misc(uint8_t op, State *s, uint8_t prev) {
       return JM_NXWH;
     case OP_CONTINUE:
       return JM_WHI0;
-    case OP_RETURN:
-      return -1;
     case OP_RUN: {
       uint16_t len = strlen((char*) s->_m);
       uint8_t *src = (uint8_t*) malloc(len * 8 + 1);

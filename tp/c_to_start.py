@@ -278,6 +278,7 @@ class CToStart:
                 vn = self.var_name(vname)
                 out.append(f'{st_type}{vn}^')
                 out.append(f'{st_type}>')
+        out.append('i_STR_^')
 
         # Fase 2: converte corpo linha por linha
         for line in lines:
@@ -331,6 +332,18 @@ class CToStart:
                 out.append('(')
                 continue
 
+            # while (1) {
+            m = re.match(r'^while\s*\(\s*1\s*\)\s*\{?$', line)
+            if m:
+                self.loop_stack.append(('__while__', None))
+                out.append('t[')
+                continue
+
+            # break;
+            if re.match(r'^break\s*;$', line):
+                out.append('x:')
+                continue
+
             # } else {
             if re.match(r'^\}\s*else\s*\{', line):
                 out.append(':')
@@ -351,6 +364,7 @@ class CToStart:
                     ops = self.expr_to_start(expr)
                     out.extend(ops)
                     out.append('PN')
+                out.append('i_STR_;')
                 out.append('b10@.@')
                 continue
 
@@ -376,6 +390,7 @@ class CToStart:
                 s = m.group(1)
                 has_newline = '\\n' in s
                 s = s.replace('\\n', '')
+                out.append('i_STR_;')
                 if s:
                     out.append(f'"{s}" PS')
                 if has_newline:
@@ -397,6 +412,8 @@ class CToStart:
                     top = self.loop_stack.pop()
                     if isinstance(top, tuple) and top[0] == '__if__':
                         out.append(')')
+                    elif isinstance(top, tuple) and top[0] == '__while__':
+                        out.append('t]')
                     else:
                         loop_var, step = top
                         vn = self.var_name(loop_var)

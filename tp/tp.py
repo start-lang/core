@@ -297,18 +297,29 @@ class CodeGen:
             if r['is_tmp']: self.free_tmp(r['val'])
             return {'val': res_v, 'type': res_t, 'is_lit': False, 'is_tmp': True}
         elif isinstance(node, UnaryOp):
-            if node.op in ('++', '--'):
+            if node.prefix:
                 vn = node.expr.name.upper()
                 st = self.vars[vn]
                 op = '+' if node.op == '++' else '-'
                 self.emit(f"1 {st}{vn}; 1{op} {st}{vn};")
                 return {'val': vn, 'type': st, 'is_lit': False, 'is_tmp': False}
             else:
-                # Postfix: same as prefix for now
+                # Postfix: load current value first, then modify
+                vn = node.expr.name.upper()
+                st = self.vars[vn]
                 op = '+' if node.op == '++' else '-'
+                # Load current value to register (for return value)
+                self.emit(f"{st}{vn};")
+                # Store current value in a temp
+                tmp = self.alloc_tmp(st)
+                self.emit(f"{tmp}!")
+                # Now decrement/increment the variable
                 self.emit(f"1 {st}{vn}; 1{op} {st}{vn};")
-                
-                return {'val': vn, 'type': st, 'is_lit': False, 'is_tmp': False}
+                # Load temp back to register for return
+                self.emit(f"{st}{tmp};")
+                if tmp.startswith('_T'):
+                    self.free_tmp(tmp)
+                return {'val': tmp if tmp.startswith('_T') else vn, 'type': st, 'is_lit': False, 'is_tmp': tmp.startswith('_T')}
         elif isinstance(node, Id):
             vn = node.name.upper()
             return {'val': vn, 'type': self.vars[vn], 'is_lit': False, 'is_tmp': False}

@@ -243,15 +243,35 @@ class CodeGen:
 
     def load_to_reg(self, val, target_type=None):
         t = target_type if target_type else val['type']
-        if val['is_lit']:
+        if val.get('on_stack', False):
+            # Value is on stack, pop it to register
+            self.emit("o")
+        elif val['is_lit']:
+            # For literals, load with the target type
             self.emit(f"{t}{val['val']}")
         else:
-            # For variables, always load with their original type
+            # For variables and temps, load with their original type
+            # If narrower int (i8/i16) will be cast to float, clear high bytes first
+            if target_type == 'f' and val['type'] in ('s', 'b'):
+                self.emit("i0")
             self.emit(f"{val['type']}{val['val']};")
 
     def cast_reg(self, from_t, to_t):
-        if from_t == 'f' and to_t != 'f': self.emit('e')
-        if from_t != 'f' and to_t == 'f': self.emit('e')
+        # from_t -> to_t conversion in register
+        if from_t == to_t: return
+        if from_t == 'f' and to_t != 'f':
+            # float -> int: 'e' converts reg.f32 to reg.i32
+            self.emit('e')
+        elif to_t == 'f':
+            # int -> float
+            if from_t == 'i':
+                # i32 -> f32: just use 'f' type op (which auto-converts from int32)
+                # Actually we need to emit nothing here, the caller will emit 'f' type
+                self.emit('f')
+            else:
+                # i8/i16 -> float: need 'e' (reg.f32 = (float)reg.i32), then explicit f
+                # Assumes high bytes are clean (load_to_reg emits i0 before load)
+                self.emit('ef')
 
     def visit(self, node):
         if isinstance(node, Program):
@@ -263,16 +283,24 @@ class CodeGen:
                 self.vars[vn] = st
                 if expr:
                     res = self.visit(expr)
-                    self.load_to_reg(res)
-                    self.cast_reg(res['type'], st)
-                    self.emit(f"{vn}!")
+                    if res.get('on_stack', False):
+                        # Value is on stack, pop directly to variable
+                        self.emit(f"{st}o {vn}!")
+                    else:
+                        self.load_to_reg(res)
+                        self.cast_reg(res['type'], st)
+                        self.emit(f"{vn}!")
         elif isinstance(node, Assign):
             vn = node.id_.upper()
             st = self.vars[vn]
             res = self.visit(node.expr)
-            self.load_to_reg(res)
-            self.cast_reg(res['type'], st)
-            self.emit(f"{vn}!")
+            if res.get('on_stack', False):
+                # Value is on stack, pop directly to variable
+                self.emit(f"{st}o {vn}!")
+            else:
+                self.load_to_reg(res)
+                self.cast_reg(res['type'], st)
+                self.emit(f"{vn}!")
             if res['is_tmp']: self.free_tmp(res['val'])
             return {'val': vn, 'type': st, 'is_lit': False, 'is_tmp': False}
         elif isinstance(node, BinOp):
@@ -283,14 +311,20 @@ class CodeGen:
             res_t = 'f' if 'f' in (l['type'], r['type']) else 'i'
             res_v = self.alloc_tmp(res_t)
             
+            # Load left operand into register and cast to result type
             self.load_to_reg(l, target_type=res_t)
             self.cast_reg(l['type'], res_t)
+            # Ensure type is res_t before store (load may have changed _type)
+            self.emit(f"{res_t}")
             self.emit(f"{res_v}!")
             
+            # Load right operand into register and cast
             self.load_to_reg(r, target_type=res_t)
-            # Only cast if the original type is different from target type and not a literal
             if r['type'] != res_t and not r['is_lit']:
                 self.cast_reg(r['type'], res_t)
+            # Ensure type is res_t before math op
+            self.emit(f"{res_t}")
+            # Perform operation: mem(res_v) OP reg(right) -> mem(res_v)
             self.emit(f"{res_v}{ARITH_MAP[node.op]}")
             
             if l['is_tmp']: self.free_tmp(l['val'])

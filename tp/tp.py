@@ -251,8 +251,12 @@ class CodeGen:
             self.emit(f"{t}{val['val']}")
         else:
             # For variables and temps, load with their original type
-            # If narrower int (i8/i16) will be cast to float, clear high bytes first
-            if target_type == 'f' and val['type'] in ('s', 'b'):
+            # If target is wider than source, clear high bytes first with i0
+            # Type widths: b=1, s=2, i=4, f=4
+            widths = {'b': 1, 's': 2, 'i': 4, 'f': 4}
+            src_w = widths.get(val['type'], 4)
+            tgt_w = widths.get(target_type, src_w) if target_type else src_w
+            if tgt_w > src_w:
                 self.emit("i0")
             self.emit(f"{val['type']}{val['val']};")
 
@@ -284,22 +288,24 @@ class CodeGen:
                 if expr:
                     res = self.visit(expr)
                     if res.get('on_stack', False):
-                        # Value is on stack, pop directly to variable
                         self.emit(f"{st}o {vn}!")
                     else:
-                        self.load_to_reg(res)
+                        self.load_to_reg(res, target_type=st)
                         self.cast_reg(res['type'], st)
+                        # Ensure _type matches var type before store
+                        self.emit(f"{st}")
                         self.emit(f"{vn}!")
+                    if res.get('is_tmp', False): self.free_tmp(res['val'])
         elif isinstance(node, Assign):
             vn = node.id_.upper()
             st = self.vars[vn]
             res = self.visit(node.expr)
             if res.get('on_stack', False):
-                # Value is on stack, pop directly to variable
                 self.emit(f"{st}o {vn}!")
             else:
-                self.load_to_reg(res)
+                self.load_to_reg(res, target_type=st)
                 self.cast_reg(res['type'], st)
+                self.emit(f"{st}")
                 self.emit(f"{vn}!")
             if res['is_tmp']: self.free_tmp(res['val'])
             return {'val': vn, 'type': st, 'is_lit': False, 'is_tmp': False}
@@ -426,23 +432,41 @@ class CodeGen:
         l = self.visit(node.left)
         r = self.visit(node.right)
         
-        if l['is_lit']:
-            tmp = self.alloc_tmp(l['type'])
-            self.emit(f"{l['type']}{l['val']} {tmp}!")
-            l = {'val': tmp, 'type': l['type'], 'is_tmp': True}
-            
-        # Point memory to left operand first
-        if l['is_lit'] or l['is_tmp']:
-            self.emit(f"{l['type']}{l['val']};")
+        # Determine comparison type: if either is float, use float; else use widest
+        if 'f' in (l['type'], r['type']):
+            cmp_t = 'f'
         else:
-            self.emit(f"{l['type']}{l['val']}")
+            widths = {'b': 1, 's': 2, 'i': 4}
+            lw = widths.get(l['type'], 4)
+            rw = widths.get(r['type'], 4)
+            cmp_t = l['type'] if lw >= rw else r['type']
         
-        # Load right operand into register
-        self.load_to_reg(r)
-        self.cast_reg(r['type'], l['type'])
+        if l['is_lit']:
+            tmp = self.alloc_tmp(cmp_t)
+            self.load_to_reg(l, target_type=cmp_t)
+            self.cast_reg(l['type'], cmp_t)
+            self.emit(f"{cmp_t}{tmp}!")
+            l = {'val': tmp, 'type': cmp_t, 'is_tmp': True, 'is_lit': False}
+            
+        # Point memory to left operand (set _type to cmp_t and move _m to l)
+        if l['type'] != cmp_t and not l['is_tmp']:
+            # Need to cast via register then store to tmp
+            tmp = self.alloc_tmp(cmp_t)
+            self.load_to_reg(l, target_type=cmp_t)
+            self.cast_reg(l['type'], cmp_t)
+            self.emit(f"{cmp_t}{tmp}!")
+            l = {'val': tmp, 'type': cmp_t, 'is_tmp': True, 'is_lit': False}
         
-        # CMP_MAP is '<': '?<'. The virtual machine compares MEM ? REG.
-        # So memory should be Left, register should be Right.
+        # Emit left pointer (without load)
+        self.emit(f"{l['type']}{l['val']}")
+        
+        # Load right operand into register with cmp_t
+        self.load_to_reg(r, target_type=cmp_t)
+        self.cast_reg(r['type'], cmp_t)
+        # Ensure _type is cmp_t for comparison
+        self.emit(f"{cmp_t}")
+        
+        # CMP: mem(left) ? reg(right)
         self.emit(CMP_MAP[node.op])
         
         if l['is_tmp']: self.free_tmp(l['val'])

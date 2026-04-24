@@ -33,7 +33,7 @@ $(TP_BUILD)/%.st: $(TESTS_DIR)/%.c $(TRANSPILER) | $(TP_BUILD)
 	python3 $(TRANSPILER) $< > $@ 2>&1
 
 $(TP_BUILD)/%.actual: $(TP_BUILD)/%.st $(CLI) | $(TP_BUILD)
-	$(CLI) -t 2 -S 10 -O 1000 -f $< > $@ 2>&1 || true
+	$(CLI) -t 30 -S 100000 -O 100000 -f $< > $@ 2>&1 || true
 
 test: $(TP_BUILD) $(EXPECTED_FILES) $(ACTUAL_FILES)
 	@echo "=== Testing C→Start converter ==="

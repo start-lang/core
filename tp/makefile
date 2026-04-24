@@ -37,6 +37,7 @@ $(TP_BUILD)/%.st: $(TESTS_DIR)/%.c $(TRANSPILER) | $(TP_BUILD)
 	python3 $(TRANSPILER) $< > $@ 2>&1
 
 $(TP_BUILD)/%.actual: $(TP_BUILD)/%.st $(CLI) | $(TP_BUILD)
+	cat ${TP_BUILD}/$*.st
 	@if [ -f $(TESTS_DIR)/$*.in ]; then \
 		$(CLI) -t 30 -S 100000 -O 100000 -f $< < $(TESTS_DIR)/$*.in > $@ 2>&1 || true; \
 	else \

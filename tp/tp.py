@@ -383,8 +383,10 @@ class CodeGen:
         # from_t -> to_t conversion in register
         if from_t == to_t: return
         if from_t == 'f' and to_t != 'f':
-            # float -> int: 'e' converts reg.f32 to reg.i32
-            self.emit('e')
+            # float -> int: the following type token already performs the
+            # conversion in the runtime, so emitting TYPE_CAST here would
+            # convert the register twice and truncate values to 0.
+            return
         elif to_t == 'f':
             # int -> float
             if from_t == 'i':
@@ -712,7 +714,7 @@ class CodeGen:
             self.emit(f"{st}{vn}^ {st}>")
         self.emit("i_STR_^")
         self.visit(ast)
-        return '\n'.join(self.out)
+        return ' '.join(self.out)
 
     def ensure_input_buf(self):
         """Ensure _INPUT_ byte var exists for reading input."""

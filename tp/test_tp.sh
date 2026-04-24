@@ -8,7 +8,7 @@ BUILD="build"
 CLI="${BUILD}/start"
 TP_DIR="tp"
 TESTS_DIR="${TP_DIR}/tests"
-CONVERTER="${TP_DIR}/c_to_start.py"
+CONVERTER="${TP_DIR}/compiler.py"
 
 # Verifica se o CLI existe
 if [ ! -f "$CLI" ]; then

@@ -241,10 +241,12 @@ class CodeGen:
                 tmp['used'] = False
                 break
 
-    def load_to_reg(self, val):
+    def load_to_reg(self, val, target_type=None):
+        t = target_type if target_type else val['type']
         if val['is_lit']:
-            self.emit(f"{val['type']}{val['val']}")
+            self.emit(f"{t}{val['val']}")
         else:
+            # For variables, always load with their original type
             self.emit(f"{val['type']}{val['val']};")
 
     def cast_reg(self, from_t, to_t):
@@ -281,12 +283,14 @@ class CodeGen:
             res_t = 'f' if 'f' in (l['type'], r['type']) else 'i'
             res_v = self.alloc_tmp(res_t)
             
-            self.load_to_reg(l)
+            self.load_to_reg(l, target_type=res_t)
             self.cast_reg(l['type'], res_t)
             self.emit(f"{res_v}!")
             
-            self.load_to_reg(r)
-            self.cast_reg(r['type'], res_t)
+            self.load_to_reg(r, target_type=res_t)
+            # Only cast if the original type is different from target type and not a literal
+            if r['type'] != res_t and not r['is_lit']:
+                self.cast_reg(r['type'], res_t)
             self.emit(f"{res_v}{ARITH_MAP[node.op]}")
             
             if l['is_tmp']: self.free_tmp(l['val'])

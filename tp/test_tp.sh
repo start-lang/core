@@ -2,7 +2,7 @@
 # Script de teste para o conversor C→Start (tp)
 # Similar ao test-cli do makefile
 
-set -e
+# set -e  # Don't exit on error so we can see all test results
 
 BUILD="build"
 CLI="${BUILD}/start"
@@ -43,8 +43,8 @@ for c_file in "${TESTS_DIR}"/*.c; do
     # Converte C → Start
     python3 "$CONVERTER" "$c_file" > "$st_file" 2>&1
     
-    # Executa o código Start
-    "$CLI" -f "$st_file" > "$actual_out" 2>&1 || true
+    # Executa o código Start com timeout e limite de passos
+    "$CLI" -t 2 -S 10 -O 1000 -f "$st_file" > "$actual_out" 2>&1 || true
     
     # Compara com a saída esperada
     if [ -f "$out_file" ]; then

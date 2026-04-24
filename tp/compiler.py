@@ -29,7 +29,7 @@ class Assign(Node):
 class BinOp(Node):
     def __init__(self, op, left, right): self.op = op; self.left = left; self.right = right
 class UnaryOp(Node):
-    def __init__(self, op, expr): self.op = op; self.expr = expr
+    def __init__(self, op, expr, prefix=True): self.op = op; self.expr = expr; self.prefix = prefix
 class Num(Node):
     def __init__(self, val, is_float): self.val = val; self.is_float = is_float
 class Id(Node):
@@ -146,7 +146,7 @@ class Parser:
         self.expect('KW', 'printf'); self.expect('PUNC', '(')
         fmt = self.cur()[1]; self.expect('STR')
         args = []
-        if self.match('PUNC', ','): args.append(self.parse_expr())
+        while self.match('PUNC', ','): args.append(self.parse_expr())
         self.expect('PUNC', ')'); self.expect('PUNC', ';')
         return Printf(fmt[1:-1], args)
 
@@ -189,11 +189,11 @@ class Parser:
     def parse_unary(self):
         if self.cur()[1] in ('++', '--'):
             op = self.cur()[1]; self.pos += 1
-            return UnaryOp(op, self.parse_primary())
+            return UnaryOp(op, self.parse_primary(), prefix=True)
         prim = self.parse_primary()
         if self.cur()[1] in ('++', '--'):
             op = self.cur()[1]; self.pos += 1
-            return UnaryOp(op, prim)
+            return UnaryOp(op, prim, prefix=False)
         return prim
     def parse_primary(self):
         t = self.cur()
@@ -216,9 +216,9 @@ class CodeGen:
     def __init__(self):
         self.out = []
         self.vars = {}
-        self.tmps = {'i': 0, 'f': 0}
+        self.tmps = {'i': 0, 'f': 0, 's': 0, 'b': 0}
         self.tmp_pool = []
-        self.tmp_counts = {'i': 0, 'f': 0}
+        self.tmp_counts = {'i': 0, 'f': 0, 's': 0, 'b': 0}
     
     def emit(self, code):
         if self.pass_num == 2:
@@ -299,12 +299,15 @@ class CodeGen:
         elif isinstance(node, UnaryOp):
             if node.op in ('++', '--'):
                 vn = node.expr.name.upper()
-                st = self.vars[vn]
-                op_c = '1+' if node.op == '++' else '1-'
-                # Just execute `1+` which means REG=1, M=vn, MEM(vn) += REG(1)
-                # But we shouldn't overwrite it with I!.
-                # Wait, if we need the value in REG, we should load it AFTER increment.
-                self.emit(f"{st}{vn}; {op_c} {st}{vn};")
+                st = self.vars[vn]# Prefix: load 1, add/sub to memory, load result
+                op = '+' if node.op == '++' else '-'
+                self.emit(f"1 {st}{vn}; 1{op} {st}{vn};")
+                return {'val': vn, 'type': st, 'is_lit': False, 'is_tmp': False}
+            else:
+                # Postfix: same as prefix for now
+                op = '+' if node.op == '++' else '-'
+                self.emit(f"1 {st}{vn}; 1{op} {st}{vn};")
+                
                 return {'val': vn, 'type': st, 'is_lit': False, 'is_tmp': False}
         elif isinstance(node, Id):
             vn = node.name.upper()
@@ -315,19 +318,33 @@ class CodeGen:
         elif isinstance(node, Printf):
             fmt = node.fmt.replace('\\n', '')
             has_nl = '\\n' in node.fmt
-            if '%d' in fmt or '%f' in fmt:
-                res = self.visit(node.args[0])
-                self.load_to_reg(res)
-                self.emit("PN")
-            elif '%c' in fmt:
-                res = self.visit(node.args[0])
-                self.load_to_reg(res)
-                self.emit("i_STR_! .")
-            elif fmt:
-                self.emit('i_STR_;')
-                self.emit(f'"{fmt}" PS')
+            arg_idx = 0
+            i = 0
+            while i < len(fmt):
+                if fmt[i] == '%' and i + 1 < len(fmt) and arg_idx < len(node.args):
+                    spec = fmt[i+1]
+                    if spec in ('d', 'f'):
+                        res = self.visit(node.args[arg_idx])
+                        self.load_to_reg(res)
+                        self.emit("PN")
+                        arg_idx += 1
+                    elif spec == 'c':
+                        res = self.visit(node.args[arg_idx])
+                        self.load_to_reg(res)
+                        self.emit("i_STR_! .")
+                        arg_idx += 1
+                    i += 2
+                else:
+                    # Collect literal characters until next % or end
+                    start = i
+                    while i < len(fmt) and not (fmt[i] == '%' and i + 1 < len(fmt)):
+                        i += 1
+                    if start < i:
+                        literal = fmt[start:i]
+                        self.emit('i_STR_;')
+                        self.emit(f'"{literal}" PS')
             if has_nl:
-                self.emit('b10 i_STR_! .')
+                self.emit('b10@.@')
         elif isinstance(node, While):
             self.emit('t[')
             if not (isinstance(node.cond, Num) and node.cond.val == '1'):
@@ -343,16 +360,16 @@ class CodeGen:
             self.visit(node.body)
             self.visit(node.step)
             self.emit('t]')
+        elif isinstance(node, Break):
+            self.emit('x:') # start language break token is x: (or just x and then it requires :) actually let's use x: as in older transplier
         elif isinstance(node, If):
             self.emit_cond(node.cond)
             self.emit('(')
             self.visit(node.body)
-            self.emit(')')
             if node.else_body:
                 self.emit(':')
                 self.visit(node.else_body)
-        elif isinstance(node, Break):
-            self.emit('x:') # start language break token is x: (or just x and then it requires :) actually let's use x: as in older transplier
+            self.emit(')')
 
     def emit_cond(self, node):
         if not isinstance(node, BinOp) or node.op not in CMP_MAP:
@@ -369,13 +386,19 @@ class CodeGen:
             self.emit(f"{l['type']}{l['val']} {tmp}!")
             l = {'val': tmp, 'type': l['type'], 'is_tmp': True}
             
+        # Point memory to left operand first
+        if l['is_lit'] or l['is_tmp']:
+            self.emit(f"{l['type']}{l['val']};")
+        else:
+            self.emit(f"{l['type']}{l['val']}")
+        
+        # Load right operand into register
         self.load_to_reg(r)
         self.cast_reg(r['type'], l['type'])
         
         # CMP_MAP is '<': '?<'. The virtual machine compares MEM ? REG.
         # So memory should be Left, register should be Right.
-        # This means `l` is in memory (we just loaded r into reg).
-        self.emit(f"{l['val']} {CMP_MAP[node.op]}")
+        self.emit(CMP_MAP[node.op])
         
         if l['is_tmp']: self.free_tmp(l['val'])
         if r['is_tmp']: self.free_tmp(r['val'])

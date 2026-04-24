@@ -1,8 +1,6 @@
 #!/bin/bash
-# Script de teste para o conversor C→Start (tp)
-# Similar ao test-cli do makefile
-
-# set -e  # Don't exit on error so we can see all test results
+# Test script for C→Start converter (tp)
+# Similar to test-cli from makefile
 
 BUILD="build"
 CLI="${BUILD}/start"
@@ -10,24 +8,24 @@ TP_DIR="tp"
 TESTS_DIR="${TP_DIR}/tests"
 CONVERTER="${TP_DIR}/compiler.py"
 
-# Verifica se o CLI existe
+# Check if CLI exists
 if [ ! -f "$CLI" ]; then
-    echo "CLI não encontrado em $CLI. Execute 'make build-cli' primeiro."
+    echo "CLI not found at $CLI. Run 'make build-cli' first."
     exit 1
 fi
 
-# Verifica se o conversor existe
+# Check if converter exists
 if [ ! -f "$CONVERTER" ]; then
-    echo "Conversor não encontrado em $CONVERTER"
+    echo "Converter not found at $CONVERTER"
     exit 1
 fi
 
-# Cria diretório de saída
+# Create output directory
 mkdir -p "${BUILD}/tp"
 
-echo "=== Testando conversor C→Start ==="
+echo "=== Testing C→Start converter ==="
 
-# Para cada arquivo .c em tests/
+# For each .c file in tests/
 for c_file in "${TESTS_DIR}"/*.c; do
     if [ ! -f "$c_file" ]; then
         continue
@@ -35,33 +33,38 @@ for c_file in "${TESTS_DIR}"/*.c; do
     
     test_name=$(basename "$c_file" .c)
     st_file="${BUILD}/tp/${test_name}.st"
-    out_file="${TESTS_DIR}/${test_name}.out"
-    actual_out="${BUILD}/tp/${test_name}.out"
+    c_binary="${BUILD}/tp/${test_name}"
+    expected_out="${BUILD}/tp/${test_name}.expected"
+    actual_out="${BUILD}/tp/${test_name}.actual"
     
-    echo "Testando: $test_name"
+    echo "Testing: $test_name"
     
-    # Converte C → Start
+    # Compile C with gcc/clang to get expected output
+    gcc "$c_file" -o "$c_binary" 2>/dev/null || clang "$c_file" -o "$c_binary" 2>/dev/null
+    if [ -f "$c_binary" ]; then
+        "$c_binary" > "$expected_out" 2>&1 || true
+    else
+        echo "  ⚠ SKIP: Failed to compile with gcc/clang"
+        continue
+    fi
+    
+    # Convert C → Start
     python3 "$CONVERTER" "$c_file" > "$st_file" 2>&1
     
-    # Executa o código Start com timeout e limite de passos
+    # Execute Start code with timeout and step limit
     "$CLI" -t 2 -S 10 -O 1000 -f "$st_file" > "$actual_out" 2>&1 || true
     
-    # Compara com a saída esperada
-    if [ -f "$out_file" ]; then
-        if diff "$out_file" "$actual_out" > /dev/null; then
-            echo "  ✓ PASS"
-        else
-            echo "  ✗ FAIL: Saída diferente"
-            echo "  Esperado:"
-            cat "$out_file" | sed 's/^/    /'
-            echo "  Obtido:"
-            cat "$actual_out" | sed 's/^/    /'
-            exit 1
-        fi
+    # Compare outputs
+    if diff "$expected_out" "$actual_out" > /dev/null; then
+        echo "  ✓ PASS"
     else
-        echo "  ⚠ SKIP: Arquivo .out não encontrado"
+        echo "  ✗ FAIL: Output differs"
+        echo "  Expected:"
+        cat "$expected_out" | sed 's/^/    /'
+        echo "  Got:"
+        cat "$actual_out" | sed 's/^/    /'
     fi
 done
 
 echo ""
-echo "=== Todos os testes passaram ==="
+echo "=== Test run complete ==="

@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdint.h>
 
 int main() {
   float X = 0.0f;

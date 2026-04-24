@@ -299,7 +299,7 @@ class CodeGen:
         elif isinstance(node, UnaryOp):
             if node.op in ('++', '--'):
                 vn = node.expr.name.upper()
-                st = self.vars[vn]# Prefix: load 1, add/sub to memory, load result
+                st = self.vars[vn]
                 op = '+' if node.op == '++' else '-'
                 self.emit(f"1 {st}{vn}; 1{op} {st}{vn};")
                 return {'val': vn, 'type': st, 'is_lit': False, 'is_tmp': False}
@@ -331,7 +331,7 @@ class CodeGen:
                     elif spec == 'c':
                         res = self.visit(node.args[arg_idx])
                         self.load_to_reg(res)
-                        self.emit("i_STR_! .")
+                        self.emit("i_STR_! i_STR_;.")
                         arg_idx += 1
                     i += 2
                 else:

@@ -457,13 +457,16 @@ class CodeGen:
             self.emit(f"{cmp_t}{tmp}!")
             l = {'val': tmp, 'type': cmp_t, 'is_tmp': True, 'is_lit': False}
         
-        # Emit left pointer (without load)
-        self.emit(f"{l['type']}{l['val']}")
-        
-        # Load right operand into register with cmp_t
+        # Load right operand into register with cmp_t FIRST
+        # (since loading moves _m, we need to point to left AFTER)
         self.load_to_reg(r, target_type=cmp_t)
         self.cast_reg(r['type'], cmp_t)
         # Ensure _type is cmp_t for comparison
+        self.emit(f"{cmp_t}")
+        
+        # Point memory to left operand (just move _m, no load)
+        self.emit(f"{l['type']}{l['val']}")
+        # Set _type to cmp_t for comparison (may differ from left's type)
         self.emit(f"{cmp_t}")
         
         # CMP: mem(left) ? reg(right)

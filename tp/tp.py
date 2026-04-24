@@ -4,11 +4,12 @@ import sys, re
 # --- LEXER ---
 TOKENS = [
     ('STR', r'"([^"\\]|\\.)*"'),
+    ('CHAR', r"'(\\.|[^'\\])'"),
     ('FLOAT', r'\d+\.\d+f?'),
     ('INT', r'\d+'),
-    ('KW', r'\b(int|float|double|uint\w+|int\w+|if|else|while|for|break|return|printf)\b'),
+    ('KW', r'\b(int|float|double|char|uint\w+|int\w+|if|else|while|do|for|break|continue|return|printf|scanf|getchar|putchar)\b'),
     ('ID', r'[a-zA-Z_]\w*'),
-    ('OP', r'==|!=|<=|>=|\+\+|--|&&|\|\||[+\-*/%<>=]'),
+    ('OP', r'<<|>>|==|!=|<=|>=|\+\+|--|&&|\|\||[+\-*/%<>=&|^~!?:]'),
     ('PUNC', r'[(){};,]'),
     ('HASH', r'#'),
     ('SPACE', r'\s+'),
@@ -41,8 +42,22 @@ class While(Node):
 class For(Node):
     def __init__(self, init, cond, step, body): self.init = init; self.cond = cond; self.step = step; self.body = body
 class Break(Node): pass
+class Continue(Node): pass
+class DoWhile(Node):
+    def __init__(self, cond, body): self.cond = cond; self.body = body
 class Printf(Node):
     def __init__(self, fmt, args): self.fmt = fmt; self.args = args
+class Scanf(Node):
+    def __init__(self, fmt, args): self.fmt = fmt; self.args = args
+class Getchar(Node): pass
+class Putchar(Node):
+    def __init__(self, expr): self.expr = expr
+class Ternary(Node):
+    def __init__(self, cond, then_, else_): self.cond = cond; self.then_ = then_; self.else_ = else_
+class LogicOp(Node):
+    def __init__(self, op, left, right): self.op = op; self.left = left; self.right = right
+class Not(Node):
+    def __init__(self, expr): self.expr = expr
 
 # --- PARSER ---
 class Parser:
@@ -89,15 +104,27 @@ class Parser:
 
     def parse_stmt(self):
         t = self.cur()
-        if t[0] == 'KW' and t[1] in ('int', 'float', 'double', 'uint16_t', 'uint32_t', 'uint8_t', 'int16_t', 'int32_t', 'int8_t'):
+        if t[0] == 'KW' and t[1] in ('int', 'float', 'double', 'char', 'uint16_t', 'uint32_t', 'uint8_t', 'int16_t', 'int32_t', 'int8_t'):
             return self.parse_decl()
         if t[1] == 'if': return self.parse_if()
         if t[1] == 'while': return self.parse_while()
+        if t[1] == 'do': return self.parse_do_while()
         if t[1] == 'for': return self.parse_for()
         if t[1] == 'break':
             self.pos += 1; self.expect('PUNC', ';')
             return Break()
+        if t[1] == 'continue':
+            self.pos += 1; self.expect('PUNC', ';')
+            return Continue()
         if t[1] == 'printf': return self.parse_printf()
+        if t[1] == 'scanf': return self.parse_scanf()
+        if t[1] == 'putchar':
+            self.pos += 1
+            self.expect('PUNC', '(')
+            expr = self.parse_expr()
+            self.expect('PUNC', ')')
+            self.expect('PUNC', ';')
+            return Putchar(expr)
         
         expr = self.parse_expr()
         self.expect('PUNC', ';')
@@ -134,6 +161,14 @@ class Parser:
         self.expect('PUNC', ')')
         return While(cond, self.parse_block())
 
+    def parse_do_while(self):
+        self.expect('KW', 'do')
+        body = self.parse_block()
+        self.expect('KW', 'while'); self.expect('PUNC', '(')
+        cond = self.parse_expr()
+        self.expect('PUNC', ')'); self.expect('PUNC', ';')
+        return DoWhile(cond, body)
+
     def parse_for(self):
         self.expect('KW', 'for'); self.expect('PUNC', '(')
         init = self.parse_decl() if self.cur()[1] in ('int', 'float', 'uint16_t', 'uint32_t') else self.parse_expr()
@@ -150,6 +185,20 @@ class Parser:
         self.expect('PUNC', ')'); self.expect('PUNC', ';')
         return Printf(fmt[1:-1], args)
 
+    def parse_scanf(self):
+        self.expect('KW', 'scanf'); self.expect('PUNC', '(')
+        fmt = self.cur()[1]; self.expect('STR')
+        args = []
+        while self.match('PUNC', ','):
+            # Expect & followed by id (address-of)
+            if self.cur() == ('OP', '&'):
+                self.pos += 1
+            # parse just an identifier (simple case)
+            id_tok = self.cur(); self.expect('ID')
+            args.append(Id(id_tok[1]))
+        self.expect('PUNC', ')'); self.expect('PUNC', ';')
+        return Scanf(fmt[1:-1], args)
+
     def parse_block(self):
         if self.match('PUNC', '{'):
             stmts = []
@@ -159,9 +208,47 @@ class Parser:
 
     def parse_expr(self): return self.parse_assign()
     def parse_assign(self):
-        left = self.parse_eq()
+        left = self.parse_ternary()
         if self.match('OP', '='): return Assign(left.name, self.parse_assign())
         return left
+    def parse_ternary(self):
+        cond = self.parse_logor()
+        if self.match('OP', '?'):
+            then_ = self.parse_expr()
+            self.expect('OP', ':')
+            else_ = self.parse_assign()
+            return Ternary(cond, then_, else_)
+        return cond
+    def parse_logor(self):
+        node = self.parse_logand()
+        while self.cur()[1] == '||':
+            self.pos += 1
+            node = LogicOp('||', node, self.parse_logand())
+        return node
+    def parse_logand(self):
+        node = self.parse_bitor()
+        while self.cur()[1] == '&&':
+            self.pos += 1
+            node = LogicOp('&&', node, self.parse_bitor())
+        return node
+    def parse_bitor(self):
+        node = self.parse_bitxor()
+        while self.cur()[1] == '|':
+            self.pos += 1
+            node = BinOp('|', node, self.parse_bitxor())
+        return node
+    def parse_bitxor(self):
+        node = self.parse_bitand()
+        while self.cur()[1] == '^':
+            self.pos += 1
+            node = BinOp('^', node, self.parse_bitand())
+        return node
+    def parse_bitand(self):
+        node = self.parse_eq()
+        while self.cur()[1] == '&':
+            self.pos += 1
+            node = BinOp('&', node, self.parse_eq())
+        return node
     def parse_eq(self):
         node = self.parse_rel()
         while self.cur()[1] in ('==', '!='):
@@ -169,8 +256,14 @@ class Parser:
             node = BinOp(op, node, self.parse_rel())
         return node
     def parse_rel(self):
-        node = self.parse_add()
+        node = self.parse_shift()
         while self.cur()[1] in ('<', '>', '<=', '>='):
+            op = self.cur()[1]; self.pos += 1
+            node = BinOp(op, node, self.parse_shift())
+        return node
+    def parse_shift(self):
+        node = self.parse_add()
+        while self.cur()[1] in ('<<', '>>'):
             op = self.cur()[1]; self.pos += 1
             node = BinOp(op, node, self.parse_add())
         return node
@@ -190,6 +283,16 @@ class Parser:
         if self.cur()[1] in ('++', '--'):
             op = self.cur()[1]; self.pos += 1
             return UnaryOp(op, self.parse_primary(), prefix=True)
+        if self.cur()[1] == '!':
+            self.pos += 1
+            return Not(self.parse_unary())
+        if self.cur()[1] == '~':
+            self.pos += 1
+            return UnaryOp('~', self.parse_unary(), prefix=True)
+        if self.cur()[1] == '-':
+            self.pos += 1
+            # unary minus: 0 - expr
+            return BinOp('-', Num('0', False), self.parse_unary())
         prim = self.parse_primary()
         if self.cur()[1] in ('++', '--'):
             op = self.cur()[1]; self.pos += 1
@@ -197,20 +300,36 @@ class Parser:
         return prim
     def parse_primary(self):
         t = self.cur()
+        if t[0] == 'KW' and t[1] == 'getchar':
+            self.pos += 1
+            self.expect('PUNC', '('); self.expect('PUNC', ')')
+            return Getchar()
         if t[0] == 'ID':
             self.pos += 1; return Id(t[1])
         if t[0] == 'INT':
             self.pos += 1; return Num(t[1], False)
         if t[0] == 'FLOAT':
             self.pos += 1; return Num(t[1].replace('f',''), True)
+        if t[0] == 'CHAR':
+            self.pos += 1
+            # Parse char literal, e.g. 'a', '\n', '\t'
+            s = t[1][1:-1]  # strip quotes
+            if s.startswith('\\'):
+                escapes = {'n':'10', 't':'9', 'r':'13', '0':'0', '\\':'92', '\'':'39', '"':'34'}
+                val = escapes.get(s[1], str(ord(s[1])))
+            else:
+                val = str(ord(s))
+            return Num(val, False)
         if self.match('PUNC', '('):
             expr = self.parse_expr(); self.expect('PUNC', ')'); return expr
         raise Exception(f"Unexpected in expr: {t}")
 
 # --- CODE GEN ---
-TYPE_MAP = { 'int':'i', 'float':'f', 'double':'f', 'uint16_t':'s', 'uint32_t':'i', 'int16_t':'s', 'int8_t':'b', 'uint8_t':'b' }
+TYPE_MAP = { 'int':'i', 'float':'f', 'double':'f', 'char':'b', 'uint16_t':'s', 'uint32_t':'i', 'int16_t':'s', 'int8_t':'b', 'uint8_t':'b' }
 CMP_MAP = {'<': '?<', '>': '?>', '<=': '?l', '>=': '?g', '==': '?=', '!=': '?!'}
-ARITH_MAP = {'+': '+', '-': '-', '*': '*', '/': '/', '%': '%'}
+# Bitwise ops use 'w' prefix in Start language
+ARITH_MAP = {'+': '+', '-': '-', '*': '*', '/': '/', '%': '%',
+             '&': 'w&', '|': 'w|', '^': 'w^', '<<': 'w<', '>>': 'w>'}
 
 class CodeGen:
     def __init__(self):
@@ -413,6 +532,15 @@ class CodeGen:
             self.emit('t]')
         elif isinstance(node, Break):
             self.emit('x:') # start language break token is x: (or just x and then it requires :) actually let's use x: as in older transplier
+        elif isinstance(node, Continue):
+            self.emit('c')
+        elif isinstance(node, DoWhile):
+            self.emit('t[')
+            self.visit(node.body)
+            if not (isinstance(node.cond, Num) and node.cond.val == '1'):
+                self.emit_cond(node.cond)
+                self.emit('~(x:)')
+            self.emit('t]')
         elif isinstance(node, If):
             self.emit_cond(node.cond)
             self.emit('(')
@@ -421,6 +549,105 @@ class CodeGen:
                 self.emit(':')
                 self.visit(node.else_body)
             self.emit(')')
+        elif isinstance(node, Getchar):
+            # Read one byte into _INPUT_ buffer, return it as byte
+            self.ensure_input_buf()
+            # Point _m to _INPUT_, emit `,` to read, keep result in memory
+            self.emit('b_INPUT_,')
+            # Return as byte value (caller will load via load_to_reg)
+            return {'val': '_INPUT_', 'type': 'b', 'is_lit': False, 'is_tmp': False}
+        elif isinstance(node, Putchar):
+            # Write one char to stdout
+            res = self.visit(node.expr)
+            self.load_to_reg(res, target_type='b')
+            # To print char: store to _STR_ as single byte, then print string of 1
+            # Simpler: use the same trick as printf %c
+            self.emit('i_STR_! i_STR_;.')
+            if res.get('is_tmp', False): self.free_tmp(res['val'])
+        elif isinstance(node, Scanf):
+            self.ensure_input_buf()
+            fmt = node.fmt
+            arg_idx = 0
+            i = 0
+            while i < len(fmt):
+                if fmt[i] == '%' and i + 1 < len(fmt) and arg_idx < len(node.args):
+                    spec = fmt[i+1]
+                    vn = node.args[arg_idx].name.upper()
+                    st = self.vars[vn]
+                    if spec == 'c':
+                        # Read one char directly into var
+                        self.emit(f'b{vn},')
+                    elif spec == 'd':
+                        # Read decimal integer (accumulate digits)
+                        self.emit_read_int(vn, st)
+                    arg_idx += 1
+                    i += 2
+                else:
+                    # Skip literal chars in format (for scanf, these are whitespace to skip)
+                    i += 1
+        elif isinstance(node, Ternary):
+            # Evaluate cond; if true, store then_ result, else store else_
+            # Use a tmp to hold the result
+            # First evaluate branches to infer type
+            # Emit: cond (then_ to tmp : else_ to tmp)
+            self.emit_cond(node.cond)
+            self.emit('(')
+            t_res = self.visit(node.then_)
+            tmp = self.alloc_tmp(t_res['type'])
+            self.load_to_reg(t_res, target_type=t_res['type'])
+            self.cast_reg(t_res['type'], t_res['type'])
+            self.emit(f"{t_res['type']}{tmp}!")
+            if t_res.get('is_tmp', False): self.free_tmp(t_res['val'])
+            self.emit(':')
+            e_res = self.visit(node.else_)
+            self.load_to_reg(e_res, target_type=t_res['type'])
+            self.cast_reg(e_res['type'], t_res['type'])
+            self.emit(f"{t_res['type']}{tmp}!")
+            if e_res.get('is_tmp', False): self.free_tmp(e_res['val'])
+            self.emit(')')
+            return {'val': tmp, 'type': t_res['type'], 'is_lit': False, 'is_tmp': True}
+        elif isinstance(node, Not):
+            # Logical not: returns 0 or 1 based on whether expr is nonzero
+            tmp = self.alloc_tmp('b')
+            # Use emit_cond to set _ans, then invert
+            self.emit_cond(node.expr)
+            self.emit('~')  # invert _ans
+            self.emit('(')
+            self.emit(f'b1 b{tmp}!')
+            self.emit(':')
+            self.emit(f'b0 b{tmp}!')
+            self.emit(')')
+            return {'val': tmp, 'type': 'b', 'is_lit': False, 'is_tmp': True}
+        elif isinstance(node, LogicOp):
+            # Short-circuit logic: && and ||
+            # Result is a byte (0 or 1)
+            tmp = self.alloc_tmp('b')
+            if node.op == '&&':
+                # result = (left) ? (right ? 1 : 0) : 0
+                self.emit_cond(node.left)
+                self.emit('(')
+                self.emit_cond(node.right)
+                self.emit('(')
+                self.emit(f'b1 b{tmp}!')
+                self.emit(':')
+                self.emit(f'b0 b{tmp}!')
+                self.emit(')')
+                self.emit(':')
+                self.emit(f'b0 b{tmp}!')
+                self.emit(')')
+            else:  # ||
+                self.emit_cond(node.left)
+                self.emit('(')
+                self.emit(f'b1 b{tmp}!')
+                self.emit(':')
+                self.emit_cond(node.right)
+                self.emit('(')
+                self.emit(f'b1 b{tmp}!')
+                self.emit(':')
+                self.emit(f'b0 b{tmp}!')
+                self.emit(')')
+                self.emit(')')
+            return {'val': tmp, 'type': 'b', 'is_lit': False, 'is_tmp': True}
 
     def emit_cond(self, node):
         if not isinstance(node, BinOp) or node.op not in CMP_MAP:
@@ -486,6 +713,39 @@ class CodeGen:
         self.emit("i_STR_^")
         self.visit(ast)
         return '\n'.join(self.out)
+
+    def ensure_input_buf(self):
+        """Ensure _INPUT_ byte var exists for reading input."""
+        if '_INPUT_' not in self.vars:
+            self.vars['_INPUT_'] = 'b'
+
+    def emit_read_int(self, vn, st):
+        """Generate code to read a decimal integer from stdin into variable vn.
+        Reads digit chars, accumulating: VAR = VAR*10 + (c - '0').
+        Stops when a non-digit is read.
+        Uses AST-level primitives through visit() for correct type handling.
+        """
+        # Initialize VAR = 0 : visit Assign(vn, Num(0))
+        self.visit(Assign(vn, Num('0', False)))
+        # Read first char
+        self.emit('b_INPUT_,')
+        # Loop: while char is in '0'..'9' accumulate and read next
+        self.emit('t[')
+        # Compare c < '0' or c > '9' -> break
+        # Break if _INPUT_ < 48 or _INPUT_ > 57
+        self.visit(If(
+            LogicOp('||',
+                    BinOp('<', Id('_INPUT_'), Num('48', False)),
+                    BinOp('>', Id('_INPUT_'), Num('57', False))),
+            Program([Break()]), None))
+        # VAR = VAR * 10 + (_INPUT_ - 48)
+        self.visit(Assign(vn,
+            BinOp('+',
+                  BinOp('*', Id(vn), Num('10', False)),
+                  BinOp('-', Id('_INPUT_'), Num('48', False)))))
+        # Read next char
+        self.emit('b_INPUT_,')
+        self.emit('t]')
 
 if __name__ == '__main__':
     with open(sys.argv[1]) as f: code = f.read()

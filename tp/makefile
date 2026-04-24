@@ -27,13 +27,21 @@ $(TP_BUILD)/%: $(TESTS_DIR)/%.c | $(TP_BUILD)
 	gcc $< -o $@ 2>/dev/null || clang $< -o $@ 2>/dev/null
 
 $(TP_BUILD)/%.expected: $(TP_BUILD)/% | $(TP_BUILD)
-	$< > $@ 2>&1 || true
+	@if [ -f $(TESTS_DIR)/$*.in ]; then \
+		$< < $(TESTS_DIR)/$*.in > $@ 2>&1 || true; \
+	else \
+		$< > $@ 2>&1 || true; \
+	fi
 
 $(TP_BUILD)/%.st: $(TESTS_DIR)/%.c $(TRANSPILER) | $(TP_BUILD)
 	python3 $(TRANSPILER) $< > $@ 2>&1
 
 $(TP_BUILD)/%.actual: $(TP_BUILD)/%.st $(CLI) | $(TP_BUILD)
-	$(CLI) -t 30 -S 100000 -O 100000 -f $< > $@ 2>&1 || true
+	@if [ -f $(TESTS_DIR)/$*.in ]; then \
+		$(CLI) -t 30 -S 100000 -O 100000 -f $< < $(TESTS_DIR)/$*.in > $@ 2>&1 || true; \
+	else \
+		$(CLI) -t 30 -S 100000 -O 100000 -f $< > $@ 2>&1 || true; \
+	fi
 
 test: $(TP_BUILD) $(EXPECTED_FILES) $(ACTUAL_FILES)
 	@echo "=== Testing C→Start converter ==="

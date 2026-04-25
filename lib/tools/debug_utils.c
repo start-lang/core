@@ -381,5 +381,9 @@ void print_exec_info(void) {
   if (!steps) return;
   printf("\n\n%"PRIu64" op\n", steps);
   if (follow_mem) printf("%d bytes\n", mem_used);
+  time_spent = (clock() - start_time) * 1000 / CLOCKS_PER_SEC;
   printf("%.2f s\n", time_spent/1000.0);
+  if (time_spent > 0) {
+    printf("%.2f mop/s\n", steps / 1000000.0 / (time_spent/1000.0));
+  }
 }

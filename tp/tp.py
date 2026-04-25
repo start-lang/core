@@ -3,13 +3,14 @@ import sys, re
 
 # --- LEXER ---
 TOKENS = [
+    ('COMMENT', r'//.*|/\*[\s\S]*?\*/'),
     ('STR', r'"([^"\\]|\\.)*"'),
     ('CHAR', r"'(\\.|[^'\\])'"),
     ('FLOAT', r'\d+\.\d+f?'),
     ('INT', r'\d+'),
     ('KW', r'\b(int|float|double|char|uint\w+|int\w+|if|else|while|do|for|break|continue|return|printf|scanf|getchar|putchar)\b'),
     ('ID', r'[a-zA-Z_]\w*'),
-    ('OP', r'<<|>>|==|!=|<=|>=|\+\+|--|&&|\|\||[+\-*/%<>=&|^~!?:]'),
+    ('OP', r'<<|>>|==|!=|<=|>=|\+=|-=|\*=|/=|%=|\+\+|--|&&|\|\||[+\-*/%<>=&|^~!?:]'),
     ('PUNC', r'[(){};,]'),
     ('HASH', r'#'),
     ('SPACE', r'\s+'),
@@ -17,7 +18,7 @@ TOKENS = [
 TOK_REGEX = '|'.join(f'(?P<{name}>{pat})' for name, pat in TOKENS)
 
 def lex(code):
-    return [(m.lastgroup, m.group(m.lastgroup)) for m in re.finditer(TOK_REGEX, code) if m.lastgroup not in ('SPACE', 'HASH')]
+    return [(m.lastgroup, m.group(m.lastgroup)) for m in re.finditer(TOK_REGEX, code) if m.lastgroup not in ('SPACE', 'HASH', 'COMMENT')]
 
 # --- AST NODES ---
 class Node: pass
@@ -126,6 +127,8 @@ class Parser:
             self.expect('PUNC', ';')
             return Putchar(expr)
         
+        # Debug: print current token before parsing expression
+        # print(f"DEBUG parse_stmt: current token = {t}, pos={self.pos}")
         expr = self.parse_expr()
         self.expect('PUNC', ';')
         return expr
@@ -209,7 +212,16 @@ class Parser:
     def parse_expr(self): return self.parse_assign()
     def parse_assign(self):
         left = self.parse_ternary()
-        if self.match('OP', '='): return Assign(left.name, self.parse_assign())
+        if self.cur()[0] == 'OP' and self.cur()[1] in ('=', '+=', '-=', '*=', '/=', '%='):
+            op = self.cur()[1]
+            self.pos += 1
+            if op == '=':
+                return Assign(left.name, self.parse_assign())
+            else:
+                # Compound assignment: a += b -> a = a + b
+                # Convert compound op to binary op
+                bin_op = op[0]  # '+', '-', '*', '/', '%'
+                return Assign(left.name, BinOp(bin_op, left, self.parse_ternary()))
         return left
     def parse_ternary(self):
         cond = self.parse_logor()

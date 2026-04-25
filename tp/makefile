@@ -18,6 +18,8 @@ ACTUAL_FILES := $(addprefix $(TP_BUILD)/, $(addsuffix .actual, $(TEST_NAMES)))
 
 .PHONY: all test clean help
 
+.PRECIOUS: $(TP_BUILD)/%.st $(C_BINARIES)
+
 all: test
 
 $(TP_BUILD):
@@ -44,17 +46,20 @@ $(TP_BUILD)/%.actual: $(TP_BUILD)/%.st $(CLI) | $(TP_BUILD)
 		$(CLI) -t 30 -S 100000 -O 100000 -f $< > $@ 2>&1 || true; \
 	fi
 
+.PHONY: build
+build: $(TP_BUILD) $(EXPECTED_FILES) $(ACTUAL_FILES)
+
+.PHONY: test
 test: $(TP_BUILD) $(EXPECTED_FILES) $(ACTUAL_FILES)
-	@echo "=== Testing C→Start converter ==="
 	@passed=0; \
 	failed=0; \
 	for actual_file in $(ACTUAL_FILES); do \
 		test_name=$$(basename $$actual_file .actual); \
 		expected_file=$$(echo $$actual_file | sed 's/.actual/.expected/'); \
 		if [ -f "$$expected_file" ]; then \
-			echo "Testing: $$test_name"; \
+			echo "> $$test_name"; \
 			if diff "$$expected_file" "$$actual_file" > /dev/null 2>&1; then \
-				echo "  ✓ PASS"; \
+				echo "  ✓ OK"; \
 				passed=$$((passed + 1)); \
 			else \
 				echo "  ✗ FAIL: Output differs"; \
@@ -70,8 +75,8 @@ test: $(TP_BUILD) $(EXPECTED_FILES) $(ACTUAL_FILES)
 		fi; \
 	done; \
 	echo ""; \
-	echo "=== Test run complete ==="; \
-	echo "Passed: $$passed, Failed: $$failed"
+	echo "=== run complete ==="; \
+	echo "$$passed ok / $$failed failed"
 
 clean:
 	@rm -rf $(TP_BUILD)

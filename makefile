@@ -279,7 +279,7 @@ test-cli-mandelbrot: ${CLI_OUTPUT} ${WASM_CLI_OUTPUT}
 
 .PHONY: test-tp
 test-tp: ${CLI_OUTPUT}
-	$(MAKE) -C tp test
+	$(MAKE) -j -C tp build test
 
 ## TEST
 

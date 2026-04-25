@@ -412,39 +412,73 @@ class CodeGen:
 
     def visit(self, node):
         if isinstance(node, Program):
-            for s in node.stmts: self.visit(s)
+            for s in node.stmts:
+                # Statement-level postfix ++/-- discards the return value;
+                # use the cheaper prefix path (no temp save/restore).
+                if isinstance(s, UnaryOp) and not s.prefix and s.op in ('++', '--'):
+                    self.visit(UnaryOp(s.op, s.expr, prefix=True))
+                else:
+                    self.visit(s)
         elif isinstance(node, Decl):
             st = TYPE_MAP.get(node.type_, 'i')
             for id_, expr in node.decls:
                 vn = id_.upper()
                 self.vars[vn] = st
                 if expr:
-                    res = self.visit(expr)
-                    if res.get('on_stack', False):
-                        self.emit(f"{st}o {vn}!")
+                    if isinstance(expr, BinOp) and expr.op in ARITH_MAP:
+                        self.emit_assign_binop(expr, vn, st)
                     else:
-                        self.load_to_reg(res, target_type=st)
-                        self.cast_reg(res['type'], st)
-                        # Ensure _type matches var type before store
-                        self.emit(f"{st}")
-                        self.emit(f"{vn}!")
-                    if res.get('is_tmp', False): self.free_tmp(res['val'])
+                        res = self.visit(expr)
+                        if res.get('on_stack', False):
+                            self.emit(f"{st}o {vn}!")
+                        else:
+                            self.load_to_reg(res, target_type=st)
+                            self.cast_reg(res['type'], st)
+                            self.emit(f"{st}")
+                            self.emit(f"{vn}!")
+                        if res.get('is_tmp', False): self.free_tmp(res['val'])
         elif isinstance(node, Assign):
             vn = node.id_.upper()
             st = self.vars[vn]
-            res = self.visit(node.expr)
-            if res.get('on_stack', False):
-                self.emit(f"{st}o {vn}!")
+            if isinstance(node.expr, BinOp) and node.expr.op in ARITH_MAP:
+                self.emit_assign_binop(node.expr, vn, st)
             else:
-                self.load_to_reg(res, target_type=st)
-                self.cast_reg(res['type'], st)
-                self.emit(f"{st}")
-                self.emit(f"{vn}!")
-            if res['is_tmp']: self.free_tmp(res['val'])
+                res = self.visit(node.expr)
+                if res.get('on_stack', False):
+                    self.emit(f"{st}o {vn}!")
+                else:
+                    self.load_to_reg(res, target_type=st)
+                    self.cast_reg(res['type'], st)
+                    self.emit(f"{st}")
+                    self.emit(f"{vn}!")
+                if res['is_tmp']: self.free_tmp(res['val'])
             return {'val': vn, 'type': st, 'is_lit': False, 'is_tmp': False}
         elif isinstance(node, BinOp):
             if node.op in CMP_MAP:
                 return self.emit_cond(node)
+            # Constant folding: evaluate literal-only expressions at compile time
+            if isinstance(node.left, Num) and isinstance(node.right, Num):
+                lv = float(node.left.val) if node.left.is_float else int(node.left.val)
+                rv = float(node.right.val) if node.right.is_float else int(node.right.val)
+                is_f = node.left.is_float or node.right.is_float
+                if node.op == '+':   result = lv + rv
+                elif node.op == '-': result = lv - rv
+                elif node.op == '*': result = lv * rv
+                elif node.op == '/' and rv != 0:
+                    result = lv / rv if is_f else int(lv) // int(rv)
+                elif node.op == '%' and rv != 0:
+                    result = int(lv) % int(rv); is_f = False
+                elif node.op == '&':  result = int(lv) & int(rv);  is_f = False
+                elif node.op == '|':  result = int(lv) | int(rv);  is_f = False
+                elif node.op == '^':  result = int(lv) ^ int(rv);  is_f = False
+                elif node.op == '<<': result = int(lv) << int(rv); is_f = False
+                elif node.op == '>>': result = int(lv) >> int(rv); is_f = False
+                else: result = None
+                # Start language has no negative literal syntax; skip folding
+                if result is not None and result >= 0:
+                    t = 'f' if is_f else 'i'
+                    return {'val': str(int(result) if not is_f else result),
+                            'type': t, 'is_lit': True, 'is_tmp': False}
             l = self.visit(node.left)
             r = self.visit(node.right)
             res_t = 'f' if 'f' in (l['type'], r['type']) else 'i'
@@ -542,7 +576,11 @@ class CodeGen:
             self.emit_cond(node.cond)
             self.emit('~(x:)')
             self.visit(node.body)
-            self.visit(node.step)
+            # For-step result is always discarded; treat postfix as prefix.
+            step = node.step
+            if isinstance(step, UnaryOp) and not step.prefix and step.op in ('++', '--'):
+                step = UnaryOp(step.op, step.expr, prefix=True)
+            self.visit(step)
             self.emit('t]')
         elif isinstance(node, Break):
             self.emit('x:') # start language break token is x: (or just x and then it requires :) actually let's use x: as in older transplier
@@ -716,6 +754,96 @@ class CodeGen:
         if l['is_tmp']: self.free_tmp(l['val'])
         if r['is_tmp']: self.free_tmp(r['val'])
 
+    def peephole_tokens(self, tokens):
+        """Remove standalone type tokens that repeat the already-current type."""
+        TYPE_CHARS = {'i', 'b', 's', 'f'}
+        result = []
+        last_type = None
+        for tok in tokens:
+            if not tok:
+                continue
+            first = tok[0]
+            if first in TYPE_CHARS:
+                new_type = first
+                if len(tok) == 1 and new_type == last_type:
+                    continue  # redundant standalone type token
+                last_type = new_type
+            result.append(tok)
+        return result
+
+    def emit_assign_binop(self, bop, vn, st):
+        """Emit optimized code for vn = bop (arithmetic BinOp only).
+
+        Three cases in order of preference:
+          1. a = a OP b  →  load b; a OP=
+          2. a = b OP a  (commutative) →  load b; a OP=
+          3. a = b OP c  →  load b; a=b; load c; a OP=  (use a as accumulator)
+          fallback: use a temp (for e.g. a = b - a, non-commutative + right==target)
+        """
+        if bop.op not in ARITH_MAP:
+            res = self.visit(bop)
+            self.load_to_reg(res, target_type=st)
+            self.cast_reg(res['type'], st)
+            self.emit(st)
+            self.emit(f"{vn}!")
+            if res.get('is_tmp'): self.free_tmp(res['val'])
+            return
+
+        COMMUTATIVE = ('+', '*', '&', '|', '^')
+        left_is_vn  = isinstance(bop.left, Id)  and bop.left.name.upper()  == vn
+        right_is_vn = isinstance(bop.right, Id) and bop.right.name.upper() == vn
+
+        if left_is_vn:
+            # a = a OP b
+            r = self.visit(bop.right)
+            res_t = 'f' if (r['type'] == 'f' or st == 'f') else st
+            self.load_to_reg(r, target_type=res_t)
+            if r['type'] != res_t and not r['is_lit']:
+                self.cast_reg(r['type'], res_t)
+            self.emit(res_t)
+            self.emit(f"{vn}{ARITH_MAP[bop.op]}")
+            if r.get('is_tmp'): self.free_tmp(r['val'])
+
+        elif right_is_vn and bop.op in COMMUTATIVE:
+            # a = b OP a  (commutative → treat as a = a OP b)
+            l = self.visit(bop.left)
+            res_t = 'f' if (l['type'] == 'f' or st == 'f') else st
+            self.load_to_reg(l, target_type=res_t)
+            if l['type'] != res_t and not l['is_lit']:
+                self.cast_reg(l['type'], res_t)
+            self.emit(res_t)
+            self.emit(f"{vn}{ARITH_MAP[bop.op]}")
+            if l.get('is_tmp'): self.free_tmp(l['val'])
+
+        elif not right_is_vn:
+            # a = b OP c  — use a as accumulator (no separate temp needed)
+            l = self.visit(bop.left)
+            r = self.visit(bop.right)
+            res_t = 'f' if ('f' in (l['type'], r['type']) or st == 'f') else st
+
+            self.load_to_reg(l, target_type=res_t)
+            self.cast_reg(l['type'], res_t)
+            self.emit(res_t)
+            self.emit(f"{vn}!")
+
+            self.load_to_reg(r, target_type=res_t)
+            if r['type'] != res_t and not r['is_lit']:
+                self.cast_reg(r['type'], res_t)
+            self.emit(res_t)
+            self.emit(f"{vn}{ARITH_MAP[bop.op]}")
+
+            if l.get('is_tmp'): self.free_tmp(l['val'])
+            if r.get('is_tmp'): self.free_tmp(r['val'])
+
+        else:
+            # a = b OP a, non-commutative (e.g. a = b - a) — must use temp
+            res = self.visit(bop)
+            self.load_to_reg(res, target_type=st)
+            self.cast_reg(res['type'], st)
+            self.emit(st)
+            self.emit(f"{vn}!")
+            if res.get('is_tmp'): self.free_tmp(res['val'])
+
     def generate(self, ast):
         self.pass_num = 1
         self.visit(ast)
@@ -726,7 +854,9 @@ class CodeGen:
             self.emit(f"{st}{vn}^ {st}>")
         self.emit("i_STR_^")
         self.visit(ast)
-        return ' '.join(self.out)
+        tokens = ' '.join(self.out).split()
+        tokens = self.peephole_tokens(tokens)
+        return ' '.join(tokens)
 
     def ensure_input_buf(self):
         """Ensure _INPUT_ byte var exists for reading input."""

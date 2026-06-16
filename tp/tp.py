@@ -10,7 +10,7 @@ TOKENS = [
     ('INT', r'\d+'),
     ('KW', r'\b(int|float|double|char|uint\w+|int\w+|if|else|while|do|for|break|continue|return|printf|scanf|getchar|putchar)\b'),
     ('ID', r'[a-zA-Z_]\w*'),
-    ('OP', r'<<|>>|==|!=|<=|>=|\+=|-=|\*=|/=|%=|\+\+|--|&&|\|\||[+\-*/%<>=&|^~!?:]'),
+    ('OP', r'<<=|>>=|<<|>>|==|!=|<=|>=|\+=|-=|\*=|/=|%=|&=|\|=|\^=|\+\+|--|&&|\|\||[+\-*/%<>=&|^~!?:]'),
     ('PUNC', r'[(){};,]'),
     ('HASH', r'#'),
     ('SPACE', r'\s+'),
@@ -212,7 +212,7 @@ class Parser:
     def parse_expr(self): return self.parse_assign()
     def parse_assign(self):
         left = self.parse_ternary()
-        if self.cur()[0] == 'OP' and self.cur()[1] in ('=', '+=', '-=', '*=', '/=', '%='):
+        if self.cur()[0] == 'OP' and self.cur()[1] in ('=', '+=', '-=', '*=', '/=', '%=', '<<=', '>>=', '&=', '|=', '^='):
             op = self.cur()[1]
             self.pos += 1
             if op == '=':
@@ -220,7 +220,7 @@ class Parser:
             else:
                 # Compound assignment: a += b -> a = a + b
                 # Convert compound op to binary op
-                bin_op = op[0]  # '+', '-', '*', '/', '%'
+                bin_op = op[:-1]  # '+', '-', '*', '/', '%', '<<', '>>', '&', '|', '^'
                 return Assign(left.name, BinOp(bin_op, left, self.parse_ternary()))
         return left
     def parse_ternary(self):

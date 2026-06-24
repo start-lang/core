@@ -459,6 +459,7 @@ void validate(void){
   assert_eq((run("8!?=[1-?! c x ]"), RM.i8[0]), 1);
   assert_eq((run("1! t[ 2 t[ 3 x 4! ] 5 ?=]"), s->reg.i8[0]), 5);
   assert_eq((run("1! t[ 2 t[ 3 x 4! ] 5 ?=]"), RM.i8[0]), 1);
+  assert_eq((run("1! t[ 1?=(x:) t[ 2 x ] 3! t] 4!"), s->reg.i8[0]), 4);
   assert_eq((run("1! t[ 2 t[ 3 (x:c) 4! t] 5 ?=]"), s->reg.i8[0]), 5);
   assert_eq((run("0! t[ t[7?=(0! x :1+) 3 t] 5 ??]"), s->reg.i8[0]), 5);
   assert_eq((run("t[t[1?=(c:(c:x))]]"), REG.i8[0]), 1);

@@ -14,12 +14,14 @@ int8_t f_input(State * s);
 uint8_t jump(State * s){
   uint8_t token = *(s->src);
   uint8_t prev = 0;
+  uint8_t is_while = (s->_op_result == JM_EWHI || s->_op_result == JM_WHI0
+      || s->_op_result == JM_WHI1 || s->_op_result == JM_NXWH);
   while (token) {
-    if (token == IF){
+    if (token == IF && !is_while){
       s->_matching++;
     } else if (token == ELSE && s->_op_result == JM_EIFE && s->_matching == 1) {
       break;
-    } else if (token == ENDIF) {
+    } else if (token == ENDIF && !is_while) {
       s->_matching--;
       if (s->_op_result <= JM_ENIF && ! s->_matching){
         break;
@@ -31,10 +33,7 @@ uint8_t jump(State * s){
       }
     } else if (token == ENDWHILE) {
       s->_matching--;
-      if (s->_op_result == JM_EWHI && ! s->_matching){
-        break;
-      }
-      if (s->_op_result == JM_NXWH){
+      if ((s->_op_result == JM_EWHI || s->_op_result == JM_NXWH) && ! s->_matching){
         break;
       }
     } else if (token == COMMENT_OUT) {
@@ -238,10 +237,10 @@ uint8_t st_op(uint8_t token, State * s){
     return SUCCESS;
   }
 
-  if (token == PRINT && (prev < '0' || prev > '9')) {
+  if (token == PRINT && (prev < '0' || prev > '9') && !s->_idlen) {
     f_print(s);
     return SUCCESS;
-  } else if (token == INPUT) {
+  } else if (token == INPUT && !s->_idlen) {
     f_input(s);
     return SUCCESS;
   }
@@ -316,7 +315,9 @@ uint8_t st_op(uint8_t token, State * s){
       }
     }
     s->_idlen = 0;
-  }
+    }
+    if (token == INPUT) { f_input(s); return SUCCESS; }
+    if (token == PRINT && (prev < '0' || prev > '9')) { f_print(s); return SUCCESS; }
 
   uint8_t cont = 0;
   if (s->_lookahead){
@@ -587,9 +588,14 @@ uint8_t st_op(uint8_t token, State * s){
           jmpmatch = JM_NXWH;
         } else if (token == CONTINUE){
           //jump to while [
-          s->_forward = 0;
-          s->_matching = -1;
-          jmpmatch = JM_WHI0;
+          if (s->_cond && !s->_ans) {
+            s->_cond = 0;
+          } else {
+            s->_cond = 0;
+            s->_forward = 0;
+            s->_matching = -1;
+            jmpmatch = JM_WHI1;
+          }
         } else if (token == ENDWHILE && s->_ans){
           //jump to WHILE [ + 1
           s->_cond = 0;

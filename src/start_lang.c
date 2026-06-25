@@ -139,10 +139,10 @@ int8_t st_step(State * s) {
     s->src += s->_forward ? 1 : -1;;
     if (s->_op_result != 0) {
       if (jump(s)) return BL_PREV;
-      if (s->_op_result != JM_WHI0){
+      if (s->_op_result != JM_WHI0 && *(s->src) != 0){
         s->src++;
-        s->_op_result = 0;
       }
+      s->_op_result = 0;
     }
   }
   return SUCCESS;

@@ -106,7 +106,7 @@ container-img-pull:
 container-run:
 	$(CONTAINER_RUN) $(CMD)
 
-CONTAINER_TASKS = test test-long benchmark memcheck build-wasm build-cli svg assets
+CONTAINER_TASKS = test test-long benchmark memcheck asan build-wasm build-cli svg assets
 .PHONY: $(addprefix container-, $(CONTAINER_TASKS))
 $(addprefix container-, $(CONTAINER_TASKS)):
 	$(MAKE) container-run CMD="make $(subst container-,,$@)"
@@ -141,6 +141,12 @@ else
 	chmod +x ${TEST_OUTPUT}
 	leaks -atExit -- ${TEST_OUTPUT}
 endif
+
+.PHONY: asan
+asan: init
+	${CC} ${CFLAGS} ${ASSERTS} -fsanitize=address -fno-omit-frame-pointer ${TEST} -o ${TEST_OUTPUT}
+	chmod +x ${TEST_OUTPUT}
+	${TEST_OUTPUT}
 
 .PHONY: coverage
 coverage: init

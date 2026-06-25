@@ -39,6 +39,9 @@ jobs:
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
+      - name: Cleanup codecov artifacts
+        run: rm -f codecov codecov.SHA256SUM codecov.SHA256SUM.sig codecov-*
+
       - name: Update assets
         run: |
           git config --global --add safe.directory $GITHUB_WORKSPACE

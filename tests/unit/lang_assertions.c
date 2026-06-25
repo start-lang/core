@@ -353,6 +353,9 @@ void validate(void){
   assert_eq((run("f3!2/;?g"), s->_ans), 1);
   assert_eq((run("f3!2/;??"), s->_ans), 1);
   assert_eq((run("f3!2/;?z"), s->_ans), 0);
+  // invalid cmp op
+  assert_eq(run("1?B"), JM_PEXC);
+  assert_eq(run("1?@"), JM_PEXC);
   end_section();
 
   begin_section("OP");
@@ -523,6 +526,9 @@ void validate(void){
   assert_eq((run("N^>B^0!>A^1!N 8!?=[N 1-?!A;B@A+]"), RM.i8[0]), 21);
   assert_eq((run("A^0!>2!A;"), RM.i8[0]), 0);
   assert_eq((run("A^0!>2!A;>A^ A;"), RM.i8[0]), 2);
+  // overflow (MAX_IDLEN = 16)
+  assert_eq(run("ABCDEFGHIJKLMNO123"), JM_ERR0);
+  assert_eq(run("_0123456789ABCDE"), JM_ERR0);
   end_section();
 
   begin_section("Functions");
@@ -605,6 +611,8 @@ void validate(void){
   assert_eq((run("I{A^,[>,10?!(0?!)]33!A#}I>I"), M[0]), 123);
   strcat(input, "123\n231");
   assert_eq((run("I{A^,[>,10?!(0?!)]33!A#}I>I"), M[1]), 231);
+  // PRINT after digit (non-float context)
+  assert_eq((run("1."), REG.i8[0]), 1);
   end_section();
 
   #ifdef ENABLE_FILES
@@ -788,5 +796,11 @@ void validate(void){
   assert_float_eq((run("f3.1415"), REG.f32), 3.1415f);
   assert_str_eq((run("f3.1415! ."), out), "U");
   assert_float_eq((run("f5.2!2.6/ "), RM.f32), 2.0f);
+  // float while condition
+  assert_eq(run("f1! [x]"), 0);
+  assert_eq(run("f0! [x]"), 0);
+  // invalid char in float context
+  assert_eq(run("fq"), JM_PEXC);
+  assert_eq(run("fj"), JM_PEXC);
   end_section();
 }

@@ -257,7 +257,14 @@ benchmark: init ${BMARK_OUTPUT}.gcc ${BMARK_OUTPUT}.clang ${WASM_BMARK_OUTPUT}
 .PHONY: test-cli-mandelbrot
 test-cli-mandelbrot: ${CLI_OUTPUT} ${WASM_CLI_OUTPUT}
 	time ${CLI_OUTPUT} -e -f tests/mandelbrot/m.st
-	time node ${WASM_RUNTIME} ${WASM_CLI_OUTPUT} -e "$$(cat tests/mandelbrot/m.st)"
+	time node ${WASM_RUNTIME} ${CLI_OUTPUT} -e "$$(cat tests/mandelbrot/m.st)"
+
+SLOW_PRIMES_ST_S = ${BUILD}/slow_primes_s.st
+
+.PHONY: slow-primes
+slow-primes: ${CLI_OUTPUT}
+	python3 tp/tp.py tp/slow_primes.c | sed -E 's/i/s/g' > ${SLOW_PRIMES_ST_S}
+	time ${CLI_OUTPUT} -e -S 0 -t 0 -f ${SLOW_PRIMES_ST_S} || true
 
 ## TRANSPILER
 

@@ -142,7 +142,9 @@ void arg_parse(int argc, char* argv[]){
       follow_vars = 1;
     } else if (strcmp("-S", argv[i]) == 0 || strcmp("--max-steps", argv[i]) == 0) {
       if (i + 1 >= argc) { help(argv[0]); exit(1); }
-      max_steps = atoi(argv[++i]) * 1000;
+      max_steps = atoi(argv[++i]);
+      if (max_steps) max_steps *= 1000;
+      else max_steps = -1;
     } else if (strcmp("-O", argv[i]) == 0 || strcmp("--max-output", argv[i]) == 0) {
       if (i + 1 >= argc) { help(argv[0]); exit(1); }
       max_output = atoi(argv[++i]);
@@ -155,7 +157,9 @@ void arg_parse(int argc, char* argv[]){
       exec_info = 1;
     } else if (strcmp("-t", argv[i]) == 0 || strcmp("--timeout", argv[i]) == 0) {
       if (i + 1 >= argc) { help(argv[0]); exit(1); }
-      timeout = atoi(argv[++i]) * 1000;
+      timeout = atoi(argv[++i]);
+      if (timeout) timeout *= 1000;
+      else timeout = -1;
     } else if (strcmp("-s", argv[i]) == 0 || strcmp("--src", argv[i]) == 0) {
       print_src = 1;
     } else if (strcmp("-v", argv[i]) == 0 || strcmp("--version", argv[i]) == 0) {

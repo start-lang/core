@@ -282,8 +282,6 @@ uint8_t debug_state(State * s, uint8_t enable, uint8_t interactive){
       src++;
       srclen++;
     }
-  } else if (steps > 10000 && s->src - s->_src0 == srclen) {
-    time_spent = (clock() - start_time) * 1000 / CLOCKS_PER_SEC;
   }
 
   uint8_t stop = 0;
@@ -381,7 +379,14 @@ uint8_t debug_state(State * s, uint8_t enable, uint8_t interactive){
 
 void print_exec_info(void) {
   if (!steps) return;
+  if (time_spent == 0) {
+    time_spent = (clock() - start_time) * 1000 / CLOCKS_PER_SEC;
+  }
+  float secs = time_spent / 1000.0;
   printf("\n\n%"PRIu64" op\n", steps);
   if (follow_mem) printf("%d bytes\n", mem_used);
-  printf("%.2f s\n", time_spent/1000.0);
+  printf("%.2f s\n", secs);
+  if (secs > 0) {
+    printf("%.2f mop/s\n", (float)steps / secs / 1000000.0);
+  }
 }

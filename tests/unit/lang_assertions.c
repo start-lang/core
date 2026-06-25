@@ -710,6 +710,13 @@ void validate(void){
   assert_str_eq((run("f3!2/ ;if PRINTNUM"), out), "1.00");
   //byte to int to float
   assert_str_eq((run("b32 if PRINTNUM"), out), "32.00");
+  // TYPE_CAST 'e': raw bit reinterpretation float->int32
+  assert_eq((run("f0! ;e"), REG.i32), 0);
+  assert_eq((run("f1! ;e"), REG.i32), 1065353216);
+  assert_eq((run("f3!2/ ;e"), REG.i32), 1069547520);
+  // TYPE_CAST 'e': raw bit reinterpretation int->float (no error)
+  assert_eq(run("i3 e"), 0);
+  assert_eq(run("i0 e"), 0);
   end_section();
 
   begin_section("ROTATE REGISTER");

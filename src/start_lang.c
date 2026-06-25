@@ -799,10 +799,14 @@ uint8_t st_op(uint8_t token, State * s){
       }
       break;
     case TYPE_CAST:
-      if (s->_type == T_FLOAT) {
-        REG.i32 = REG.f32;
+      if (s->_type == FLOAT) {
+        uint32_t _tmp;
+        memcpy(&_tmp, &REG.f32, sizeof(_tmp));
+        REG.i32 = _tmp;
       } else {
-        REG.f32 = REG.i32;
+        float _tmp;
+        memcpy(&_tmp, &REG.i32, sizeof(_tmp));
+        REG.f32 = _tmp;
       }
       break;
     case T_INT8:

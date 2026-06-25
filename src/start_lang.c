@@ -315,9 +315,15 @@ uint8_t st_op(uint8_t token, State * s){
       }
     }
     s->_idlen = 0;
-    }
-    if (token == INPUT) { f_input(s); return SUCCESS; }
-    if (token == PRINT && (prev < '0' || prev > '9')) { f_print(s); return SUCCESS; }
+  }
+
+  if (token == INPUT) {
+    f_input(s);
+    return SUCCESS;
+  } else if (token == PRINT && (prev < '0' || prev > '9')) {
+    f_print(s);
+    return SUCCESS;
+  }
 
   uint8_t cont = 0;
   if (s->_lookahead){
@@ -822,7 +828,7 @@ uint8_t st_op(uint8_t token, State * s){
       s->_type = 2;
       break;
     case T_FLOAT:
-      if (s->_type == INT32) {
+      if (s->_type == INT32 || s->_type == INT16) {
         REG.f32 = (float) REG.i32;
       }
       s->_type = 3;

@@ -725,6 +725,8 @@ void validate(void){
   // TYPE_CAST 'e': raw bit reinterpretation int->float (no error)
   assert_eq(run("i3 e"), 0);
   assert_eq(run("i0 e"), 0);
+  assert_float_eq((run("A^ s50! i0 sA; ef"), REG.f32), 50.0f);
+  assert_float_eq((run("A^ s25! i0 sA; ef ! f2.0 / "), RM.f32), 12.5f);
   end_section();
 
   begin_section("ROTATE REGISTER");

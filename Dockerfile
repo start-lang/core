@@ -2,12 +2,13 @@ FROM alpine:edge
 
 RUN apk add --no-cache \
     curl \
+    gnupg \
     gcc \
     valgrind \
-    clang19 \
+    clang22 \
     compiler-rt \
-    lld \
-    llvm \
+    lld22 \
+    llvm22 \
     libc-dev \
     bash \
     python3 \

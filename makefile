@@ -4,10 +4,12 @@ SHELL := /bin/bash
 CC   := clang
 ifeq (${CC}, gcc)
   GCOV := gcov
-else ifeq ($(shell command -v llvm-cov-19 2> /dev/null),)
-  GCOV := llvm-cov gcov
 else
-  GCOV := llvm-cov-19 gcov
+  GCOV := $(shell command -v llvm22-cov 2>/dev/null || \
+           command -v llvm21-cov 2>/dev/null || \
+           command -v llvm20-cov 2>/dev/null || \
+           command -v llvm-cov 2>/dev/null || \
+           echo "llvm-cov") gcov
 endif
 
 LIBS = src lib/microcuts/src lib/tools
@@ -79,6 +81,15 @@ docker-img-build:
 docker-img-push:
 	docker tag clang-wasm:latest aantunes/clang-wasm:latest
 	docker push aantunes/clang-wasm:latest
+
+.PHONY: container-img-build
+container-img-build:
+	container build -t clang-wasm . --no-cache --platform linux/amd64
+
+.PHONY: container-img-push
+container-img-push:
+	container image tag clang-wasm:latest aantunes/clang-wasm:latest
+	container image push aantunes/clang-wasm:latest
 
 .PHONY: docker-run-test
 docker-run-test:

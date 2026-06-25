@@ -77,6 +77,8 @@ test: $(TP_BUILD) $(EXPECTED_FILES) $(ACTUAL_FILES)
 	echo ""; \
 	echo "=== run complete ==="; \
 	echo "$$passed ok / $$failed failed"; \
+	mkdir -p $(BUILD); \
+	echo $$passed > $(BUILD)/tp_test_count; \
 	[ "$$failed" -eq 0 ] || exit 1
 
 clean:

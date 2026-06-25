@@ -328,7 +328,7 @@ assets: init ${WASM_CLI_OUTPUT} svg
 	cp assets/logo.svg ${BUILD}/assets/img/logo.svg
 	cat assets/shields/version.svg | sed 's/__VERSION__/${VERSION_TAG}/g' > ${BUILD}/assets/img/version.svg
 	cat assets/shields/coverage.svg | sed "s/__COV__/$$(cat ${BUILD}/coverage.out | grep start_lang | tr -s ' ' | cut -d ' ' -f 4)/g" > ${BUILD}/assets/img/coverage.svg
-	cat assets/shields/tests.svg | sed "s/__TESTS__/$$(cat ${BUILD}/test.out | grep '0m' | grep -o '\.' | wc -l)/g" > ${BUILD}/assets/img/tests.svg
+	cat assets/shields/tests.svg | sed "s/__TESTS__/$$(echo $$(( $$(cat ${BUILD}/test.out | grep '0m' | grep -o '\.' | wc -l) + $$(cat ${BUILD}/tp_test_count 2>/dev/null || echo 0) )))/g" > ${BUILD}/assets/img/tests.svg
 	cp ${BUILD}/start.wasm ${BUILD}/assets
 	cp targets/web/wasm_runtime.js ${BUILD}/assets
 	cp targets/web/wasm_runtime.css ${BUILD}/assets

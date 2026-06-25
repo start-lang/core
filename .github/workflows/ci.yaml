@@ -30,6 +30,15 @@ jobs:
           make test
           make assets
 
+      - name: Upload coverage
+        uses: codecov/codecov-action@v5
+        with:
+          files: start_lang.c.gcov
+          disable_search: true
+          plugins: noop
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
       - name: Update assets
         run: |
           git config --global --add safe.directory $GITHUB_WORKSPACE
@@ -43,8 +52,3 @@ jobs:
           git add .
           git commit -m "Update assets" || echo "No new changes"
           git push origin assets
-
-      - name: Upload coverage
-        uses: codecov/codecov-action@v5
-        env:
-          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}

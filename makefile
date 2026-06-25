@@ -68,60 +68,48 @@ init:
 	[ "$$(ls -A lib/wunstd)" ] || git submodule update --init --recursive
 	mkdir -p ${BUILD}
 
-## DOCKER
+## CONTAINER
 
-DOCKER = docker run --platform linux/amd64 --rm -it --user $$(id -u):$$(id -g) -v`pwd`:/src -w/src
-DOCKER_IMAGE = aantunes/clang-wasm:latest
+ifneq ($(strip $(wildcard /usr/local/bin/container /opt/homebrew/bin/container)),)
+  CONTAINER_TOOL = container
+else
+  CONTAINER_TOOL = docker
+endif
+CONTAINER_IMAGE = aantunes/clang-wasm:latest
 
-.PHONY: docker-img-build
-docker-img-build:
-	docker build -t clang-wasm . --no-cache=true --platform=linux/amd64
+ifeq ($(CONTAINER_TOOL),container)
+  CONTAINER_IMG  = $(CONTAINER_TOOL) image
+else
+  CONTAINER_IMG  = $(CONTAINER_TOOL)
+endif
 
-.PHONY: docker-img-push
-docker-img-push:
-	docker tag clang-wasm:latest aantunes/clang-wasm:latest
-	docker push aantunes/clang-wasm:latest
+ifeq ($(CONTAINER_TOOL),container)
+  CONTAINER_RUN = container run --platform linux/amd64 --rm --user $$(id -u):$$(id -g) --volume `pwd`:/src --workdir /src $(CONTAINER_IMAGE)
+else
+  CONTAINER_RUN = docker run --platform linux/amd64 --rm -it --user $$(id -u):$$(id -g) -v`pwd`:/src -w/src $(CONTAINER_IMAGE)
+endif
 
 .PHONY: container-img-build
 container-img-build:
-	container build -t clang-wasm . --no-cache --platform linux/amd64
+	$(CONTAINER_TOOL) build -t clang-wasm . --no-cache --platform=linux/amd64
 
 .PHONY: container-img-push
 container-img-push:
-	container image tag clang-wasm:latest aantunes/clang-wasm:latest
-	container image push aantunes/clang-wasm:latest
+	$(CONTAINER_IMG) tag clang-wasm:latest aantunes/clang-wasm:latest
+	$(CONTAINER_IMG) push aantunes/clang-wasm:latest
 
-.PHONY: docker-run-test
-docker-run-test:
-	${DOCKER} ${DOCKER_IMAGE} make test
+.PHONY: container-img-pull
+container-img-pull:
+	$(CONTAINER_IMG) pull aantunes/clang-wasm:latest
 
-.PHONY: docker-run-test-long
-docker-run-test-long:
-	 ${DOCKER} ${DOCKER_IMAGE} make test-long
+.PHONY: container-run
+container-run:
+	$(CONTAINER_RUN) $(CMD)
 
-.PHONY: docker-run-benchmark
-docker-run-benchmark:
-	${DOCKER} ${DOCKER_IMAGE} make benchmark
-
-.PHONY: docker-run-memcheck
-docker-run-memcheck:
-	${DOCKER} ${DOCKER_IMAGE} make memcheck
-
-.PHONY: docker-run-build-wasm
-docker-run-build-wasm:
-	${DOCKER} ${DOCKER_IMAGE} make build-wasm
-
-.PHONY: docker-run-build-cli
-docker-run-build-cli:
-	${DOCKER} ${DOCKER_IMAGE} make build-cli
-
-.PHONY: docker-run-svg
-docker-run-svg:
-	${DOCKER} ${DOCKER_IMAGE} make svg
-
-.PHONY: docker-run-assets
-docker-run-assets:
-	${DOCKER} ${DOCKER_IMAGE} make assets
+CONTAINER_TASKS = test test-long benchmark memcheck build-wasm build-cli svg assets
+.PHONY: $(addprefix container-, $(CONTAINER_TASKS))
+$(addprefix container-, $(CONTAINER_TASKS)):
+	$(MAKE) container-run CMD="make $(subst container-,,$@)"
 
 ## BUILD
 

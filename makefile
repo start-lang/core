@@ -253,12 +253,23 @@ test-cli-mandelbrot: ${CLI_OUTPUT} ${WASM_CLI_OUTPUT}
 	time ${CLI_OUTPUT} -e -f tests/mandelbrot/m.st
 	time node ${WASM_RUNTIME} ${WASM_CLI_OUTPUT} -e "$$(cat tests/mandelbrot/m.st)"
 
+## TRANSPILER
+
+.PHONY: test-tp
+test-tp: ${CLI_OUTPUT}
+	$(MAKE) -C tp test
+
+.PHONY: clean-tp
+clean-tp:
+	$(MAKE) -C tp clean
+
 ## TEST
 
 .PHONY: test
 test: clean init
 	${MAKE} coverage
 	${MAKE} test-cli
+	${MAKE} test-tp
 	${MAKE} test-wasm-cli
 	${MAKE} test-wasm-example
 

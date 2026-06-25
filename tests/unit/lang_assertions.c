@@ -430,6 +430,9 @@ void validate(void){
   assert_eq((run("1!1?>(2:3)!"), s->_m[0]), 3);
   // 2 > 1 ?
   assert_eq((run("2!1?>(2:3)!"), s->_m[0]), 2);
+  // nested if inside false if (jump over nested if)
+  assert_eq((run("0?!(1(2):3(4))!"), s->_m[0]), 3);
+  assert_eq((run("0?!(1(2):3(4))"), s->reg.i8[0]), 3);
   end_section();
 
   begin_section("Stack");
@@ -529,6 +532,8 @@ void validate(void){
   // overflow (MAX_IDLEN = 16)
   assert_eq(run("ABCDEFGHIJKLMNO123"), JM_ERR0);
   assert_eq(run("_0123456789ABCDE"), JM_ERR0);
+  assert_eq(run("ABC."), 0);
+  assert_eq(run("ABC,"), 0);
   end_section();
 
   begin_section("Functions");

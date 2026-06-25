@@ -237,14 +237,6 @@ uint8_t st_op(uint8_t token, State * s){
     return SUCCESS;
   }
 
-  if (token == PRINT && (prev < '0' || prev > '9') && !s->_idlen) {
-    f_print(s);
-    return SUCCESS;
-  } else if (token == INPUT && !s->_idlen) {
-    f_input(s);
-    return SUCCESS;
-  }
-
   if ((token >= 'A' && token <= 'Z') || token == '_'
       || (s->_idlen && (token >= '0' && token <= '9'))){
     s->_id[s->_idlen] = token;
